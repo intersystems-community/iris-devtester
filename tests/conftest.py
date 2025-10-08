@@ -102,8 +102,9 @@ def iris_db_shared():
     """
     # Start IRIS container (shared for module)
     with IRISContainer() as iris:
-        # Get connection URL and create DBAPI connection
-        import irisnative
+        # Use Feature 003 modern connection manager
+        from iris_devtools.connections import get_connection
+        from iris_devtools.config import IRISConfig
 
         # Parse connection details from container
         host = iris.get_container_host_ip()
@@ -111,13 +112,15 @@ def iris_db_shared():
 
         # Use the test user created by testcontainers-iris
         # (username="test", password="test", no expiration!)
-        conn = irisnative.createConnection(
-            hostname=host,
+        config = IRISConfig(
+            host=host,
             port=port,
             namespace="USER",
             username="test",
             password="test",
         )
+
+        conn = get_connection(config, auto_retry=True, max_retries=3)
 
         # Add ObjectScript execution capability (TEST-ONLY workaround)
         # TODO: Remove this when Feature 003 implements proper ObjectScript execution

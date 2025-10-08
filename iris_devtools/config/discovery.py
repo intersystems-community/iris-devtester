@@ -23,7 +23,6 @@ from iris_devtools.config.defaults import (
     DEFAULT_DRIVER,
     DEFAULT_TIMEOUT,
 )
-from iris_devtools.connections.auto_discovery import auto_detect_iris_host_and_port
 
 
 def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
@@ -68,6 +67,9 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
     }
 
     # Layer 4: Auto-detect from Docker/native instances (override defaults)
+    # Import here to avoid circular dependency
+    from iris_devtools.connections.auto_discovery import auto_detect_iris_host_and_port
+
     auto_host, auto_port = auto_detect_iris_host_and_port()
     if auto_host:
         discovered["host"] = auto_host

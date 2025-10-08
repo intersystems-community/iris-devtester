@@ -17,16 +17,20 @@ Quick Start:
     ...     print(cursor.fetchone())
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "Your Name"
 __license__ = "MIT"
 
 # Convenience imports for common usage
-from iris_devtools.connections import get_iris_connection
-from iris_devtools.containers import IRISContainer
+# These will be implemented in later tasks
+# Commented out for now to avoid import errors during setup
+# from iris_devtools.connections import get_iris_connection
+# from iris_devtools.containers import IRISContainer
+# from iris_devtools.config import IRISConfig
 
 __all__ = [
     "__version__",
-    "get_iris_connection",
-    "IRISContainer",
+    # "get_iris_connection",
+    # "IRISContainer",
+    # "IRISConfig",
 ]

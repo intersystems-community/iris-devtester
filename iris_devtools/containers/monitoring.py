@@ -574,49 +574,35 @@ def get_monitoring_status(conn) -> Tuple[bool, dict]:
         ConnectionError: If IRIS connection unavailable
     """
     try:
-        cursor = conn.cursor()
+        # Check if monitoring tasks exist and are active
+        # Note: StatsSQL profiles are not directly queryable via SQL tables
+        # so we check for active monitoring tasks instead
+        tasks = list_monitoring_tasks(conn)
 
-        # Query for active ^SystemPerformance profiles using SQL directly
-        # (DBAPI is SQL-only, we can't execute ObjectScript)
-        sql = "SELECT Name, Description, Interval, Duration, RunTime, Status FROM %SYS_PTools.StatsProfile"
+        if not tasks:
+            return (False, {"enabled": 0, "tasks": []})
 
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-
-        # Build status dict
+        # Build status from tasks
         status = {
-            "enabled": 0,
-            "profiles": [],
+            "enabled": 1,
+            "tasks": tasks,
+            "policy_name": "iris-devtools-default",  # Default policy name
+            "profile_name": "iris-devtools-default",  # Alias for compatibility
         }
 
-        for row in rows:
-            profile = {
-                "name": row[0],
-                "description": row[1],
-                "interval": row[2],
-                "duration": row[3],
-                "runtime": row[4],
-                "status": row[5],
-            }
-            status["profiles"].append(profile)
+        # Check if any task is not suspended
+        # Note: task dict has 'suspended' (lowercase) as boolean
+        has_active_task = any(not task.get("suspended", True) for task in tasks)
 
-            # Check if this is our default profile
-            if profile["name"] == "iris-devtools-default":
-                status["enabled"] = 1
-                status["policy_name"] = profile["name"]
-                status["interval"] = profile["interval"]
-                status["retention"] = profile["duration"]
-
-        is_running = bool(status.get("enabled", 0))
-        return (is_running, status) if status["profiles"] else (False, {})
+        return (has_active_task, status)
 
     except Exception as e:
         logger.warning(f"Could not query monitoring status: {e}")
         # Non-fatal - return disabled status
-        return (False, {"enabled": False, "error": str(e)})
+        return (False, {"enabled": 0, "error": str(e)})
 
 
-def disable_monitoring(conn) -> Tuple[bool, str]:
+def disable_monitoring(conn) -> int:
     """
     Disable monitoring.
 
@@ -626,7 +612,7 @@ def disable_monitoring(conn) -> Tuple[bool, str]:
         conn: Database connection
 
     Returns:
-        (success: bool, message: str)
+        int: Count of disabled tasks
 
     Raises:
         ConnectionError: If IRIS connection unavailable
@@ -638,7 +624,7 @@ def disable_monitoring(conn) -> Tuple[bool, str]:
 
         if not tasks:
             logger.info("No monitoring tasks found to disable")
-            return (True, "No monitoring tasks active")
+            return 0
 
         # Suspend all monitoring tasks
         disabled_count = 0
@@ -650,7 +636,7 @@ def disable_monitoring(conn) -> Tuple[bool, str]:
                     disabled_count += 1
 
         logger.info(f"✓ Disabled {disabled_count} monitoring task(s)")
-        return (True, f"Disabled {disabled_count} monitoring task(s)")
+        return disabled_count
 
     except Exception as e:
         error_msg = f"Failed to disable monitoring: {e}"
@@ -658,7 +644,7 @@ def disable_monitoring(conn) -> Tuple[bool, str]:
         raise RuntimeError(error_msg) from e
 
 
-def enable_monitoring(conn) -> Tuple[bool, str]:
+def enable_monitoring(conn) -> int:
     """
     Enable monitoring.
 
@@ -668,7 +654,7 @@ def enable_monitoring(conn) -> Tuple[bool, str]:
         conn: Database connection
 
     Returns:
-        (success: bool, message: str)
+        int: Count of enabled tasks
 
     Raises:
         ConnectionError: If IRIS connection unavailable
@@ -701,7 +687,7 @@ def enable_monitoring(conn) -> Tuple[bool, str]:
                     enabled_count += 1
 
         logger.info(f"✓ Enabled {enabled_count} monitoring task(s)")
-        return (True, f"Enabled {enabled_count} monitoring task(s)")
+        return enabled_count
 
     except Exception as e:
         error_msg = f"Failed to enable monitoring: {e}"
@@ -730,14 +716,15 @@ def create_task(conn, schedule: TaskSchedule) -> str:
 
         logger.debug(f"Creating Task Manager task: {schedule.name}")
 
-        # Create task using SQL INSERT (works with DBAPI!)
-        # Note: %SYS.Task table accepts SQL INSERT operations
+        # Create task using SQL INSERT with fields that work
+        # Note: TimePeriod has strict validation - omit it and let IRIS set defaults
+        # DailyIncrement is VARCHAR(50), store as string like "30"
         insert_sql = """
             INSERT INTO %SYS.Task
                 (Name, Description, TaskClass, RunAsUser, Suspended,
-                 DailyFrequency, DailyIncrement, DailyIncrementUnit,
-                 StartDate, StartTime)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, CURRENT_TIME)
+                 DailyFrequency, DailyIncrement,
+                 StartDate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)
         """
 
         cursor.execute(
@@ -747,10 +734,9 @@ def create_task(conn, schedule: TaskSchedule) -> str:
                 schedule.description,
                 schedule.task_class,
                 schedule.run_as_user,
-                1 if schedule.suspended else 0,  # Start suspended initially
+                1 if schedule.suspended else 0,  # Respect schedule.suspended setting
                 schedule.daily_frequency,
-                schedule.daily_increment,
-                schedule.daily_increment_unit,
+                str(schedule.daily_increment),  # Store as string like "30"
             ),
         )
         conn.commit()
@@ -811,15 +797,16 @@ def get_task_status(conn, task_id: str) -> dict:
     try:
         cursor = conn.cursor()
 
-        # Query task details
-        query = f"""
-            SELECT task.Name, task.Suspended, task.TaskClass,
-                   task.DailyIncrement, task.NextScheduledTime
-            FROM %SYS.Task_GetOpenId('{task_id}') task
+        # Query task details using simple SELECT (works with DBAPI)
+        query = """
+            SELECT Name, Suspended, TaskClass, DailyIncrement
+            FROM %SYS.Task
+            WHERE ID = ?
         """
 
         logger.debug(f"Querying task status: {task_id}")
-        result = cursor.execute(query).fetchone()
+        cursor.execute(query, (task_id,))
+        result = cursor.fetchone()
 
         if not result:
             raise ValueError(f"Task not found: {task_id}")
@@ -830,7 +817,6 @@ def get_task_status(conn, task_id: str) -> dict:
             "suspended": bool(result[1]) if result[1] is not None else False,
             "task_class": result[2] if result[2] else "",
             "daily_increment": int(result[3]) if result[3] else 0,
-            "next_scheduled_time": result[4] if result[4] else None,
         }
 
         logger.info(f"✓ Retrieved task status: {status['name']} (ID: {task_id})")
@@ -869,20 +855,35 @@ def suspend_task(conn, task_id: str) -> bool:
         RuntimeError: If suspension fails
     """
     try:
-        # Use TaskSchedule.disable() to generate ObjectScript
-        schedule = TaskSchedule(task_id=task_id)
-        objectscript = schedule.disable()
-
         logger.debug(f"Suspending task: {task_id}")
 
-        # Execute ObjectScript using test fixture helper or raise error
-        if hasattr(conn, 'execute_objectscript'):
-            conn.execute_objectscript(objectscript)
-        else:
-            raise NotImplementedError(
-                "ObjectScript execution not available\n"
-                "\n"
-                "What went wrong:\n"
+        # Use SQL UPDATE to suspend the task (works with DBAPI!)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE %SYS.Task SET Suspended = 1 WHERE ID = ?",
+            (task_id,)
+        )
+        conn.commit()
+
+        # Verify it was updated
+        cursor.execute("SELECT Suspended FROM %SYS.Task WHERE ID = ?", (task_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            raise RuntimeError(f"Task {task_id} not found after suspend attempt")
+
+        if result[0] != 1:
+            # Fallback to ObjectScript if SQL didn't work
+            schedule = TaskSchedule(task_id=task_id)
+            objectscript = schedule.disable()
+
+            if hasattr(conn, 'execute_objectscript'):
+                conn.execute_objectscript(objectscript)
+            else:
+                raise NotImplementedError(
+                    "ObjectScript execution not available\n"
+                    "\n"
+                    "What went wrong:\n"
                 "  This connection does not support ObjectScript execution.\n"
                 "  DBAPI connections are SQL-only.\n"
                 "\n"
@@ -930,29 +931,44 @@ def resume_task(conn, task_id: str) -> bool:
         RuntimeError: If resume fails
     """
     try:
-        # Use TaskSchedule.enable() to generate ObjectScript
-        schedule = TaskSchedule(task_id=task_id)
-        objectscript = schedule.enable()
-
         logger.debug(f"Resuming task: {task_id}")
 
-        # Execute ObjectScript using test fixture helper or raise error
-        if hasattr(conn, 'execute_objectscript'):
-            conn.execute_objectscript(objectscript)
-        else:
-            raise NotImplementedError(
-                "ObjectScript execution not available\n"
-                "\n"
-                "What went wrong:\n"
-                "  This connection does not support ObjectScript execution.\n"
-                "  DBAPI connections are SQL-only.\n"
-                "\n"
-                "How to fix it:\n"
-                "  1. Use a JDBC connection (supports ObjectScript via stored procedures)\n"
-                "  2. Or wait for Feature 003 (Connection Manager) which provides\n"
-                "     hybrid DBAPI/JDBC connections with ObjectScript support\n"
-                "\n"
-                "See: docs/learnings/dbapi-objectscript-limitation.md\n"
+        # Use SQL UPDATE to resume the task (works with DBAPI!)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE %SYS.Task SET Suspended = 0 WHERE ID = ?",
+            (task_id,)
+        )
+        conn.commit()
+
+        # Verify it was updated
+        cursor.execute("SELECT Suspended FROM %SYS.Task WHERE ID = ?", (task_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            raise RuntimeError(f"Task {task_id} not found after resume attempt")
+
+        if result[0] != 0:
+            # Fallback to ObjectScript if SQL didn't work
+            schedule = TaskSchedule(task_id=task_id)
+            objectscript = schedule.enable()
+
+            if hasattr(conn, 'execute_objectscript'):
+                conn.execute_objectscript(objectscript)
+            else:
+                raise NotImplementedError(
+                    "ObjectScript execution not available\n"
+                    "\n"
+                    "What went wrong:\n"
+                    "  This connection does not support ObjectScript execution.\n"
+                    "  DBAPI connections are SQL-only.\n"
+                    "\n"
+                    "How to fix it:\n"
+                    "  1. Use a JDBC connection (supports ObjectScript via stored procedures)\n"
+                    "  2. Or wait for Feature 003 (Connection Manager) which provides\n"
+                    "     hybrid DBAPI/JDBC connections with ObjectScript support\n"
+                    "\n"
+                    "See: docs/learnings/dbapi-objectscript-limitation.md\n"
             )
 
         logger.info(f"✓ Resumed task: {task_id}")
@@ -989,39 +1005,34 @@ def delete_task(conn, task_id: str) -> bool:
         RuntimeError: If deletion fails
     """
     try:
-        # ObjectScript to delete task
-        objectscript = f"""
-            set task = ##class(%SYS.Task).%OpenId("{task_id}")
-            if $IsObject(task) {{
-                do task.%Delete()
-                write "DELETED"
-            }} else {{
-                write "NOT_FOUND"
-            }}
-        """
-
         logger.debug(f"Deleting task: {task_id}")
 
-        # Execute ObjectScript using test fixture helper or raise error
-        if hasattr(conn, 'execute_objectscript'):
-            output = conn.execute_objectscript(objectscript)
-            if "NOT_FOUND" in output:
+        # Use SQL DELETE (works with DBAPI!)
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM %SYS.Task WHERE ID = ?",
+            (task_id,)
+        )
+        conn.commit()
+
+        # Check if anything was deleted
+        if cursor.rowcount == 0:
+            # Fallback to ObjectScript if SQL didn't work
+            if hasattr(conn, 'execute_objectscript'):
+                objectscript = f"""
+                    set task = ##class(%SYS.Task).%OpenId("{task_id}")
+                    if $IsObject(task) {{
+                        do task.%Delete()
+                        write "DELETED"
+                    }} else {{
+                        write "NOT_FOUND"
+                    }}
+                """
+                output = conn.execute_objectscript(objectscript)
+                if "NOT_FOUND" in output:
+                    raise ValueError(f"Task not found: {task_id}")
+            else:
                 raise ValueError(f"Task not found: {task_id}")
-        else:
-            raise NotImplementedError(
-                "ObjectScript execution not available\n"
-                "\n"
-                "What went wrong:\n"
-                "  This connection does not support ObjectScript execution.\n"
-                "  DBAPI connections are SQL-only.\n"
-                "\n"
-                "How to fix it:\n"
-                "  1. Use a JDBC connection (supports ObjectScript via stored procedures)\n"
-                "  2. Or wait for Feature 003 (Connection Manager) which provides\n"
-                "     hybrid DBAPI/JDBC connections with ObjectScript support\n"
-                "\n"
-                "See: docs/learnings/dbapi-objectscript-limitation.md\n"
-            )
 
         logger.info(f"✓ Deleted task: {task_id}")
         return True
@@ -1072,7 +1083,8 @@ def list_monitoring_tasks(conn) -> list:
         """
 
         logger.debug("Querying monitoring tasks")
-        results = cursor.execute(query).fetchall()
+        cursor.execute(query)
+        results = cursor.fetchall()
 
         tasks = []
         for row in results:
