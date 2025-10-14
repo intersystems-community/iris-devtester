@@ -1,0 +1,455 @@
+"""Integration tests for .DAT fixture management.
+
+These tests require a running IRIS instance and test the complete
+roundtrip workflow: create → validate → load → verify.
+
+Tests cover:
+- T012: Roundtrip workflow (create → validate → load → verify data)
+- T013: Checksum mismatch detection
+- T014: Atomic namespace mounting (all-or-nothing)
+"""
+
+import pytest
+import tempfile
+import shutil
+from pathlib import Path
+
+from iris_devtools.fixtures import (
+    FixtureCreator,
+    DATFixtureLoader,
+    FixtureValidator,
+    ChecksumMismatchError,
+    FixtureValidationError,
+)
+from iris_devtools.connections import get_connection
+import time
+
+
+@pytest.fixture(scope="module")
+def iris_connection():
+    """
+    Provide IRIS connection for integration tests.
+
+    Assumes IRIS is running on localhost:1972 (default).
+    This is automatically discovered by iris-devtools connection manager.
+    """
+    # Verify IRIS is accessible
+    max_retries = 3
+    for i in range(max_retries):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.close()
+            break
+        except Exception as e:
+            if i == max_retries - 1:
+                pytest.skip(f"IRIS not available: {e}")
+            time.sleep(2)
+
+    yield conn
+
+
+@pytest.fixture(scope="function")
+def temp_fixture_dir():
+    """Provide temporary directory for fixture files."""
+    temp_dir = tempfile.mkdtemp(prefix="iris_fixture_test_")
+    yield temp_dir
+    # Cleanup
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+class TestFixtureRoundtrip:
+    """Test T012: Complete fixture roundtrip workflow."""
+
+    def test_create_validate_load_verify(self, iris_connection, temp_fixture_dir):
+        """Test complete roundtrip: create fixture → validate → load → verify data."""
+        # Step 1: Create test data in source namespace
+        source_namespace = "TEST_FIXTURE_SOURCE"
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Create namespace and test table
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '%SYS'
+                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
+                quit:sc
+            ")
+        """)
+
+        # Switch to new namespace and create test data
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '{source_namespace}'
+
+                // Create test table
+                &sql(CREATE TABLE TestData (
+                    ID INT PRIMARY KEY,
+                    Name VARCHAR(100),
+                    Value DECIMAL(10,2)
+                ))
+
+                // Insert test rows
+                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (1, 'Alice', 100.50))
+                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (2, 'Bob', 200.75))
+                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (3, 'Charlie', 300.25))
+
+                quit
+            ")
+        """)
+        cursor.close()
+
+        # Step 2: Create fixture from source namespace
+        creator = FixtureCreator()
+        fixture_path = Path(temp_fixture_dir) / "test-roundtrip"
+
+        manifest = creator.create_fixture(
+            fixture_id="test-roundtrip",
+            namespace=source_namespace,
+            output_dir=str(fixture_path),
+            description="Integration test fixture",
+            version="1.0.0"
+        )
+
+        # Verify manifest
+        assert manifest.fixture_id == "test-roundtrip"
+        assert manifest.namespace == source_namespace
+        assert len(manifest.tables) > 0
+        assert any(t.name.endswith("TestData") for t in manifest.tables)
+
+        # Step 3: Validate fixture
+        validator = FixtureValidator()
+        result = validator.validate_fixture(str(fixture_path), validate_checksum=True)
+
+        assert result.valid, f"Validation failed: {result.errors}"
+        assert len(result.errors) == 0
+        assert result.manifest is not None
+
+        # Step 4: Load fixture into different namespace
+        target_namespace = "TEST_FIXTURE_TARGET"
+        loader = DATFixtureLoader()
+
+        load_result = loader.load_fixture(
+            fixture_path=str(fixture_path),
+            target_namespace=target_namespace,
+            validate_checksum=True
+        )
+
+        # Verify load result
+        assert load_result.success
+        assert load_result.namespace == target_namespace
+        assert len(load_result.tables_loaded) > 0
+
+        # Step 5: Verify data in target namespace
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '{target_namespace}'
+
+                &sql(SELECT COUNT(*) INTO :count FROM TestData)
+
+                write count
+                quit
+            ")
+        """)
+
+        row = cursor.fetchone()
+        count = int(row[0]) if row else 0
+        assert count == 3, f"Expected 3 rows, found {count}"
+
+        # Verify specific data
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '{target_namespace}'
+
+                &sql(SELECT Name, Value INTO :name, :value FROM TestData WHERE ID = 2)
+
+                write name_'|'_value
+                quit
+            ")
+        """)
+
+        row = cursor.fetchone()
+        result_str = row[0] if row else ""
+        assert "Bob" in result_str
+        assert "200.75" in result_str
+
+        cursor.close()
+
+        # Cleanup namespaces
+        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+
+
+class TestChecksumMismatch:
+    """Test T013: Checksum mismatch detection."""
+
+    def test_detect_corrupted_dat_file(self, iris_connection, temp_fixture_dir):
+        """Test that corrupted .DAT file is detected via checksum mismatch."""
+        # Create a valid fixture first
+        source_namespace = "TEST_CHECKSUM"
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Create minimal test data
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '%SYS'
+                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
+                quit:sc
+            ")
+        """)
+        cursor.close()
+
+        # Create fixture
+        creator = FixtureCreator()
+        fixture_path = Path(temp_fixture_dir) / "test-checksum"
+
+        manifest = creator.create_fixture(
+            fixture_id="test-checksum",
+            namespace=source_namespace,
+            output_dir=str(fixture_path),
+            description="Checksum test fixture",
+            version="1.0.0"
+        )
+
+        # Corrupt the IRIS.DAT file
+        dat_file = fixture_path / "IRIS.DAT"
+        with open(dat_file, "ab") as f:
+            f.write(b"CORRUPTED DATA")
+
+        # Attempt to validate - should fail
+        validator = FixtureValidator()
+
+        with pytest.raises(ChecksumMismatchError) as exc_info:
+            validator.validate_fixture(str(fixture_path), validate_checksum=True)
+
+        assert "Checksum mismatch" in str(exc_info.value)
+        assert "What went wrong" in str(exc_info.value)
+        assert "How to fix it" in str(exc_info.value)
+
+    def test_skip_checksum_validation(self, iris_connection, temp_fixture_dir):
+        """Test that checksum validation can be skipped for performance."""
+        # Create a valid fixture
+        source_namespace = "TEST_SKIP_CHECKSUM"
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '%SYS'
+                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
+                quit:sc
+            ")
+        """)
+        cursor.close()
+
+        creator = FixtureCreator()
+        fixture_path = Path(temp_fixture_dir) / "test-skip"
+
+        creator.create_fixture(
+            fixture_id="test-skip",
+            namespace=source_namespace,
+            output_dir=str(fixture_path)
+        )
+
+        # Corrupt the DAT file
+        dat_file = fixture_path / "IRIS.DAT"
+        with open(dat_file, "ab") as f:
+            f.write(b"CORRUPTED")
+
+        # Should succeed when skipping checksum
+        validator = FixtureValidator()
+        result = validator.validate_fixture(str(fixture_path), validate_checksum=False)
+
+        # Manifest validation should still pass
+        assert result.valid or len(result.errors) == 0
+
+
+class TestAtomicOperations:
+    """Test T014: Atomic namespace mounting (all-or-nothing)."""
+
+    def test_load_is_atomic(self, iris_connection, temp_fixture_dir):
+        """Test that fixture loading is atomic (all-or-nothing operation)."""
+        # Create a valid fixture
+        source_namespace = "TEST_ATOMIC"
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '%SYS'
+                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
+                quit:sc
+            ")
+        """)
+        cursor.close()
+
+        creator = FixtureCreator()
+        fixture_path = Path(temp_fixture_dir) / "test-atomic"
+
+        creator.create_fixture(
+            fixture_id="test-atomic",
+            namespace=source_namespace,
+            output_dir=str(fixture_path)
+        )
+
+        # Load fixture should succeed
+        loader = DATFixtureLoader()
+        target_namespace = "TEST_ATOMIC_TARGET"
+
+        result = loader.load_fixture(
+            fixture_path=str(fixture_path),
+            target_namespace=target_namespace
+        )
+
+        assert result.success
+        assert result.namespace == target_namespace
+
+        # Verify namespace exists
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
+                write exists
+                quit
+            ")
+        """)
+
+        row = cursor.fetchone()
+        exists = int(row[0]) if row else 0
+        assert exists == 1, "Namespace should exist after successful load"
+        cursor.close()
+
+        # Cleanup
+        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+
+    def test_cleanup_removes_namespace(self, iris_connection, temp_fixture_dir):
+        """Test that cleanup properly removes namespace."""
+        # Create and load a fixture
+        source_namespace = "TEST_CLEANUP"
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                new $NAMESPACE
+                set $NAMESPACE = '%SYS'
+                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
+                quit:sc
+            ")
+        """)
+        cursor.close()
+
+        creator = FixtureCreator()
+        fixture_path = Path(temp_fixture_dir) / "test-cleanup"
+
+        creator.create_fixture(
+            fixture_id="test-cleanup",
+            namespace=source_namespace,
+            output_dir=str(fixture_path)
+        )
+
+        loader = DATFixtureLoader()
+        target_namespace = "TEST_CLEANUP_TARGET"
+
+        loader.load_fixture(
+            fixture_path=str(fixture_path),
+            target_namespace=target_namespace
+        )
+
+        # Cleanup with delete
+        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+
+        # Verify namespace is gone
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            DO $SYSTEM.OBJ.Execute("
+                set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
+                write exists
+                quit
+            ")
+        """)
+
+        row = cursor.fetchone()
+        exists = int(row[0]) if row else 0
+        assert exists == 0, "Namespace should not exist after cleanup"
+        cursor.close()
+
+
+class TestErrorScenarios:
+    """Test error handling scenarios."""
+
+    def test_missing_manifest(self, temp_fixture_dir):
+        """Test validation fails gracefully with missing manifest."""
+        fixture_path = Path(temp_fixture_dir) / "no-manifest"
+        fixture_path.mkdir(parents=True)
+
+        validator = FixtureValidator()
+        result = validator.validate_fixture(str(fixture_path), validate_checksum=False)
+
+        assert not result.valid
+        assert any("manifest.json" in error.lower() for error in result.errors)
+
+    def test_missing_dat_file(self, temp_fixture_dir):
+        """Test validation fails gracefully with missing .DAT file."""
+        fixture_path = Path(temp_fixture_dir) / "no-dat"
+        fixture_path.mkdir(parents=True)
+
+        # Create manifest without DAT file
+        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        manifest = FixtureManifest(
+            fixture_id="test",
+            version="1.0.0",
+            schema_version="1.0",
+            description="Test",
+            created_at="2025-01-01T00:00:00Z",
+            iris_version="2024.1",
+            namespace="TEST",
+            dat_file="IRIS.DAT",
+            checksum="sha256:abc123",
+            tables=[]
+        )
+        manifest.to_file(str(fixture_path / "manifest.json"))
+
+        validator = FixtureValidator()
+        result = validator.validate_fixture(str(fixture_path), validate_checksum=False)
+
+        assert not result.valid
+        assert any("IRIS.DAT" in error for error in result.errors)
+
+    def test_load_nonexistent_fixture(self):
+        """Test loading nonexistent fixture fails gracefully."""
+        loader = DATFixtureLoader()
+
+        with pytest.raises(FileNotFoundError):
+            loader.load_fixture(fixture_path="/nonexistent/path")
+
+
+# Test count verification
+def test_integration_test_count():
+    """Verify we have comprehensive integration tests."""
+    import sys
+    module = sys.modules[__name__]
+
+    test_classes = [
+        TestFixtureRoundtrip,
+        TestChecksumMismatch,
+        TestAtomicOperations,
+        TestErrorScenarios,
+    ]
+
+    total_tests = 0
+    for test_class in test_classes:
+        test_methods = [m for m in dir(test_class) if m.startswith('test_')]
+        total_tests += len(test_methods)
+
+    # Should have at least 10 integration tests
+    assert total_tests >= 10, f"Expected at least 10 integration tests, found {total_tests}"

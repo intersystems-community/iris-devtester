@@ -1,0 +1,201 @@
+# API Contract: DATFixtureLoader
+# Feature: 004-dat-fixtures
+# Date: 2025-10-14
+
+contract:
+  name: DATFixtureLoader
+  description: Loads IRIS .DAT fixtures into test databases with validation and rollback
+  module: iris_devtools.fixtures.loader
+  class: DATFixtureLoader
+
+constructor:
+  signature: __init__(connection_config: Optional[Dict[str, Any]] = None)
+  description: Initialize fixture loader with optional connection configuration
+  parameters:
+    - name: connection_config
+      type: Optional[Dict[str, Any]]
+      required: false
+      description: Connection configuration (host, port, namespace, etc.). If None, auto-discovers from environment.
+  returns:
+    type: DATFixtureLoader
+    description: Initialized fixture loader instance
+  raises:
+    - exception: ConnectionError
+      when: Cannot establish connection to IRIS
+      message: "Failed to connect to IRIS at {host}:{port}\n\nWhat went wrong:\n  ..."
+
+methods:
+  - name: load_fixture
+    signature: load_fixture(fixture_path: str, target_namespace: Optional[str] = None, validate_checksum: bool = True) -> LoadResult
+    description: Load IRIS.DAT fixture into IRIS database by mounting namespace
+    parameters:
+      - name: fixture_path
+        type: str
+        required: true
+        description: Path to fixture directory containing manifest.json and IRIS.DAT
+      - name: target_namespace
+        type: Optional[str]
+        required: false
+        description: Target namespace to mount fixture to. If None, uses manifest's source namespace.
+      - name: validate_checksum
+        type: bool
+        required: false
+        description: Validate IRIS.DAT checksum before loading (default: True)
+    returns:
+      type: LoadResult
+      description: Result object with success status, loaded tables, and elapsed time
+    raises:
+      - exception: FileNotFoundError
+        when: Fixture directory, manifest.json, or IRIS.DAT not found
+        message: "Fixture not found: {fixture_path}\n\nWhat went wrong:\n  The fixture directory, manifest.json, or IRIS.DAT is missing\n\nHow to fix it:\n  1. Check the path: ls -la {fixture_path}\n  2. Verify manifest exists: cat {fixture_path}/manifest.json\n  3. Verify IRIS.DAT exists: ls -lh {fixture_path}/IRIS.DAT\n  4. Re-create fixture: iris-devtools fixture create --namespace ..."
+      - exception: FixtureValidationError
+        when: Manifest validation fails or IRIS.DAT checksum mismatch
+        message: "Fixture validation failed\n\nWhat went wrong:\n  {validation_errors}\n\nHow to fix it:\n  ..."
+      - exception: FixtureLoadError
+        when: Loading fails (namespace exists, mount error, etc.)
+        message: "Failed to load fixture\n\nWhat went wrong:\n  {error_details}\n\nHow to fix it:\n  ..."
+    examples:
+      - description: Load fixture with default settings
+        code: |
+          loader = DATFixtureLoader()
+          result = loader.load_fixture("./fixtures/test-entities-100")
+          print(f"Loaded {len(result.tables_loaded)} tables in {result.elapsed_seconds:.2f}s")
+      - description: Load to custom target namespace with checksum validation
+        code: |
+          loader = DATFixtureLoader()
+          result = loader.load_fixture(
+              "./fixtures/test-100",
+              target_namespace="USER_TEST_001",
+              validate_checksum=True
+          )
+      - description: Load without checksum validation (faster, less safe)
+        code: |
+          result = loader.load_fixture(
+              "./fixtures/test-100",
+              validate_checksum=False
+          )
+
+  - name: validate_fixture
+    signature: validate_fixture(fixture_path: str) -> ValidationResult
+    description: Validate fixture without loading (checks manifest, files, checksums)
+    parameters:
+      - name: fixture_path
+        type: str
+        required: true
+        description: Path to fixture directory
+    returns:
+      type: ValidationResult
+      description: Validation result with errors, warnings, and manifest if valid
+    raises:
+      - exception: FileNotFoundError
+        when: Fixture directory not found
+    examples:
+      - description: Validate fixture before loading
+        code: |
+          loader = DATFixtureLoader()
+          result = loader.validate_fixture("./fixtures/test-100")
+          if result.valid:
+              print("✅ Fixture is valid")
+          else:
+              print(f"❌ Validation failed: {result.errors}")
+
+  - name: cleanup_fixture
+    signature: cleanup_fixture(manifest: FixtureManifest, target_namespace: Optional[str] = None) -> bool
+    description: Remove loaded namespace (unmount or delete database)
+    parameters:
+      - name: manifest
+        type: FixtureManifest
+        required: true
+        description: Manifest from load_fixture() result
+      - name: target_namespace
+        type: Optional[str]
+        required: false
+        description: Namespace to remove (default: manifest's namespace)
+    returns:
+      type: bool
+      description: True if namespace removed successfully
+    raises:
+      - exception: RuntimeError
+        when: Cleanup fails (namespace still in use, etc.)
+    examples:
+      - description: Load fixture and cleanup after test
+        code: |
+          loader = DATFixtureLoader()
+          result = loader.load_fixture("./fixtures/test-100")
+
+          # Run tests...
+
+          # Cleanup
+          loader.cleanup_fixture(result.manifest)
+
+  - name: get_connection
+    signature: get_connection() -> IRISConnection
+    description: Get underlying IRIS connection (for advanced usage)
+    returns:
+      type: IRISConnection
+      description: Active IRIS connection from Feature 003
+    examples:
+      - description: Execute custom SQL after loading fixture
+        code: |
+          loader = DATFixtureLoader()
+          result = loader.load_fixture("./fixtures/test-100")
+
+          conn = loader.get_connection()
+          cursor = conn.cursor()
+          cursor.execute("SELECT COUNT(*) FROM RAG.Entities")
+          print(cursor.fetchone()[0])
+
+properties:
+  - name: connection
+    type: IRISConnection
+    readonly: true
+    description: Active IRIS connection
+
+behavior:
+  atomicity: Namespace mounted atomically (entire namespace or none)
+  idempotency: Can mount to different target namespaces, or remount by first unmounting
+  thread_safety: Not thread-safe - each thread should create own instance
+  performance:
+    - "Namespace mount: <1 second (near-instant)"
+    - "10K rows: <2 seconds (mount + verification)"
+    - "Checksum validation: <5 seconds (scales with IRIS.DAT size)"
+
+error_handling:
+  strategy: Fail fast with guidance (Constitutional Principle #5)
+  message_format: |
+    Failed to {operation}
+
+    What went wrong:
+      {error_details}
+
+    How to fix it:
+      1. {step_1}
+      2. {step_2}
+      ...
+
+    Documentation: https://iris-devtools.readthedocs.io/fixtures/
+
+exit_codes:
+  0: Success
+  1: Missing manifest
+  2: Checksum validation failure
+  3: Table not found
+  4: Connection failure
+  5: Partial load failure (rolled back)
+
+testing:
+  contract_tests: tests/contract/test_fixture_loader_api.py
+  unit_tests: tests/unit/test_loader.py
+  integration_tests: tests/integration/test_dat_fixtures_integration.py
+
+dependencies:
+  - Feature 003 (Connection Manager) - Required for IRIS connectivity
+  - iris_devtools.fixtures.manifest - FixtureManifest, TableInfo dataclasses
+  - iris_devtools.fixtures.validator - Checksum validation
+
+constitutional_compliance:
+  principle_1: Auto-remediation via retry logic and clear error messages
+  principle_2: DBAPI first (inherits from Feature 003 connection manager)
+  principle_4: Zero configuration (auto-discovers IRIS connection)
+  principle_5: Fail fast with guidance (structured error messages)
+  principle_7: Medical-grade reliability (100% checksum validation, atomic transactions)
