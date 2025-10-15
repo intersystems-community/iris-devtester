@@ -36,9 +36,10 @@ classifiers = [
 
 dependencies = [
     "testcontainers>=4.0.0",
-    "testcontainers-iris-python>=1.2.2",
+    "testcontainers-iris>=1.2.2",
     "python-dotenv>=1.0.0",
     "docker>=6.0.0",
+    "click>=8.0.0",
 ]
 
 [project.optional-dependencies]

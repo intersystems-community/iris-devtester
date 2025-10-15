@@ -48,6 +48,7 @@ pytest
 iris_devtools/
 ├── connections/    # Connection management (DBAPI/JDBC)
 ├── containers/     # Testcontainers wrapper
+├── fixtures/       # DAT fixture management (Feature 004)
 ├── testing/        # pytest fixtures & utilities
 ├── config/         # Configuration discovery
 └── utils/          # Helpers
@@ -83,7 +84,7 @@ When extracting from rag-templates:
 
 Core:
 - `testcontainers>=4.0.0` - Container management
-- `testcontainers-iris-python>=1.2.2` - IRIS support
+- `testcontainers-iris>=1.2.2` - IRIS support
 - `python-dotenv>=1.0.0` - Environment config
 
 Optional (install with `[all]`):
@@ -280,6 +281,113 @@ twine upload dist/*
 - **README**: User-facing documentation
 - **Source**: `~/ws/rag-templates/` - Working implementation
 - **Specification**: `.specify/feature-request.md` - What to build
+
+## Feature 004: DAT Fixture Management
+
+**Status**: Planned (design phase complete)
+**Branch**: `004-dat-fixtures`
+**Docs**: `specs/004-dat-fixtures/`
+
+### Quick Overview
+
+Provides fast, reproducible test fixtures by exporting IRIS tables to .DAT files with checksum validation.
+
+**Performance**: 10-100x faster than programmatic test data creation
+- Load 10K rows in <10s (vs ~50 minutes programmatically)
+- SHA256 checksum validation for data integrity
+- Atomic loading with transaction rollback
+- Version-controlled fixtures for team sharing
+
+### Module Structure
+
+```
+iris_devtools/fixtures/
+├── __init__.py           # Public API: DATFixtureLoader, FixtureCreator
+├── loader.py             # DATFixtureLoader class (loads .DAT files)
+├── creator.py            # FixtureCreator class (exports to .DAT)
+├── validator.py          # FixtureValidator class (checksum validation)
+├── manifest.py           # FixtureManifest dataclass + schema
+└── pytest_plugin.py      # pytest integration (@pytest.mark.dat_fixture)
+```
+
+### CLI Commands
+
+```bash
+# Create fixture from tables
+iris-devtools fixture create --name test-100 --tables RAG.Entities --output ./fixtures/test-100
+
+# Validate fixture integrity
+iris-devtools fixture validate --fixture ./fixtures/test-100
+
+# Load fixture into IRIS
+iris-devtools fixture load --fixture ./fixtures/test-100
+
+# List available fixtures
+iris-devtools fixture list ./fixtures/
+
+# Show fixture info
+iris-devtools fixture info --fixture ./fixtures/test-100
+```
+
+### Python API
+
+```python
+from iris_devtools.fixtures import DATFixtureLoader, FixtureCreator
+
+# Create fixture
+creator = FixtureCreator()
+manifest = creator.create_fixture(
+    fixture_id="test-100",
+    tables=["RAG.Entities"],
+    output_dir="./fixtures/test-100"
+)
+
+# Load fixture
+loader = DATFixtureLoader()
+result = loader.load_fixture("./fixtures/test-100")
+print(f"Loaded {len(result.tables_loaded)} tables in {result.elapsed_seconds:.2f}s")
+
+# Cleanup
+loader.cleanup_fixture(result.manifest)
+```
+
+### pytest Integration
+
+```python
+# Declarative fixture loading
+@pytest.mark.dat_fixture("./fixtures/test-100", scope="class")
+class TestRAGQueries:
+    def test_entity_count(self, iris_db):
+        cursor = iris_db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM RAG.Entities")
+        assert cursor.fetchone()[0] == 100
+```
+
+### Key Design Decisions
+
+1. **ObjectScript via DBAPI**: Use `$SYSTEM.OBJ.Export()` and `$SYSTEM.OBJ.Load()` for .DAT operations
+2. **SHA256 checksums**: Cryptographic validation for medical-grade reliability
+3. **Transaction-based loading**: Atomic all-or-nothing with automatic rollback
+4. **Dataclasses for manifest**: Zero dependencies, simple validation
+5. **Flat directory structure**: Git-friendly, easy to inspect
+
+### Constitutional Compliance
+
+- ✅ Principle #2: DBAPI First (inherits from Feature 003)
+- ✅ Principle #4: Zero Configuration (auto-discovers IRIS connection)
+- ✅ Principle #5: Fail Fast with Guidance (structured error messages)
+- ✅ Principle #7: Medical-Grade Reliability (100% checksum validation)
+
+### Reference Documentation
+
+- Spec: `specs/004-dat-fixtures/spec.md`
+- Plan: `specs/004-dat-fixtures/plan.md`
+- Research: `specs/004-dat-fixtures/research.md`
+- Data Model: `specs/004-dat-fixtures/data-model.md`
+- Contracts: `specs/004-dat-fixtures/contracts/`
+- Quickstart: `specs/004-dat-fixtures/quickstart.md`
+
+---
 
 ## Important Reminders
 
