@@ -108,8 +108,40 @@ def reset_password(
         # Step 2: Reset password using IRIS session
         logger.info(f"Resetting IRIS password for user '{username}'...")
 
-        # Use ObjectScript to change password
+        # Use ObjectScript to change password AND disable "change password on next login" flag
+        # This fixes the DBAPI authentication issue
         reset_cmd = [
+            "docker",
+            "exec",
+            "-i",
+            container_name,
+            "bash",
+            "-c",
+            f'''echo "set props(\\"ChangePassword\\")=0 set props(\\"ExternalPassword\\")=\\"{new_password}\\" write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
+        ]
+
+        result = subprocess.run(
+            reset_cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+
+        if result.returncode == 0 and "1" in result.stdout:
+            # Update environment variables so subsequent connections use new password
+            os.environ["IRIS_USERNAME"] = username
+            os.environ["IRIS_PASSWORD"] = new_password
+
+            # Wait for password change to propagate
+            time.sleep(2)
+
+            logger.info(f"✓ Password reset successful for user '{username}'")
+            return True, f"Password reset successful for user '{username}'"
+
+        # Step 3: Try alternative method using ChangePassword (without Modify)
+        logger.debug("Primary method failed, trying ChangePassword approach...")
+
+        alt_cmd = [
             "docker",
             "exec",
             "-i",
@@ -123,49 +155,28 @@ def reset_password(
         ]
 
         result = subprocess.run(
-            reset_cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            input=new_password + "\n",  # Provide current password if needed
+            alt_cmd, capture_output=True, text=True, timeout=timeout, input=new_password + "\n"
         )
 
         if result.returncode == 0:
-            # Update environment variables so subsequent connections use new password
-            os.environ["IRIS_USERNAME"] = username
-            os.environ["IRIS_PASSWORD"] = new_password
+            # Also try to disable ChangePassword flag separately
+            disable_flag_cmd = [
+                "docker",
+                "exec",
+                "-i",
+                container_name,
+                "bash",
+                "-c",
+                f'''echo "set props(\\"ChangePassword\\")=0 write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
+            ]
+            subprocess.run(disable_flag_cmd, capture_output=True, text=True, timeout=timeout)
 
-            # Wait for password change to propagate
-            time.sleep(2)
-
-            logger.info(f"✓ Password reset successful for user '{username}'")
-            return True, f"Password reset successful for user '{username}'"
-
-        # Step 3: Try alternative method using SQL
-        logger.debug("Primary method failed, trying SQL approach...")
-
-        alt_cmd = [
-            "docker",
-            "exec",
-            "-i",
-            container_name,
-            "sh",
-            "-c",
-            f"echo \"ALTER USER {username} IDENTIFY BY '{new_password}'\" | iris sql IRIS -U %SYS",
-        ]
-
-        result = subprocess.run(alt_cmd, capture_output=True, text=True, timeout=timeout)
-
-        if (
-            "error" not in result.stdout.lower()
-            and "error" not in result.stderr.lower()
-        ):
             os.environ["IRIS_USERNAME"] = username
             os.environ["IRIS_PASSWORD"] = new_password
             time.sleep(2)
 
-            logger.info(f"✓ Password reset successful (via SQL) for user '{username}'")
-            return True, f"Password reset successful (via SQL) for user '{username}'"
+            logger.info(f"✓ Password reset successful (via ChangePassword) for user '{username}'")
+            return True, f"Password reset successful (via ChangePassword) for user '{username}'"
 
         # Both methods failed
         return (
@@ -175,7 +186,7 @@ def reset_password(
             "How to fix it manually:\n"
             f"  1. docker exec -it {container_name} bash\n"
             f"  2. iris session IRIS -U %SYS\n"
-            f"  3. Do ##class(Security.Users).ChangePassword('{username}','{new_password}')\n"
+            f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n"
             "\n"
             f"Primary error: {result.stderr}\n",
         )
@@ -220,7 +231,7 @@ def reset_password(
             "How to fix it manually:\n"
             f"  1. docker exec -it {container_name} bash\n"
             f"  2. iris session IRIS -U %SYS\n"
-            f"  3. Do ##class(Security.Users).ChangePassword('{username}','{new_password}')\n",
+            f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n",
         )
 
 
