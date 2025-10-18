@@ -128,6 +128,54 @@ class IRISContainer(BaseIRISContainer):
         return container
 
     @classmethod
+    def from_existing(cls, auto_discover: bool = True) -> Optional[IRISConfig]:
+        """
+        Detect existing IRIS instance (Docker or native) without creating container.
+
+        Uses auto-discovery to find running IRIS instances via:
+        1. Docker container inspection
+        2. Native IRIS 'iris list' command
+        3. Multi-port scanning (31972, 1972, 11972, 21972)
+
+        Args:
+            auto_discover: Enable automatic discovery (default: True)
+
+        Returns:
+            IRISConfig if found, None otherwise
+
+        Example:
+            >>> config = IRISContainer.from_existing()
+            >>> if config:
+            ...     print(f"Found IRIS at {config.host}:{config.port}")
+            ... else:
+            ...     # No existing IRIS, create new container
+            ...     with IRISContainer.community() as iris:
+            ...         pass
+
+        See Also:
+            - docs/learnings/rag-templates-production-patterns.md (Pattern 1, 2)
+            - iris_devtools.config.auto_discovery
+        """
+        if not auto_discover:
+            return None
+
+        from iris_devtools.config.auto_discovery import auto_discover_iris
+
+        config_dict = auto_discover_iris()
+
+        if config_dict is None:
+            return None
+
+        # Convert dict to IRISConfig
+        return IRISConfig(
+            host=config_dict.get("host", "localhost"),
+            port=config_dict.get("port", 1972),
+            namespace=config_dict.get("namespace", "USER"),
+            username=config_dict.get("username", "_SYSTEM"),
+            password=config_dict.get("password", "SYS"),
+        )
+
+    @classmethod
     def enterprise(
         cls,
         license_key: Optional[str] = None,

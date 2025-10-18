@@ -12,8 +12,17 @@ from iris_devtools.testing.models import (
     TableDefinition,
     TestState,
 )
+from iris_devtools.testing.schema_reset import (
+    SchemaResetter,
+    cleanup_test_data,
+    get_namespace_tables,
+    reset_namespace,
+    reset_schema,
+    verify_tables_exist,
+)
 
 __all__ = [
+    # Models
     "CleanupAction",
     "ColumnDefinition",
     "ContainerConfig",
@@ -24,4 +33,11 @@ __all__ = [
     "SchemaValidationResult",
     "TableDefinition",
     "TestState",
+    # Schema reset utilities
+    "SchemaResetter",
+    "cleanup_test_data",
+    "get_namespace_tables",
+    "reset_namespace",
+    "reset_schema",
+    "verify_tables_exist",
 ]
