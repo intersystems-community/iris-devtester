@@ -5,7 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/iris-devtools.svg)](https://badge.fury.io/py/iris-devtools)
 [![Python Versions](https://img.shields.io/pypi/pyversions/iris-devtools.svg)](https://pypi.org/project/iris-devtools/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Test Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/yourusername/iris-devtools)
+[![Test Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](https://github.com/intersystems-community/iris-devtools)
 
 ## What is This?
 
@@ -211,8 +211,8 @@ MIT License - See [LICENSE](LICENSE)
 
 ## Support
 
-- [GitHub Issues](https://github.com/yourusername/iris-devtools/issues)
-- [Documentation](https://iris-devtools.readthedocs.io)
+- [GitHub Issues](https://github.com/intersystems-community/iris-devtools/issues)
+- [Documentation](https://github.com/intersystems-community/iris-devtools#readme)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/intersystems-iris) (tag: intersystems-iris)
 
 ---
