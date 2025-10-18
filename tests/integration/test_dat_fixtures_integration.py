@@ -25,29 +25,12 @@ from iris_devtools.connections import get_connection
 import time
 
 
-@pytest.fixture(scope="module")
-def iris_connection():
-    """
-    Provide IRIS connection for integration tests.
-
-    Assumes IRIS is running on localhost:1972 (default).
-    This is automatically discovered by iris-devtools connection manager.
-    """
-    # Verify IRIS is accessible
-    max_retries = 3
-    for i in range(max_retries):
-        try:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1")
-            cursor.close()
-            break
-        except Exception as e:
-            if i == max_retries - 1:
-                pytest.skip(f"IRIS not available: {e}")
-            time.sleep(2)
-
-    yield conn
+# Use shared fixtures from conftest.py instead of duplicating
+# The conftest.py provides:
+# - iris_container (session scope)
+# - test_namespace (function scope)
+# - iris_connection (function scope, DBAPI for SQL)
+# - iris_objectscript_connection (function scope, iris.connect() for ObjectScript)
 
 
 @pytest.fixture(scope="function")
@@ -62,44 +45,35 @@ def temp_fixture_dir():
 class TestFixtureRoundtrip:
     """Test T012: Complete fixture roundtrip workflow."""
 
-    def test_create_validate_load_verify(self, iris_connection, temp_fixture_dir):
-        """Test complete roundtrip: create fixture → validate → load → verify data."""
-        # Step 1: Create test data in source namespace
-        source_namespace = "TEST_FIXTURE_SOURCE"
-        conn = get_connection()
-        cursor = conn.cursor()
+    def test_create_validate_load_verify(self, iris_container, test_namespace, iris_connection, temp_fixture_dir):
+        """
+        Test complete roundtrip: create fixture → validate → load → verify data.
 
-        # Create namespace and test table
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        Uses correct SQL/ObjectScript patterns:
+        - ObjectScript (iris.connect): Create namespace
+        - SQL (DBAPI): Create tables, insert data, verify
+        """
+        # Step 1: Setup - test_namespace already created by fixture
+        # Use it as source namespace for fixture creation
+        source_namespace = test_namespace
+
+        # Step 2: Create test data using SQL (DBAPI is 3x faster)
+        cursor = iris_connection.cursor()
+
+        # Create test table
+        cursor.execute("""
+            CREATE TABLE TestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100),
+                Value DECIMAL(10,2)
+            )
         """)
 
-        # Switch to new namespace and create test data
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
+        # Insert test rows
+        cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (1, 'Alice', 100.50)")
+        cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (2, 'Bob', 200.75)")
+        cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (3, 'Charlie', 300.25)")
 
-                // Create test table
-                &sql(CREATE TABLE TestData (
-                    ID INT PRIMARY KEY,
-                    Name VARCHAR(100),
-                    Value DECIMAL(10,2)
-                ))
-
-                // Insert test rows
-                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (1, 'Alice', 100.50))
-                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (2, 'Bob', 200.75))
-                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (3, 'Charlie', 300.25))
-
-                quit
-            ")
-        """)
         cursor.close()
 
         # Step 2: Create fixture from source namespace
@@ -129,7 +103,9 @@ class TestFixtureRoundtrip:
         assert result.manifest is not None
 
         # Step 4: Load fixture into different namespace
-        target_namespace = "TEST_FIXTURE_TARGET"
+        # Use iris_container to create target namespace (ObjectScript operation)
+        target_namespace = iris_container.get_test_namespace(prefix="TARGET")
+
         loader = DATFixtureLoader()
 
         load_result = loader.load_fixture(
@@ -143,46 +119,31 @@ class TestFixtureRoundtrip:
         assert load_result.namespace == target_namespace
         assert len(load_result.tables_loaded) > 0
 
-        # Step 5: Verify data in target namespace
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{target_namespace}'
+        # Step 5: Verify data in target namespace using SQL (DBAPI)
+        # Get fresh connection to target namespace
+        target_conn = iris_container.get_connection()
+        cursor = target_conn.cursor()
 
-                &sql(SELECT COUNT(*) INTO :count FROM TestData)
+        # Switch to target namespace
+        cursor.execute(f"SET NAMESPACE {target_namespace}")
 
-                write count
-                quit
-            ")
-        """)
-
+        # Count rows
+        cursor.execute("SELECT COUNT(*) FROM TestData")
         row = cursor.fetchone()
         count = int(row[0]) if row else 0
         assert count == 3, f"Expected 3 rows, found {count}"
 
-        # Verify specific data
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{target_namespace}'
-
-                &sql(SELECT Name, Value INTO :name, :value FROM TestData WHERE ID = 2)
-
-                write name_'|'_value
-                quit
-            ")
-        """)
-
+        # Verify specific data using SQL
+        cursor.execute("SELECT Name, Value FROM TestData WHERE ID = 2")
         row = cursor.fetchone()
-        result_str = row[0] if row else ""
-        assert "Bob" in result_str
-        assert "200.75" in result_str
+        assert row is not None, "Row with ID=2 not found"
+        assert row[0] == "Bob", f"Expected Name='Bob', got '{row[0]}'"
+        assert float(row[1]) == 200.75, f"Expected Value=200.75, got {row[1]}"
 
         cursor.close()
 
-        # Cleanup namespaces
-        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        # Cleanup target namespace (source namespace cleaned by fixture)
+        iris_container.delete_namespace(target_namespace)
 
 
 class TestChecksumMismatch:
