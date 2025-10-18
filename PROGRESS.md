@@ -1,8 +1,11 @@
 # IRIS DevTools - Project Progress
 
-**Last Updated**: 2025-10-14
+**Last Updated**: 2025-10-18
 
-## Overall Progress: 78% Complete
+## Overall Progress: Phase 1 Complete, Phase 2 In Progress
+
+**Current Phase**: Phase 2 - Complete Missing Features
+**Status**: Features 002-004 merged to main, integration test limitation discovered
 
 Battle-tested Python infrastructure for InterSystems IRIS development, extracted from production code.
 
@@ -27,21 +30,23 @@ Battle-tested Python infrastructure for InterSystems IRIS development, extracted
 
 ---
 
-### ✅ Feature 002: Set Default Stats - COMPLETE
-**Status**: ✅ All tests passing (26/26 integration tests)
-**Branch**: `002-set-default-stats`
-**Progress**: 100% complete
+### ✅ Feature 002: Set Default Stats - MERGED TO MAIN
+**Status**: ✅ Implementation complete, merged to main
+**Branch**: `main` (merged from `002-set-default-stats`)
+**Progress**: 100% implementation, integration tests deferred
 
 **Completed**:
 - ✅ Data models (4 dataclasses)
 - ✅ Unit tests (67 tests, all passing)
 - ✅ Contract tests (93 tests, 67 passing)
 - ✅ API implementation (14 functions)
-- ✅ Integration test suite (26 tests, all passing)
-- ✅ Pure SQL implementation (DBAPI-first)
-- ✅ Feature 003 integration complete
+- ✅ Merged to main (2025-10-18)
 
-**Details**: See `SESSION-INTEGRATION-TESTS.md`
+**Deferred to Phase 2.1**:
+- ⏸️ Integration test suite (26 tests require ObjectScript support)
+- ⏸️ IRISContainer wrapper needed for test execution
+
+**Details**: See `docs/learnings/integration-test-dbapi-limitation.md`
 
 **Key Deliverables**:
 - Auto-configure ^SystemPerformance monitoring (30s intervals, 1hr retention)
@@ -83,10 +88,10 @@ Battle-tested Python infrastructure for InterSystems IRIS development, extracted
 
 ---
 
-### ✅ Feature 004: IRIS .DAT Fixture Management - COMPLETE
-**Status**: Implementation complete ✅
-**Branch**: `004-dat-fixtures`
-**Progress**: 100% (48/48 tasks)
+### ✅ Feature 004: IRIS .DAT Fixture Management - MERGED TO MAIN
+**Status**: Implementation complete, merged to main ✅
+**Branch**: `main` (merged from `004-dat-fixtures`)
+**Progress**: 100% implementation (48/48 tasks), integration tests deferred
 
 **Delivered**:
 - ✅ Core implementation (Validator, Loader, Creator - 1,582 lines)
@@ -94,9 +99,14 @@ Battle-tested Python infrastructure for InterSystems IRIS development, extracted
 - ✅ CLI commands (5 commands: create, load, validate, list, info - 427 lines)
 - ✅ pytest plugin (@pytest.mark.dat_fixture - 178 lines)
 - ✅ All 48 tasks complete
-- ✅ 182 tests (155 passing, 27 integration tests for live IRIS)
+- ✅ 93 contract tests (all passing)
+- ✅ 28 unit tests (all passing)
 - ✅ Type checking clean (mypy 0 errors)
 - ✅ Documentation 100% (Google style with examples)
+- ✅ Merged to main (2025-10-18)
+
+**Deferred to Phase 2.1**:
+- ⏸️ 27 integration tests (require ObjectScript support)
 
 **Features**:
 - Create fixtures from IRIS namespaces (complete DB export)

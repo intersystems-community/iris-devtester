@@ -86,11 +86,19 @@ pytest tests/integration/test_fixture_performance.py -v
 - **Total**: 53 integration tests passing
 
 **Tasks**:
-- [ ] Start IRIS container
-- [ ] Run Feature 002 integration tests (26 tests)
-- [ ] Run Feature 004 integration tests (27 tests)
-- [ ] Fix any failures
-- [ ] Document any IRIS-specific setup needs
+- [x] Start IRIS container (used existing container on port 31972)
+- [x] Run Feature 004 integration tests (27 tests)
+- [x] Discovered DBAPI limitation - tests use ObjectScript commands
+- [x] Document limitation in `docs/learnings/integration-test-dbapi-limitation.md`
+- [⏸️] Defer integration test fixes to Phase 2.1 (when IRISContainer wrapper is built)
+- [⏸️] Run Feature 002 integration tests (likely same issue)
+
+**Phase 1.3 Results**:
+- **Unit tests**: 160 passing ✅ (67 Feature 002 + 93 Feature 004)
+- **Contract tests**: 93 passing ✅ (Feature 004)
+- **Integration tests**: 3/9 passing (only ones not using ObjectScript)
+- **Blocker discovered**: DBAPI cannot execute ObjectScript through SQL
+- **Decision**: Defer to Phase 2.1 when IRISContainer wrapper provides ObjectScript support
 
 ### Phase 2: Complete Missing Features (Week 2)
 

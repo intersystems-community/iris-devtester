@@ -71,7 +71,7 @@ class TestFixtureRoundtrip:
 
         # Create namespace and test table
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '%SYS'
                 set sc = ##class(Config.Namespaces).Create('{source_namespace}')
@@ -81,7 +81,7 @@ class TestFixtureRoundtrip:
 
         # Switch to new namespace and create test data
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '{source_namespace}'
 
@@ -146,7 +146,7 @@ class TestFixtureRoundtrip:
         # Step 5: Verify data in target namespace
         cursor = conn.cursor()
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '{target_namespace}'
 
@@ -163,7 +163,7 @@ class TestFixtureRoundtrip:
 
         # Verify specific data
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '{target_namespace}'
 
@@ -197,7 +197,7 @@ class TestChecksumMismatch:
 
         # Create minimal test data
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '%SYS'
                 set sc = ##class(Config.Namespaces).Create('{source_namespace}')
@@ -241,7 +241,7 @@ class TestChecksumMismatch:
         cursor = conn.cursor()
 
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '%SYS'
                 set sc = ##class(Config.Namespaces).Create('{source_namespace}')
@@ -283,7 +283,7 @@ class TestAtomicOperations:
         cursor = conn.cursor()
 
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '%SYS'
                 set sc = ##class(Config.Namespaces).Create('{source_namespace}')
@@ -316,7 +316,7 @@ class TestAtomicOperations:
         # Verify namespace exists
         cursor = conn.cursor()
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
                 write exists
                 quit
@@ -339,7 +339,7 @@ class TestAtomicOperations:
         cursor = conn.cursor()
 
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 new $NAMESPACE
                 set $NAMESPACE = '%SYS'
                 set sc = ##class(Config.Namespaces).Create('{source_namespace}')
@@ -371,7 +371,7 @@ class TestAtomicOperations:
         # Verify namespace is gone
         cursor = conn.cursor()
         cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
+            SELECT $SYSTEM.OBJ.Execute("
                 set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
                 write exists
                 quit
