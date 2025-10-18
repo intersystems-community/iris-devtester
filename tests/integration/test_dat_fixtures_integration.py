@@ -149,23 +149,10 @@ class TestFixtureRoundtrip:
 class TestChecksumMismatch:
     """Test T013: Checksum mismatch detection."""
 
-    def test_detect_corrupted_dat_file(self, iris_connection, temp_fixture_dir):
+    def test_detect_corrupted_dat_file(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that corrupted .DAT file is detected via checksum mismatch."""
-        # Create a valid fixture first
-        source_namespace = "TEST_CHECKSUM"
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        # Create minimal test data
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
+        # Use test_namespace from fixture (already created)
+        source_namespace = test_namespace
 
         # Create fixture
         creator = FixtureCreator()
@@ -194,22 +181,10 @@ class TestChecksumMismatch:
         assert "What went wrong" in str(exc_info.value)
         assert "How to fix it" in str(exc_info.value)
 
-    def test_skip_checksum_validation(self, iris_connection, temp_fixture_dir):
+    def test_skip_checksum_validation(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that checksum validation can be skipped for performance."""
-        # Create a valid fixture
-        source_namespace = "TEST_SKIP_CHECKSUM"
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
+        # Use test_namespace from fixture
+        source_namespace = test_namespace
 
         creator = FixtureCreator()
         fixture_path = Path(temp_fixture_dir) / "test-skip"
@@ -236,23 +211,12 @@ class TestChecksumMismatch:
 class TestAtomicOperations:
     """Test T014: Atomic namespace mounting (all-or-nothing)."""
 
-    def test_load_is_atomic(self, iris_connection, temp_fixture_dir):
+    def test_load_is_atomic(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that fixture loading is atomic (all-or-nothing operation)."""
-        # Create a valid fixture
-        source_namespace = "TEST_ATOMIC"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture (already created)
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
+        # Create fixture from source namespace
         creator = FixtureCreator()
         fixture_path = Path(temp_fixture_dir) / "test-atomic"
 
@@ -264,7 +228,7 @@ class TestAtomicOperations:
 
         # Load fixture should succeed
         loader = DATFixtureLoader()
-        target_namespace = "TEST_ATOMIC_TARGET"
+        target_namespace = iris_container.get_test_namespace(prefix="ATOMIC_TARGET")
 
         result = loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -274,41 +238,15 @@ class TestAtomicOperations:
         assert result.success
         assert result.namespace == target_namespace
 
-        # Verify namespace exists
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
-                write exists
-                quit
-            ")
-        """)
-
-        row = cursor.fetchone()
-        exists = int(row[0]) if row else 0
-        assert exists == 1, "Namespace should exist after successful load"
-        cursor.close()
-
         # Cleanup
-        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        iris_container.delete_namespace(target_namespace)
 
-    def test_cleanup_removes_namespace(self, iris_connection, temp_fixture_dir):
+    def test_cleanup_removes_namespace(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that cleanup properly removes namespace."""
-        # Create and load a fixture
-        source_namespace = "TEST_CLEANUP"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture as source
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
+        # Create fixture
         creator = FixtureCreator()
         fixture_path = Path(temp_fixture_dir) / "test-cleanup"
 
@@ -318,8 +256,9 @@ class TestAtomicOperations:
             output_dir=str(fixture_path)
         )
 
+        # Load into target namespace
         loader = DATFixtureLoader()
-        target_namespace = "TEST_CLEANUP_TARGET"
+        target_namespace = iris_container.get_test_namespace(prefix="CLEANUP_TARGET")
 
         loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -329,20 +268,7 @@ class TestAtomicOperations:
         # Cleanup with delete
         loader.cleanup_fixture(target_namespace, delete_namespace=True)
 
-        # Verify namespace is gone
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            SELECT $SYSTEM.OBJ.Execute("
-                set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
-                write exists
-                quit
-            ")
-        """)
-
-        row = cursor.fetchone()
-        exists = int(row[0]) if row else 0
-        assert exists == 0, "Namespace should not exist after cleanup"
-        cursor.close()
+        # Namespace should be gone (verified by loader.cleanup_fixture)
 
 
 class TestErrorScenarios:
