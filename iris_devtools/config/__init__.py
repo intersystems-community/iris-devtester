@@ -1,7 +1,15 @@
-"""Configuration discovery and management."""
+"""Configuration and auto-discovery utilities for IRIS connections."""
 
-from iris_devtools.config.models import IRISConfig
-from iris_devtools.config.discovery import discover_config
-from iris_devtools.config import defaults
+from .auto_discovery import (
+    auto_discover_iris,
+    discover_docker_iris,
+    discover_iris_port,
+    discover_native_iris,
+)
 
-__all__ = ["IRISConfig", "discover_config", "defaults"]
+__all__ = [
+    "auto_discover_iris",
+    "discover_docker_iris",
+    "discover_iris_port",
+    "discover_native_iris",
+]
