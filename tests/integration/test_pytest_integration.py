@@ -17,43 +17,31 @@ from iris_devtools.connections import get_connection
 
 
 @pytest.fixture(scope="module")
-def test_fixture_path():
+def test_fixture_path(iris_container):
     """Create a real fixture for pytest plugin testing."""
     temp_dir = tempfile.mkdtemp(prefix="pytest_plugin_test_")
     fixture_path = Path(temp_dir) / "test-fixture"
 
     try:
-        # Create a minimal fixture
-        source_namespace = "PYTEST_PLUGIN_TEST"
-        conn = get_connection()
+        # Create namespace and test data using correct patterns
+        source_namespace = iris_container.get_test_namespace(prefix="PYTEST_PLUGIN")
+        conn = iris_container.get_connection()
         cursor = conn.cursor()
 
-        # Create namespace with test data
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Switch to test namespace
+        cursor.execute(f"SET NAMESPACE {source_namespace}")
+
+        # Create table using SQL (DBAPI, 3x faster)
+        cursor.execute("""
+            CREATE TABLE PluginTestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100)
+            )
         """)
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
-
-                &sql(CREATE TABLE PluginTestData (
-                    ID INT PRIMARY KEY,
-                    Name VARCHAR(100)
-                ))
-
-                &sql(INSERT INTO PluginTestData VALUES (1, 'Test1'))
-                &sql(INSERT INTO PluginTestData VALUES (2, 'Test2'))
-
-                quit
-            ")
-        """)
+        # Insert test data
+        cursor.execute("INSERT INTO PluginTestData (ID, Name) VALUES (1, 'Test1')")
+        cursor.execute("INSERT INTO PluginTestData (ID, Name) VALUES (2, 'Test2')")
         cursor.close()
 
         # Create fixture
@@ -69,6 +57,7 @@ def test_fixture_path():
 
     finally:
         # Cleanup
+        iris_container.delete_namespace(source_namespace)
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
