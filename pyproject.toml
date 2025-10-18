@@ -128,6 +128,7 @@ markers = [
     "integration: Integration tests requiring IRIS",
     "e2e: End-to-end tests",
     "slow: Slow-running tests",
+    "dat_fixture: Tests using DAT fixture pytest plugin",
 ]
 
 [tool.mypy]

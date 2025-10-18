@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import testcontainers-iris, provide fallback if not available
 try:
-    from testcontainers_iris import IRISContainer as BaseIRISContainer
+    from testcontainers.iris import IRISContainer as BaseIRISContainer
 
     HAS_TESTCONTAINERS_IRIS = True
 except ImportError:

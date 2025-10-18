@@ -6,8 +6,12 @@ from .auto_discovery import (
     discover_iris_port,
     discover_native_iris,
 )
+from .discovery import discover_config
+from .models import IRISConfig
 
 __all__ = [
+    "IRISConfig",
+    "discover_config",
     "auto_discover_iris",
     "discover_docker_iris",
     "discover_iris_port",
