@@ -37,16 +37,20 @@ from iris_devtools.containers.performance import (
 pytestmark = pytest.mark.integration
 
 
-# iris_conn fixture is now provided by tests/conftest.py as iris_db
-# Tests use iris_conn parameter name for consistency with original design
-@pytest.fixture(scope="module")
-def iris_conn(iris_db_shared):
-    """
-    IRIS connection for integration tests.
+# Use fixtures from tests/integration/conftest.py:
+# - iris_container (session scope) - Container management
+# - iris_connection (function scope) - DBAPI connection for SQL
+# - test_namespace (function scope) - Isolated test namespace
 
-    Uses the shared iris_db_shared fixture from conftest.py for module-level tests.
+@pytest.fixture(scope="module")
+def iris_conn(iris_container):
     """
-    return iris_db_shared
+    IRIS connection for monitoring tests.
+
+    Monitoring tests typically use session/module scope since they configure
+    global monitoring settings that persist across tests.
+    """
+    return iris_container.get_connection()
 
 
 class TestConfigureMonitoringIntegration:

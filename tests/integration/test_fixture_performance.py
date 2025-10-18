@@ -23,17 +23,10 @@ from iris_devtools.fixtures import (
 from iris_devtools.connections import get_connection
 
 
-@pytest.fixture(scope="module")
-def iris_connection():
-    """Provide IRIS connection for performance tests."""
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        cursor.close()
-        yield conn
-    except Exception as e:
-        pytest.skip(f"IRIS not available: {e}")
+# Use fixtures from tests/integration/conftest.py:
+# - iris_container (session scope)
+# - iris_connection (function scope)
+# - test_namespace (function scope)
 
 
 @pytest.fixture(scope="function")
@@ -47,49 +40,28 @@ def temp_dir():
 class TestFixtureCreationPerformance:
     """Test fixture creation performance (NFR-001)."""
 
-    def test_create_fixture_10k_rows_under_30s(self, iris_connection, temp_dir):
+    def test_create_fixture_10k_rows_under_30s(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test creating fixture with 10K rows completes in <30 seconds."""
-        # Create namespace with 10K rows
-        source_namespace = "PERF_TEST_10K"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture
+        source_namespace = test_namespace
+        cursor = iris_connection.cursor()
 
-        # Create namespace
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Create table using SQL (DBAPI, 3x faster)
+        cursor.execute("""
+            CREATE TABLE PerfTestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100),
+                Value DECIMAL(10,2),
+                Description VARCHAR(500)
+            )
         """)
 
-        # Create table and insert 10K rows
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
-
-                &sql(CREATE TABLE PerfTestData (
-                    ID INT PRIMARY KEY,
-                    Name VARCHAR(100),
-                    Value DECIMAL(10,2),
-                    Description VARCHAR(500)
-                ))
-
-                // Insert 10K rows
-                for i=1:1:10000 {{
-                    &sql(INSERT INTO PerfTestData VALUES (
-                        :i,
-                        'Name_' _ i,
-                        i * 1.5,
-                        'Description for row ' _ i
-                    ))
-                }}
-
-                quit
-            ")
-        """)
+        # Insert 10K rows using SQL (batch insert for performance)
+        for i in range(1, 10001):
+            cursor.execute(
+                "INSERT INTO PerfTestData (ID, Name, Value, Description) VALUES (?, ?, ?, ?)",
+                (i, f"Name_{i}", i * 1.5, f"Description for row {i}")
+            )
         cursor.close()
 
         # Measure creation time
@@ -114,36 +86,26 @@ class TestFixtureCreationPerformance:
         assert table_info is not None
         assert table_info.row_count == 10000
 
-    def test_create_small_fixture_under_5s(self, iris_connection, temp_dir):
+    def test_create_small_fixture_under_5s(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test creating small fixture (<1K rows) completes in <5 seconds."""
-        source_namespace = "PERF_TEST_SMALL"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture
+        source_namespace = test_namespace
+        cursor = iris_connection.cursor()
 
-        # Create namespace with 100 rows
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Create table with 100 rows using SQL
+        cursor.execute("""
+            CREATE TABLE SmallTestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100)
+            )
         """)
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
-
-                &sql(CREATE TABLE SmallData (ID INT PRIMARY KEY, Name VARCHAR(100)))
-
-                for i=1:1:100 {{
-                    &sql(INSERT INTO SmallData VALUES (:i, 'Name_' _ i))
-                }}
-
-                quit
-            ")
-        """)
+        # Insert 100 rows
+        for i in range(1, 101):
+            cursor.execute(
+                "INSERT INTO SmallTestData (ID, Name) VALUES (?, ?)",
+                (i, f"Name_{i}")
+            )
         cursor.close()
 
         # Measure creation time
@@ -165,10 +127,12 @@ class TestFixtureLoadingPerformance:
     """Test fixture loading performance (NFR-002)."""
 
     @pytest.mark.slow
-    def test_load_fixture_10k_rows_under_10s(self, iris_connection, temp_dir):
+    def test_load_fixture_10k_rows_under_10s(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test loading fixture with 10K rows completes in <10 seconds."""
-        # First create a fixture with 10K rows (from previous test)
-        # For this test, we'll create a minimal fixture and measure load time
+        # Use test_namespace and create fixture first
+        source_namespace = test_namespace
+
+        # Create test data and fixture (setup for load test)
 
         # Create source fixture
         source_namespace = "LOAD_PERF_SOURCE"
