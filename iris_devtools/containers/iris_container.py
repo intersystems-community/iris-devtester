@@ -501,3 +501,305 @@ class IRISContainer(BaseIRISContainer):
         except Exception as e:
             logger.debug(f"Could not check CallIn status: {e}")
             return False
+
+    def get_iris_connection(self):
+        """
+        Get iris.connect() connection for ObjectScript operations.
+
+        Use this for operations that require ObjectScript execution:
+        - Creating/deleting namespaces
+        - Task Manager operations
+        - Global variable operations
+        - Full ObjectScript code execution
+
+        For SQL operations (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE),
+        use get_connection() instead - it's 3x faster via DBAPI.
+
+        Returns:
+            iris connection object (embedded Python)
+
+        Raises:
+            ImportError: If intersystems-irispython not installed
+
+        Example:
+            >>> with IRISContainer.community() as container:
+            ...     # Get iris.connect() for ObjectScript
+            ...     iris_conn = container.get_iris_connection()
+            ...     iris_obj = iris.createIRIS(iris_conn)
+            ...
+            ...     # Create namespace via ObjectScript
+            ...     iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")
+            ...
+            ...     # Get DBAPI connection for SQL (3x faster)
+            ...     db_conn = container.get_connection()
+            ...     cursor = db_conn.cursor()
+            ...     cursor.execute("CREATE TABLE TestData (ID INT, Name VARCHAR(100))")
+
+        Reference:
+            See docs/SQL_VS_OBJECTSCRIPT.md for complete guide on when to use
+            iris.connect() vs DBAPI.
+        """
+        try:
+            import iris
+        except ImportError:
+            raise ImportError(
+                "intersystems-irispython not installed\n"
+                "\n"
+                "What went wrong:\n"
+                "  iris.connect() requires intersystems-irispython package\n"
+                "\n"
+                "How to fix it:\n"
+                "  pip install intersystems-irispython\n"
+                "\n"
+                "Why you need this:\n"
+                "  - ObjectScript operations require iris.connect()\n"
+                "  - SQL operations can use DBAPI (3x faster)\n"
+                "  - See docs/SQL_VS_OBJECTSCRIPT.md for details\n"
+            )
+
+        config = self.get_config()
+
+        conn = iris.connect(
+            hostname=config.host,
+            port=config.port,
+            namespace=config.namespace,
+            username=config.username,
+            password=config.password,
+        )
+
+        logger.debug(
+            f"Created iris.connect() connection to {config.host}:{config.port}/{config.namespace}"
+        )
+
+        return conn
+
+    def execute_objectscript(self, code: str, namespace: Optional[str] = None) -> str:
+        """
+        Execute ObjectScript code and return result.
+
+        Args:
+            code: ObjectScript code to execute
+            namespace: Optional namespace (default: container's namespace)
+
+        Returns:
+            Result from ObjectScript execution (whatever was Written)
+
+        Example:
+            >>> with IRISContainer.community() as container:
+            ...     # Simple expression
+            ...     result = container.execute_objectscript('Write "Hello, IRIS!"')
+            ...     print(result)  # "Hello, IRIS!"
+            ...
+            ...     # Complex ObjectScript
+            ...     result = container.execute_objectscript('''
+            ...         Set ^MyGlobal = "test value"
+            ...         Write ^MyGlobal
+            ...     ''')
+            ...     print(result)  # "test value"
+            ...
+            ...     # Execute in different namespace
+            ...     result = container.execute_objectscript(
+            ...         'Write $NAMESPACE',
+            ...         namespace="%SYS"
+            ...     )
+            ...     print(result)  # "%SYS"
+        """
+        import iris
+
+        ns = namespace or self._config.namespace
+        config = self.get_config()
+
+        conn = iris.connect(
+            hostname=config.host,
+            port=config.port,
+            namespace=ns,
+            username=config.username,
+            password=config.password,
+        )
+
+        try:
+            iris_obj = iris.createIRIS(conn)
+            result = iris_obj.execute(code)
+            return result
+        finally:
+            conn.close()
+
+    def create_namespace(self, namespace: str) -> bool:
+        """
+        Create IRIS namespace using ObjectScript.
+
+        This is a convenience method that handles the iris.connect() boilerplate.
+
+        Args:
+            namespace: Name of namespace to create
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            >>> with IRISContainer.community() as container:
+            ...     # Create test namespace
+            ...     success = container.create_namespace("TEST")
+            ...     if success:
+            ...         print("Namespace created!")
+            ...
+            ...     # Use DBAPI for SQL operations
+            ...     conn = container.get_connection()
+            ...     cursor = conn.cursor()
+            ...     cursor.execute("SET NAMESPACE TEST")
+            ...     cursor.execute("CREATE TABLE MyTable (ID INT, Name VARCHAR(100))")
+
+        Reference:
+            This uses iris.connect() internally because namespace creation
+            requires ObjectScript. See docs/SQL_VS_OBJECTSCRIPT.md for why
+            DBAPI cannot create namespaces.
+        """
+        import iris
+
+        config = self.get_config()
+
+        conn = iris.connect(
+            hostname=config.host,
+            port=config.port,
+            namespace="%SYS",  # Must use %SYS for namespace operations
+            username=config.username,
+            password=config.password,
+        )
+
+        try:
+            iris_obj = iris.createIRIS(conn)
+            result = iris_obj.classMethodValue("Config.Namespaces", "Create", namespace)
+            success = result == 1
+
+            if success:
+                logger.info(f"✓ Created namespace: {namespace}")
+            else:
+                logger.warning(f"Failed to create namespace: {namespace} (may already exist)")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Error creating namespace {namespace}: {e}")
+            return False
+
+        finally:
+            conn.close()
+
+    def delete_namespace(self, namespace: str) -> bool:
+        """
+        Delete IRIS namespace using ObjectScript.
+
+        This is a convenience method that handles the iris.connect() boilerplate.
+
+        Args:
+            namespace: Name of namespace to delete
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            >>> with IRISContainer.community() as container:
+            ...     # Create and use namespace
+            ...     container.create_namespace("TEST")
+            ...     # ... do testing ...
+            ...
+            ...     # Cleanup
+            ...     container.delete_namespace("TEST")
+
+        Reference:
+            This uses iris.connect() internally because namespace deletion
+            requires ObjectScript. See docs/SQL_VS_OBJECTSCRIPT.md for details.
+        """
+        import iris
+
+        config = self.get_config()
+
+        conn = iris.connect(
+            hostname=config.host,
+            port=config.port,
+            namespace="%SYS",  # Must use %SYS for namespace operations
+            username=config.username,
+            password=config.password,
+        )
+
+        try:
+            iris_obj = iris.createIRIS(conn)
+            result = iris_obj.classMethodValue("Config.Namespaces", "Delete", namespace)
+            success = result == 1
+
+            if success:
+                logger.info(f"✓ Deleted namespace: {namespace}")
+            else:
+                logger.warning(f"Failed to delete namespace: {namespace} (may not exist)")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Error deleting namespace {namespace}: {e}")
+            return False
+
+        finally:
+            conn.close()
+
+    def get_test_namespace(self, prefix: str = "TEST") -> str:
+        """
+        Create unique test namespace for isolated testing.
+
+        Use this in pytest fixtures to ensure test isolation. Each call
+        creates a new namespace with a unique name.
+
+        Args:
+            prefix: Namespace prefix (default: "TEST")
+
+        Returns:
+            Namespace name (e.g., "TEST_A1B2C3D4")
+
+        Example:
+            >>> # In pytest conftest.py
+            >>> @pytest.fixture
+            ... def test_namespace(iris_container):
+            ...     # Create unique namespace
+            ...     namespace = iris_container.get_test_namespace()
+            ...
+            ...     # Yield for testing
+            ...     yield namespace
+            ...
+            ...     # Automatic cleanup
+            ...     iris_container.delete_namespace(namespace)
+
+            >>> # In test file
+            >>> def test_my_feature(iris_container, test_namespace):
+            ...     # Get DBAPI connection for SQL
+            ...     conn = iris_container.get_connection()
+            ...     cursor = conn.cursor()
+            ...     cursor.execute(f"SET NAMESPACE {test_namespace}")
+            ...     cursor.execute("CREATE TABLE TestData (ID INT, Name VARCHAR(100))")
+            ...     cursor.execute("INSERT INTO TestData VALUES (1, 'Alice')")
+            ...
+            ...     # Test your code
+            ...     cursor.execute("SELECT COUNT(*) FROM TestData")
+            ...     assert cursor.fetchone()[0] == 1
+
+        Reference:
+            See docs/SQL_VS_OBJECTSCRIPT.md for the pattern of using
+            iris.connect() for setup/cleanup and DBAPI for testing.
+        """
+        import uuid
+
+        namespace = f"{prefix}_{uuid.uuid4().hex[:8].upper()}"
+
+        if self.create_namespace(namespace):
+            logger.debug(f"Created test namespace: {namespace}")
+            return namespace
+        else:
+            raise RuntimeError(
+                f"Failed to create test namespace: {namespace}\n"
+                "\n"
+                "What went wrong:\n"
+                "  Could not create unique namespace for testing.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Check IRIS container is running\n"
+                "  2. Check user has namespace creation privileges\n"
+                "  3. Check namespace doesn't already exist\n"
+            )

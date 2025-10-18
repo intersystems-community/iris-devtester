@@ -8,6 +8,21 @@
 
 This constitution codifies the hard-won lessons, blind alleys avoided, and battle-tested practices from years of InterSystems IRIS development. Every principle herein represents real production experience, real failures overcome, and real solutions that work.
 
+## CRITICAL: Read This First
+
+**Before writing ANY code that interacts with IRIS, read `docs/SQL_VS_OBJECTSCRIPT.md`.**
+
+This single document answers the most critical question in IRIS development: "How do I execute this operation?"
+
+**Why This Matters**:
+- Using the wrong execution method causes mysterious failures
+- 53 integration tests failed because of this misunderstanding
+- DBAPI is 3x faster for SQL but CANNOT execute ObjectScript
+- iris.connect() is required for namespace/Task Manager operations
+- Getting this wrong wastes hours of debugging
+
+**The Rule**: When you don't know which tool to use, check `docs/SQL_VS_OBJECTSCRIPT.md` FIRST, not after your code fails.
+
 ## Core Principles
 
 ### 1. AUTOMATIC REMEDIATION OVER MANUAL INTERVENTION
