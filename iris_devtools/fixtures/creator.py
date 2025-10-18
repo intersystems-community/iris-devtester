@@ -212,24 +212,9 @@ class FixtureCreator:
             conn = self.get_connection()
             cursor = conn.cursor()
 
-            # Verify namespace exists
-            cursor.execute(
-                f"SELECT COUNT(*) FROM SYS.Namespace WHERE Name = '{namespace}'"
-            )
-            ns_count = cursor.fetchone()[0]
-
-            if ns_count == 0:
-                raise FixtureCreateError(
-                    f"Namespace '{namespace}' does not exist\n"
-                    "\n"
-                    "What went wrong:\n"
-                    "  Cannot export non-existent namespace.\n"
-                    "\n"
-                    "How to fix it:\n"
-                    "  1. List available namespaces: do $SYSTEM.OBJ.ListNamespaces()\n"
-                    "  2. Create namespace if needed\n"
-                    "  3. Verify namespace name spelling\n"
-                )
+            # NOTE: Namespace validation removed - BACKUP operation will fail if namespace
+            # doesn't exist. Previous approach used SYS.Namespace which is not available
+            # in all IRIS editions. The backup command itself provides sufficient validation.
 
             # Execute BACKUP via ObjectScript
             # Use ##class(SYS.Database).BackupNamespace()
