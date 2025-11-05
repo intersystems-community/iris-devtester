@@ -111,6 +111,14 @@ def get_resource_metrics(conn) -> PerformanceMetrics:
 
     Raises:
         RuntimeError: If metrics query fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     metrics = get_resource_metrics(conn)
+        ...     print(f"CPU: {metrics.cpu_percent:.1f}%")
+        ...     print(f"Memory: {metrics.memory_percent:.1f}%")
+        ...     print(f"Monitoring enabled: {metrics.monitoring_enabled}")
     """
     try:
         # Check if monitoring is currently enabled by checking for active tasks
@@ -173,6 +181,18 @@ def check_resource_thresholds(
 
     Raises:
         RuntimeError: If metrics query fails
+
+    Example:
+        >>> from iris_devtools.containers.monitoring import ResourceThresholds
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     thresholds = ResourceThresholds(
+        ...         cpu_disable_percent=90.0,
+        ...         cpu_enable_percent=85.0
+        ...     )
+        ...     should_disable, should_enable, metrics = check_resource_thresholds(conn, thresholds)
+        ...     if should_disable:
+        ...         print("Resource pressure detected, disabling monitoring")
     """
     # Get current metrics
     metrics = get_resource_metrics(conn)
@@ -209,6 +229,14 @@ def auto_disable_monitoring(conn, reason: str) -> bool:
 
     Raises:
         RuntimeError: If disable operation fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     # Simulate high CPU
+        ...     success = auto_disable_monitoring(conn, "CPU >90%")
+        ...     print(f"Auto-disabled: {success}")
     """
     from iris_devtools.containers.monitoring import disable_monitoring
 
@@ -260,6 +288,15 @@ def auto_enable_monitoring(conn) -> bool:
 
     Raises:
         RuntimeError: If enable operation fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     auto_disable_monitoring(conn, "CPU >90%")
+        ...     # Later, resources recover
+        ...     success = auto_enable_monitoring(conn)
+        ...     print(f"Auto-re-enabled: {success}")
     """
     from iris_devtools.containers.monitoring import enable_monitoring
 

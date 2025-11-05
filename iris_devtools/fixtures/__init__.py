@@ -8,25 +8,46 @@ Key Features:
 - Create fixtures from IRIS namespaces (entire database backup)
 - Load fixtures via namespace mounting (<1 second)
 - Validate fixture integrity with SHA256 checksums
-- pytest integration with @pytest.mark.dat_fixture decorator
 - CLI commands for fixture management
 
 Example:
-    >>> from iris_devtools.fixtures import DATFixtureLoader
-    >>> loader = DATFixtureLoader()
-    >>> result = loader.load_fixture("./fixtures/test-data")
+    >>> from iris_devtools.fixtures import DATFixtureLoader, FixtureCreator
+    >>>
+    >>> # Create fixture from existing namespace
+    >>> creator = FixtureCreator(container=iris_container)
+    >>> manifest = creator.create_fixture(
+    ...     fixture_id="test-data",
+    ...     namespace="TEST",
+    ...     output_dir="./fixtures/test-data"
+    ... )
+    >>>
+    >>> # Load fixture into new namespace
+    >>> loader = DATFixtureLoader(container=iris_container)
+    >>> target_ns = iris_container.get_test_namespace(prefix="LOADED")
+    >>> result = loader.load_fixture(
+    ...     fixture_path="./fixtures/test-data",
+    ...     target_namespace=target_ns
+    ... )
     >>> print(f"Loaded {len(result.tables_loaded)} tables")
 
 pytest Integration:
-    Configure in conftest.py:
-        pytest_plugins = ["iris_devtools.fixtures.pytest_plugin"]
+    Use fixtures directly in pytest tests:
 
-    Use in tests:
-        @pytest.mark.dat_fixture("./fixtures/test-data")
-        def test_with_fixture(dat_fixture_connection):
-            cursor = dat_fixture_connection.cursor()
-            cursor.execute("SELECT COUNT(*) FROM RAG.Entities")
-            assert cursor.fetchone()[0] > 0
+        @pytest.fixture
+        def loaded_fixture(iris_container):
+            loader = DATFixtureLoader(container=iris_container)
+            target_ns = iris_container.get_test_namespace(prefix="TEST")
+            result = loader.load_fixture(
+                fixture_path="./fixtures/test-data",
+                target_namespace=target_ns
+            )
+            yield result
+            # Cleanup
+            loader.cleanup_fixture(target_ns, delete_namespace=True)
+
+        def test_with_fixture(loaded_fixture):
+            assert loaded_fixture.success
+            assert len(loaded_fixture.tables_loaded) > 0
 """
 
 __version__ = "0.1.0"
@@ -48,10 +69,6 @@ from .manifest import (
 from .validator import FixtureValidator
 from .loader import DATFixtureLoader
 from .creator import FixtureCreator
-
-# pytest plugin is auto-registered when imported
-# Users configure it in conftest.py or pytest.ini:
-#   pytest_plugins = ["iris_devtools.fixtures.pytest_plugin"]
 
 # Public API
 __all__ = [

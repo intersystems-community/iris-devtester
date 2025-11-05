@@ -123,7 +123,7 @@ conn = get_iris_connection()
 
 **After (iris-devtools):**
 ```python
-# pip install iris-devtools
+# pip install iris-devtester
 from iris_devtools.connections import get_connection
 conn = get_connection()  # Zero config for Docker
 ```
@@ -276,7 +276,7 @@ All extracted code validates against `CONSTITUTION.md`:
 ## Success Metrics
 
 ### Development Success
-- [ ] `pip install iris-devtools && pytest` works zero-config
+- [ ] `pip install iris-devtester && pytest` works zero-config
 - [ ] Automatic password reset (no manual Docker exec)
 - [ ] Port auto-detection (Docker + native)
 - [ ] 95%+ test coverage maintained

@@ -43,17 +43,20 @@ def unexpire_all_passwords(container_name: str = "iris_db", timeout: int = 30) -
         but can be called manually for non-testcontainer setups.
     """
     try:
-        # ObjectScript command to unexpire all user passwords
-        objectscript_cmd = '##class(Security.Users).UnExpireUserPasswords("*")'
+        # ObjectScript commands to unexpire all user passwords
+        # Using heredoc for reliable multi-line execution
+        objectscript_commands = """Do ##class(Security.Users).UnExpireUserPasswords("*")
+Write "UNEXPIRED"
+Halt"""
 
-        # Execute via iris session
+        # Execute via iris session with heredoc
         cmd = [
             "docker",
             "exec",
             container_name,
-            "bash",
+            "sh",
             "-c",
-            f'echo "do {objectscript_cmd}" | iris session iris -U %SYS',
+            f'iris session iris -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
         ]
 
         logger.info(f"Unexpiring passwords in container: {container_name}")
@@ -62,7 +65,7 @@ def unexpire_all_passwords(container_name: str = "iris_db", timeout: int = 30) -
             cmd, capture_output=True, text=True, timeout=timeout
         )
 
-        if result.returncode == 0:
+        if result.returncode == 0 and "UNEXPIRED" in result.stdout:
             logger.info(f"✓ Passwords unexpired in {container_name}")
             return True, f"Passwords unexpired successfully in {container_name}"
         else:

@@ -1,5 +1,12 @@
 # CLAUDE.md - IRIS DevTools
 
+**Purpose**: Provides Claude Code with project-specific context, patterns, and conventions.
+
+**Related Files**:
+- [AGENTS.md](AGENTS.md) - Vendor-neutral AI configuration (build commands, CI/CD, operational details)
+- [README.md](README.md) - Project overview for all audiences (human and AI)
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contributor onboarding and guidelines
+
 This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
@@ -314,19 +321,19 @@ iris_devtools/fixtures/
 
 ```bash
 # Create fixture from tables
-iris-devtools fixture create --name test-100 --tables RAG.Entities --output ./fixtures/test-100
+iris-devtester fixture create --name test-100 --tables RAG.Entities --output ./fixtures/test-100
 
 # Validate fixture integrity
-iris-devtools fixture validate --fixture ./fixtures/test-100
+iris-devtester fixture validate --fixture ./fixtures/test-100
 
 # Load fixture into IRIS
-iris-devtools fixture load --fixture ./fixtures/test-100
+iris-devtester fixture load --fixture ./fixtures/test-100
 
 # List available fixtures
-iris-devtools fixture list ./fixtures/
+iris-devtester fixture list ./fixtures/
 
 # Show fixture info
-iris-devtools fixture info --fixture ./fixtures/test-100
+iris-devtester fixture info --fixture ./fixtures/test-100
 ```
 
 ### Python API
@@ -334,33 +341,51 @@ iris-devtools fixture info --fixture ./fixtures/test-100
 ```python
 from iris_devtools.fixtures import DATFixtureLoader, FixtureCreator
 
-# Create fixture
-creator = FixtureCreator()
+# Create fixture from namespace
+creator = FixtureCreator(container=iris_container)
 manifest = creator.create_fixture(
     fixture_id="test-100",
-    tables=["RAG.Entities"],
+    namespace="SOURCE_NS",
     output_dir="./fixtures/test-100"
 )
 
-# Load fixture
-loader = DATFixtureLoader()
-result = loader.load_fixture("./fixtures/test-100")
+# Load fixture into new namespace
+loader = DATFixtureLoader(container=iris_container)
+target_ns = iris_container.get_test_namespace(prefix="TARGET")
+result = loader.load_fixture(
+    fixture_path="./fixtures/test-100",
+    target_namespace=target_ns
+)
 print(f"Loaded {len(result.tables_loaded)} tables in {result.elapsed_seconds:.2f}s")
 
 # Cleanup
-loader.cleanup_fixture(result.manifest)
+loader.cleanup_fixture(target_ns, delete_namespace=True)
 ```
 
 ### pytest Integration
 
 ```python
-# Declarative fixture loading
-@pytest.mark.dat_fixture("./fixtures/test-100", scope="class")
-class TestRAGQueries:
-    def test_entity_count(self, iris_db):
-        cursor = iris_db.cursor()
-        cursor.execute("SELECT COUNT(*) FROM RAG.Entities")
-        assert cursor.fetchone()[0] == 100
+# Use pytest fixtures for DAT fixture management
+@pytest.fixture
+def loaded_fixture(iris_container):
+    """Load DAT fixture for tests."""
+    loader = DATFixtureLoader(container=iris_container)
+    target_ns = iris_container.get_test_namespace(prefix="TEST")
+
+    result = loader.load_fixture(
+        fixture_path="./fixtures/test-100",
+        target_namespace=target_ns
+    )
+
+    yield result
+
+    # Cleanup
+    loader.cleanup_fixture(target_ns, delete_namespace=True)
+
+def test_entity_count(loaded_fixture):
+    """Test using loaded DAT fixture."""
+    assert loaded_fixture.success
+    assert len(loaded_fixture.tables_loaded) > 0
 ```
 
 ### Key Design Decisions

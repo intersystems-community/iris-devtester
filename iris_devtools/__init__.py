@@ -18,19 +18,17 @@ Quick Start:
 """
 
 __version__ = "1.0.0"
-__author__ = "Your Name"
+__author__ = "InterSystems Community"
 __license__ = "MIT"
 
 # Convenience imports for common usage
-# These will be implemented in later tasks
-# Commented out for now to avoid import errors during setup
-# from iris_devtools.connections import get_iris_connection
-# from iris_devtools.containers import IRISContainer
-# from iris_devtools.config import IRISConfig
+from iris_devtools.connections import get_connection
+from iris_devtools.containers import IRISContainer
+from iris_devtools.config import IRISConfig
 
 __all__ = [
     "__version__",
-    # "get_iris_connection",
-    # "IRISContainer",
-    # "IRISConfig",
+    "get_connection",
+    "IRISContainer",
+    "IRISConfig",
 ]

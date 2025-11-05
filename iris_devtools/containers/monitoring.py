@@ -470,6 +470,21 @@ def configure_monitoring(
         ConnectionError: If IRIS connection unavailable
         ValueError: If policy validation fails
         RuntimeError: If monitoring setup fails
+
+    Example:
+        >>> # Zero-config (uses defaults: 30s interval, 1hr retention)
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     success, msg = configure_monitoring(conn)
+        ...     print(msg)  # "Monitoring configured: iris-devtools-default (task_id=1)"
+        ...
+        >>> # Custom policy
+        >>> policy = MonitoringPolicy(
+        ...     name="high-frequency",
+        ...     interval_seconds=10,
+        ...     retention_seconds=7200
+        ... )
+        >>> success, msg = configure_monitoring(conn, policy=policy)
     """
     # Use default policy if none provided (Principle #4: Zero-config viable)
     if policy is None:
@@ -572,6 +587,14 @@ def get_monitoring_status(conn) -> Tuple[bool, dict]:
 
     Raises:
         ConnectionError: If IRIS connection unavailable
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     is_running, status = get_monitoring_status(conn)
+        ...     print(f"Monitoring active: {is_running}")
+        ...     print(f"Active tasks: {len(status['tasks'])}")
     """
     try:
         # Check if monitoring tasks exist and are active
@@ -617,6 +640,14 @@ def disable_monitoring(conn) -> int:
     Raises:
         ConnectionError: If IRIS connection unavailable
         RuntimeError: If disable fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     # Later, under high load:
+        ...     count = disable_monitoring(conn)
+        ...     print(f"Disabled {count} monitoring tasks")
     """
     try:
         # Find monitoring tasks
@@ -659,6 +690,15 @@ def enable_monitoring(conn) -> int:
     Raises:
         ConnectionError: If IRIS connection unavailable
         RuntimeError: If enable fails or no policy configured
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     disable_monitoring(conn)
+        ...     # Later, when resources recover:
+        ...     count = enable_monitoring(conn)
+        ...     print(f"Re-enabled {count} monitoring tasks")
     """
     try:
         # Find monitoring tasks
@@ -710,6 +750,17 @@ def create_task(conn, schedule: TaskSchedule) -> str:
         ConnectionError: If IRIS connection unavailable
         PermissionError: If insufficient privileges
         RuntimeError: If task creation fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     schedule = TaskSchedule(
+        ...         name="my-monitoring-task",
+        ...         description="Custom monitoring",
+        ...         daily_increment=60  # Every 60 seconds
+        ...     )
+        ...     task_id = create_task(conn, schedule)
+        ...     print(f"Created task ID: {task_id}")
     """
     try:
         cursor = conn.cursor()
@@ -793,6 +844,15 @@ def get_task_status(conn, task_id: str) -> dict:
 
     Raises:
         RuntimeError: If task not found or query fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     tasks = list_monitoring_tasks(conn)
+        ...     task_id = tasks[0]['task_id']
+        ...     status = get_task_status(conn, task_id)
+        ...     print(f"Task: {status['name']}, Active: {not status['suspended']}")
     """
     try:
         cursor = conn.cursor()
@@ -853,6 +913,14 @@ def suspend_task(conn, task_id: str) -> bool:
 
     Raises:
         RuntimeError: If suspension fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     tasks = list_monitoring_tasks(conn)
+        ...     success = suspend_task(conn, tasks[0]['task_id'])
+        ...     print(f"Task suspended: {success}")
     """
     try:
         logger.debug(f"Suspending task: {task_id}")
@@ -929,6 +997,16 @@ def resume_task(conn, task_id: str) -> bool:
 
     Raises:
         RuntimeError: If resume fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     tasks = list_monitoring_tasks(conn)
+        ...     suspend_task(conn, tasks[0]['task_id'])
+        ...     # Later:
+        ...     success = resume_task(conn, tasks[0]['task_id'])
+        ...     print(f"Task resumed: {success}")
     """
     try:
         logger.debug(f"Resuming task: {task_id}")
@@ -1003,6 +1081,15 @@ def delete_task(conn, task_id: str) -> bool:
 
     Raises:
         RuntimeError: If deletion fails
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     schedule = TaskSchedule(name="temp-task")
+        ...     task_id = create_task(conn, schedule)
+        ...     # Later, cleanup:
+        ...     success = delete_task(conn, task_id)
+        ...     print(f"Task deleted: {success}")
     """
     try:
         logger.debug(f"Deleting task: {task_id}")
@@ -1071,6 +1158,14 @@ def list_monitoring_tasks(conn) -> list:
             "daily_increment": int,
             "task_class": str
         }]
+
+    Example:
+        >>> with IRISContainer.community() as iris:
+        ...     conn = iris.get_connection()
+        ...     configure_monitoring(conn)
+        ...     tasks = list_monitoring_tasks(conn)
+        ...     for task in tasks:
+        ...         print(f"{task['name']}: {'active' if not task['suspended'] else 'suspended'}")
     """
     try:
         cursor = conn.cursor()

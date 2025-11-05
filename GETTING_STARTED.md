@@ -220,13 +220,13 @@ with IRISContainer.community() as iris:
 ```bash
 cd ~/ws/rag-templates
 pip uninstall <local-iris-code>
-pip install iris-devtools
+pip install iris-devtester
 # All 771 tests still pass
 ```
 
 ✅ **PyPI published**:
 ```bash
-pip install iris-devtools
+pip install iris-devtester
 ```
 
 ## Questions?

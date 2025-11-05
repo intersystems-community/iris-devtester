@@ -21,6 +21,14 @@ def iris_container():
             # Wait for IRIS to be ready
             container.wait_for_ready(timeout=60)
 
+            # Enable CallIn service for DBAPI connections (required)
+            container.enable_callin_service()
+
+            # Unexpire passwords to prevent "password change required" errors
+            from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+            container_name = container.get_container_name()
+            unexpire_all_passwords(container_name)
+
             yield container
 
     except Exception as e:
@@ -40,6 +48,9 @@ def test_namespace(iris_container):
         ...     # test_namespace is "TEST_A1B2C3D4"
         ...     # Use it for your test
     """
+    # Ensure CallIn service is enabled (idempotent)
+    iris_container.enable_callin_service()
+
     namespace = iris_container.get_test_namespace()
     yield namespace
     # Cleanup
@@ -60,15 +71,22 @@ def iris_connection(iris_container, test_namespace):
         ...     cursor.execute("CREATE TABLE TestData (ID INT, Name VARCHAR(100))")
         ...     cursor.execute("INSERT INTO TestData VALUES (1, 'Alice')")
     """
-    # Get DBAPI connection
-    conn = iris_container.get_connection()
-    cursor = conn.cursor()
+    # Get DBAPI connection to the test namespace
+    # Note: Create a fresh connection for each test to avoid stale connections
+    import dataclasses
+    from iris_devtools.connections import get_connection
 
-    # Switch to test namespace
-    cursor.execute(f"SET NAMESPACE {test_namespace}")
-    cursor.close()
+    config = iris_container.get_config()
+    test_config = dataclasses.replace(config, namespace=test_namespace)
+    conn = get_connection(test_config)
 
     yield conn
+
+    # Cleanup: Close connection after test
+    try:
+        conn.close()
+    except:
+        pass  # Ignore errors if connection already closed
 
 
 @pytest.fixture(scope="function")

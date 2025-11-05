@@ -280,6 +280,16 @@ class IRISContainer(BaseIRISContainer):
                     "DBAPI connections may fail. Will fall back to JDBC."
                 )
 
+        # CRITICAL: Unexpire passwords to prevent "password change required" errors
+        # (Constitutional Principle #1: Automatic Remediation)
+        from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+        container_name = self.get_container_name()
+        success, msg = unexpire_all_passwords(container_name)
+        if success:
+            logger.debug(f"✓ Passwords unexpired: {msg}")
+        else:
+            logger.warning(f"⚠️  Could not unexpire passwords: {msg}")
+
         # Update config with actual container host/port
         config = self.get_config()
 
@@ -289,10 +299,10 @@ class IRISContainer(BaseIRISContainer):
             return self._connection
 
         except Exception as e:
-            # Try automatic password reset
+            # Try automatic password reset as last resort
             logger.warning(f"Connection failed: {e}")
 
-            if reset_password_if_needed(e, container_name=self.get_container_name()):
+            if reset_password_if_needed(e, container_name=container_name):
                 logger.info("Password reset successful, retrying connection...")
                 self._connection = get_connection(config)
                 return self._connection
@@ -307,6 +317,12 @@ class IRISContainer(BaseIRISContainer):
 
         Returns:
             IRISConfig instance
+
+        Example:
+            >>> with IRISContainer.community() as iris:
+            ...     config = iris.get_config()
+            ...     print(f"IRIS running at {config.host}:{config.port}")
+            ...     print(f"Namespace: {config.namespace}")
         """
         if self._config is None:
             self._config = IRISConfig()
@@ -395,6 +411,11 @@ class IRISContainer(BaseIRISContainer):
 
         Returns:
             Container name
+
+        Example:
+            >>> with IRISContainer.community() as iris:
+            ...     name = iris.get_container_name()
+            ...     print(f"Container name: {name}")
         """
         if HAS_TESTCONTAINERS_IRIS:
             try:
@@ -414,6 +435,9 @@ class IRISContainer(BaseIRISContainer):
         - External applications calling IRIS methods
 
         Works transparently for BOTH Community and Enterprise editions.
+
+        Args:
+            (no arguments)
 
         Returns:
             True if successful, False otherwise
@@ -437,26 +461,25 @@ class IRISContainer(BaseIRISContainer):
 
             container_name = self.get_container_name()
 
-            # ObjectScript command to enable CallIn service
+            # ObjectScript commands to enable CallIn service
             # Works for BOTH Community and Enterprise editions
-            objectscript_cmd = (
-                "Do ##class(Security.Services).Get(\"%Service_CallIn\",.s) "
-                "Set s.Enabled=1 "
-                "Do ##class(Security.Services).Modify(s) "
-                "Write \"CALLIN_ENABLED\""
-            )
+            # Uses heredoc for proper multi-line ObjectScript execution
+            objectscript_commands = """Do ##class(Security.Services).Get("%Service_CallIn",.prop)
+Set prop("Enabled")=1
+Set prop("AutheEnabled")=48
+Do ##class(Security.Services).Modify("%Service_CallIn",.prop)
+Write "CALLIN_ENABLED"
+Halt"""
 
-            # Execute via iris session
+            # Execute via iris session with heredoc
+            # Note: Using sh -c with heredoc for reliable multi-line execution
             cmd = [
                 "docker",
                 "exec",
                 container_name,
-                "iris",
-                "session",
-                "IRIS",
-                "-U",
-                "%SYS",
-                objectscript_cmd,
+                "sh",
+                "-c",
+                f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
             ]
 
             logger.debug(f"Enabling CallIn on container: {container_name}")
@@ -502,14 +525,18 @@ class IRISContainer(BaseIRISContainer):
         """
         Check if CallIn service is currently enabled.
 
+        Args:
+            (no arguments)
+
         Returns:
             True if CallIn is enabled, False otherwise
 
         Example:
-            >>> if container.check_callin_enabled():
-            ...     print("DBAPI connections will work")
-            ... else:
-            ...     print("Only JDBC connections available")
+            >>> with IRISContainer.community() as container:
+            ...     if container.check_callin_enabled():
+            ...         print("DBAPI connections will work")
+            ...     else:
+            ...         print("Only JDBC connections available")
         """
         try:
             import subprocess
@@ -562,6 +589,9 @@ class IRISContainer(BaseIRISContainer):
 
         For SQL operations (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE),
         use get_connection() instead - it's 3x faster via DBAPI.
+
+        Args:
+            (no arguments)
 
         Returns:
             iris connection object (embedded Python)
@@ -625,6 +655,9 @@ class IRISContainer(BaseIRISContainer):
         """
         Execute ObjectScript code and return result.
 
+        Uses docker exec with `iris session` - the only reliable way to execute
+        arbitrary ObjectScript code from external Python.
+
         Args:
             code: ObjectScript code to execute
             namespace: Optional namespace (default: container's namespace)
@@ -652,31 +685,46 @@ class IRISContainer(BaseIRISContainer):
             ...     )
             ...     print(result)  # "%SYS"
         """
-        import iris
+        import subprocess
 
         ns = namespace or self._config.namespace
-        config = self.get_config()
+        container_name = self.get_container_name()
 
-        conn = iris.connect(
-            hostname=config.host,
-            port=config.port,
-            namespace=ns,
-            username=config.username,
-            password=config.password,
+        # Ensure code ends with Halt to terminate session cleanly
+        if "Halt" not in code:
+            code = code + "\nHalt"
+
+        # Execute via iris session with heredoc
+        cmd = [
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            f'iris session IRIS -U {ns} << "EOF"\n{code}\nEOF',
+        ]
+
+        logger.debug(f"Executing ObjectScript in namespace {ns}: {code[:100]}...")
+
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=30
         )
 
-        try:
-            iris_obj = iris.createIRIS(conn)
-            result = iris_obj.execute(code)
-            return result
-        finally:
-            conn.close()
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"ObjectScript execution failed (exit code {result.returncode})\n"
+                f"STDOUT: {result.stdout}\n"
+                f"STDERR: {result.stderr}"
+            )
+
+        return result.stdout
 
     def create_namespace(self, namespace: str) -> bool:
         """
-        Create IRIS namespace using ObjectScript.
+        Create IRIS namespace using ObjectScript via docker exec.
 
-        This is a convenience method that handles the iris.connect() boilerplate.
+        This uses docker exec to run ObjectScript commands directly, which is more
+        reliable than trying to use iris.connect() with by-reference parameters.
 
         Args:
             namespace: Name of namespace to create
@@ -698,40 +746,88 @@ class IRISContainer(BaseIRISContainer):
             ...     cursor.execute("CREATE TABLE MyTable (ID INT, Name VARCHAR(100))")
 
         Reference:
-            This uses iris.connect() internally because namespace creation
-            requires ObjectScript. See docs/SQL_VS_OBJECTSCRIPT.md for why
-            DBAPI cannot create namespaces.
+            Uses docker exec with ObjectScript because Config.Namespaces.Create()
+            requires passing properties by reference (.props), which doesn't work
+            from Python embedded API.
         """
-        import iris
-
-        config = self.get_config()
-
-        conn = iris.connect(
-            hostname=config.host,
-            port=config.port,
-            namespace="%SYS",  # Must use %SYS for namespace operations
-            username=config.username,
-            password=config.password,
-        )
-
         try:
-            iris_obj = iris.createIRIS(conn)
-            result = iris_obj.classMethodValue("Config.Namespaces", "Create", namespace)
-            success = result == 1
+            import subprocess
 
-            if success:
-                logger.info(f"✓ Created namespace: {namespace}")
+            container_name = self.get_container_name()
+
+            # ObjectScript commands to create namespace
+            # Pattern from InterSystems docs:
+            # Set props("Globals")="USER"
+            # Set props("Routines")="USER"
+            # Set status=##class(Config.Namespaces).Create("name", .props)
+            objectscript_commands = f"""Do ##class(Config.Namespaces).Exists("{namespace}",.obj,.status)
+If status=1 {{
+    Write "EXISTS"
+}} Else {{
+    Set props("Globals")="USER"
+    Set props("Routines")="USER"
+    Set status=##class(Config.Namespaces).Create("{namespace}",.props)
+    If $$$ISOK(status) {{
+        Write "CREATED"
+    }} Else {{
+        Write "FAILED"
+    }}
+}}
+Halt"""
+
+            # Execute via iris session with heredoc
+            cmd = [
+                "docker",
+                "exec",
+                container_name,
+                "sh",
+                "-c",
+                f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
+            ]
+
+            logger.debug(f"Creating namespace {namespace} in container: {container_name}")
+
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=10
+            )
+
+            if result.returncode == 0:
+                if "CREATED" in result.stdout:
+                    logger.info(f"✓ Created namespace: {namespace}")
+                    return True
+                elif "EXISTS" in result.stdout:
+                    logger.debug(f"Namespace {namespace} already exists")
+                    return True
+                else:
+                    logger.error(
+                        f"Failed to create namespace {namespace}:\n"
+                        f"stdout: {result.stdout}\n"
+                        f"stderr: {result.stderr}"
+                    )
+                    return False
             else:
-                logger.warning(f"Failed to create namespace: {namespace} (may already exist)")
+                logger.error(
+                    f"Docker exec failed for namespace creation:\n"
+                    f"stdout: {result.stdout}\n"
+                    f"stderr: {result.stderr}"
+                )
+                return False
 
-            return success
+        except subprocess.TimeoutExpired:
+            logger.error(
+                f"Timeout creating namespace {namespace} (IRIS may not be fully started)"
+            )
+            return False
+
+        except FileNotFoundError:
+            logger.error(
+                "Docker command not found. Cannot create namespace via docker exec."
+            )
+            return False
 
         except Exception as e:
             logger.error(f"Error creating namespace {namespace}: {e}")
             return False
-
-        finally:
-            conn.close()
 
     def delete_namespace(self, namespace: str) -> bool:
         """

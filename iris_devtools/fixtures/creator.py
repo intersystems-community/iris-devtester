@@ -45,17 +45,24 @@ class FixtureCreator:
     Constitutional Principle #7: Medical-Grade Reliability
     """
 
-    def __init__(self, connection_config: Optional[IRISConfig] = None):
+    def __init__(self, connection_config: Optional[IRISConfig] = None, container: Optional[Any] = None):
         """
         Initialize fixture creator.
 
         Args:
             connection_config: Optional IRIS connection configuration.
                               If None, auto-discovers from environment.
+            container: Optional IRISContainer for docker exec operations.
+                      Required for BACKUP/RESTORE operations.
 
         Example:
             >>> # Auto-discover connection
             >>> creator = FixtureCreator()
+
+            >>> # With container (for docker exec)
+            >>> from iris_devtools.containers import IRISContainer
+            >>> with IRISContainer.community() as container:
+            ...     creator = FixtureCreator(container=container)
 
             >>> # Explicit config
             >>> from iris_devtools.config import IRISConfig
@@ -63,6 +70,7 @@ class FixtureCreator:
             >>> creator = FixtureCreator(config)
         """
         self.connection_config = connection_config
+        self.container = container
         self.validator = FixtureValidator()
         self._connection: Optional[Any] = None
 
@@ -189,7 +197,7 @@ class FixtureCreator:
         """
         Export IRIS namespace to IRIS.DAT file.
 
-        Uses IRIS BACKUP^DBACK routine to create database backup.
+        Uses IRIS BACKUP routine via docker exec (most reliable method).
 
         Args:
             namespace: Source namespace to backup (e.g., "USER_TEST_100")
@@ -199,76 +207,215 @@ class FixtureCreator:
             Path to created IRIS.DAT file
 
         Raises:
-            FixtureCreateError: If backup fails
+            FixtureCreateError: If backup fails or container not available
 
         Example:
-            >>> creator = FixtureCreator()
-            >>> dat_file = creator.export_namespace_to_dat(
-            ...     "USER_TEST_100",
-            ...     "./fixtures/test-100/IRIS.DAT"
-            ... )
+            >>> with IRISContainer.community() as container:
+            ...     creator = FixtureCreator(container=container)
+            ...     dat_file = creator.export_namespace_to_dat(
+            ...         "USER_TEST_100",
+            ...         "/tmp/test-100/IRIS.DAT"  # Path from container's perspective
+            ...     )
         """
+        if not self.container:
+            raise FixtureCreateError(
+                "BACKUP operations require container parameter\n"
+                "\n"
+                "What went wrong:\n"
+                "  FixtureCreator was created without container parameter.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Pass container to FixtureCreator:\n"
+                "     creator = FixtureCreator(container=iris_container)\n"
+                "\n"
+                "  2. Or use IRISContainer context manager:\n"
+                "     with IRISContainer.community() as container:\n"
+                "         creator = FixtureCreator(container=container)\n"
+            )
+
         try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
+            import subprocess
 
-            # NOTE: Namespace validation removed - BACKUP operation will fail if namespace
-            # doesn't exist. Previous approach used SYS.Namespace which is not available
-            # in all IRIS editions. The backup command itself provides sufficient validation.
+            container_name = self.container.get_container_name()
 
-            # Execute BACKUP via ObjectScript
-            # Use ##class(SYS.Database).BackupNamespace()
-            backup_command = f"""
-                set sc = ##class(SYS.Database).BackupNamespace(
-                    "{namespace}",
-                    "{dat_file_path}",
-                    ,  // Skip journal files
-                    ,  // Include all databases
-                    1  // Overwrite existing file
-                )
-                if sc {{
-                    write "SUCCESS"
-                }} else {{
-                    write "FAILED: "_$system.Status.GetErrorText(sc)
-                }}
-            """
+            # BACKUP to /tmp inside container, then docker cp to host
+            # This avoids volume mounting complexity
+            container_path = f"/tmp/IRIS_{namespace}.DAT"
 
-            cursor.execute(f"SELECT $SYSTEM.OBJ.Execute('{backup_command}')")
-            result_row = cursor.fetchone()
+            # Simpler approach: Get database file path and copy it
+            # This is essentially an "external backup" approach
+            # Get namespace configuration to find database directory
+            # Use single-line commands to avoid ObjectScript block syntax issues
+            objectscript_commands = f"""Do ##class(Config.Namespaces).Get("{namespace}",.nsProps)
+Set dbName = $Get(nsProps("Globals"))
+If dbName="" Write "ERROR_NO_NAMESPACE" Halt
+Do ##class(Config.Databases).Get(dbName,.dbProps)
+Write dbProps("Directory")
+Halt"""
 
-            if not result_row or "SUCCESS" not in str(result_row[0]):
-                error_msg = str(result_row[0]) if result_row else "Unknown error"
+            # Execute via iris session with heredoc
+            cmd = [
+                "docker",
+                "exec",
+                container_name,
+                "sh",
+                "-c",
+                f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
+            ]
+
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=60
+            )
+
+            # Parse database directory from output
+            if result.returncode != 0 or "ERROR_NO_NAMESPACE" in result.stdout:
                 raise FixtureCreateError(
-                    f"Failed to backup namespace '{namespace}'\n"
-                    f"Error: {error_msg}\n"
+                    f"Failed to get database directory for namespace '{namespace}'\n"
+                    f"stdout: {result.stdout}\n"
+                    f"stderr: {result.stderr}\n"
+                )
+
+            # Extract database directory from output
+            # Find the line that looks like a directory path (starts with /)
+            db_dir = None
+            for line in result.stdout.strip().split('\n'):
+                line = line.strip()
+                if line.startswith('/') and 'mgr' in line:
+                    db_dir = line.rstrip('/')
+                    break
+
+            if not db_dir:
+                raise FixtureCreateError(
+                    f"Could not parse database directory from output:\n"
+                    f"stdout: {result.stdout}\n"
+                    f"stderr: {result.stderr}\n"
+                )
+
+            # Database file is IRIS.DAT in that directory
+            db_file = f"{db_dir}/IRIS.DAT"
+
+            # Copy database file to /tmp in container
+            cp_internal_cmd = [
+                "docker",
+                "exec",
+                container_name,
+                "cp",
+                db_file,
+                container_path
+            ]
+
+            cp_internal_result = subprocess.run(
+                cp_internal_cmd, capture_output=True, text=True, timeout=30
+            )
+
+            if cp_internal_result.returncode == 0:
+                # First check if file exists in container
+                check_cmd = [
+                    "docker",
+                    "exec",
+                    container_name,
+                    "ls",
+                    "-la",
+                    container_path
+                ]
+
+                check_result = subprocess.run(
+                    check_cmd, capture_output=True, text=True, timeout=10
+                )
+
+                if check_result.returncode != 0:
+                    raise FixtureCreateError(
+                        f"BACKUP reported success but file not in container:\n"
+                        f"File path: {container_path}\n"
+                        f"BACKUP stdout: {result.stdout}\n"
+                        f"BACKUP stderr: {result.stderr}\n"
+                        f"ls check: {check_result.stderr}\n"
+                        "\n"
+                        "What went wrong:\n"
+                        "  BackupGeneral() may have failed silently.\n"
+                        "\n"
+                        "How to fix it:\n"
+                        "  1. Check IRIS logs in container\n"
+                        "  2. Verify backup permissions\n"
+                        "  3. Check disk space in container\n"
+                    )
+
+                # Copy file from container to host
+                cp_cmd = [
+                    "docker",
+                    "cp",
+                    f"{container_name}:{container_path}",
+                    str(dat_file_path)
+                ]
+
+                cp_result = subprocess.run(
+                    cp_cmd, capture_output=True, text=True, timeout=30
+                )
+
+                if cp_result.returncode != 0:
+                    raise FixtureCreateError(
+                        f"Failed to copy file from container:\n"
+                        f"stdout: {cp_result.stdout}\n"
+                        f"stderr: {cp_result.stderr}\n"
+                    )
+
+                # Verify file was copied
+                if not Path(dat_file_path).exists():
+                    raise FixtureCreateError(
+                        f"Docker cp succeeded but file not found: {dat_file_path}\n"
+                        "\n"
+                        "What went wrong:\n"
+                        "  File copy from container to host failed.\n"
+                        "\n"
+                        "How to fix it:\n"
+                        "  1. Check file permissions\n"
+                        "  2. Verify output directory exists\n"
+                        "  3. Check disk space\n"
+                    )
+
+                return dat_file_path
+            else:
+                raise FixtureCreateError(
+                    f"Failed to copy database file for namespace '{namespace}'\n"
+                    f"Database file: {db_file}\n"
+                    f"Container path: {container_path}\n"
+                    f"cp stdout: {cp_internal_result.stdout}\n"
+                    f"cp stderr: {cp_internal_result.stderr}\n"
                     "\n"
                     "What went wrong:\n"
-                    "  The database backup operation failed.\n"
+                    "  Could not copy IRIS.DAT file from database directory.\n"
                     "\n"
                     "How to fix it:\n"
-                    "  1. Check user has BACKUP permission\n"
-                    "  2. Verify disk space: df -h\n"
-                    "  3. Check IRIS logs for detailed error\n"
-                    "  4. Try manual backup via Management Portal\n"
+                    "  1. Check database directory exists\n"
+                    "  2. Verify IRIS.DAT file is present\n"
+                    "  3. Check file permissions\n"
+                    "  4. Verify disk space: df -h\n"
                 )
 
-            cursor.close()
+        except subprocess.TimeoutExpired:
+            raise FixtureCreateError(
+                f"Timeout during BACKUP of namespace '{namespace}'\n"
+                "\n"
+                "What went wrong:\n"
+                "  BACKUP operation took longer than 60 seconds.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Check namespace size (large namespaces take longer)\n"
+                "  2. Verify IRIS is responsive\n"
+                "  3. Check disk I/O performance\n"
+            )
 
-            # Verify file was created
-            if not Path(dat_file_path).exists():
-                raise FixtureCreateError(
-                    f"Backup completed but IRIS.DAT not found: {dat_file_path}\n"
-                    "\n"
-                    "What went wrong:\n"
-                    "  IRIS reported success but file not created.\n"
-                    "\n"
-                    "How to fix it:\n"
-                    "  1. Check IRIS version compatibility\n"
-                    "  2. Verify file path is writable\n"
-                    "  3. Review IRIS logs\n"
-                )
-
-            return dat_file_path
+        except FileNotFoundError:
+            raise FixtureCreateError(
+                "Docker command not found\n"
+                "\n"
+                "What went wrong:\n"
+                "  Cannot execute BACKUP via docker exec.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Verify Docker is installed and in PATH\n"
+                "  2. Check Docker daemon is running\n"
+            )
 
         except Exception as e:
             if isinstance(e, FixtureCreateError):
@@ -281,10 +428,9 @@ class FixtureCreator:
                 "  An error occurred during namespace backup.\n"
                 "\n"
                 "How to fix it:\n"
-                "  1. Verify IRIS is running\n"
-                "  2. Check connection: iris-devtools connection test\n"
-                "  3. Review IRIS logs for errors\n"
-                "  4. Try listing namespaces: do $SYSTEM.OBJ.ListNamespaces()\n"
+                "  1. Verify IRIS container is running\n"
+                "  2. Check container logs: docker logs <container>\n"
+                "  3. Try listing namespaces: do $SYSTEM.OBJ.ListNamespaces()\n"
             )
 
     def calculate_checksum(self, dat_file_path: str) -> str:
@@ -327,11 +473,17 @@ class FixtureCreator:
             ...     print(f"{table.name}: {table.row_count} rows")
         """
         try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
+            # Get connection config and create connection to target namespace
+            from iris_devtools.config import discover_config
+            config = self.connection_config if self.connection_config else discover_config()
 
-            # Switch to namespace
-            cursor.execute(f"SET NAMESPACE {namespace}")
+            # Update config to use the target namespace
+            import dataclasses
+            namespace_config = dataclasses.replace(config, namespace=namespace)
+
+            # Get connection to target namespace
+            conn = get_connection(namespace_config)
+            cursor = conn.cursor()
 
             # Query for all tables
             cursor.execute(
@@ -361,6 +513,7 @@ class FixtureCreator:
                     continue
 
             cursor.close()
+            conn.close()
             return tables
 
         except Exception as e:

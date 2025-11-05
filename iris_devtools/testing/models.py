@@ -122,8 +122,16 @@ class SchemaValidationResult:
         """
         Get human-readable summary of validation result.
 
+        Args:
+            (no arguments)
+
         Returns:
             Summary string describing validation outcome
+
+        Example:
+            >>> result = SchemaValidationResult(is_valid=True, mismatches=[])
+            >>> print(result.get_summary())
+            "Schema validation passed"
         """
         if self.is_valid:
             return "Schema validation passed"
@@ -158,8 +166,16 @@ class PasswordResetResult:
         """
         Get human-readable message about reset result.
 
+        Args:
+            (no arguments)
+
         Returns:
             Message describing reset outcome and next steps
+
+        Example:
+            >>> result = PasswordResetResult(success=True, new_password="newpass123")
+            >>> print(result.get_message())
+            "Password reset successful. New password: newpass123"
         """
         if self.success:
             return f"Password reset successful. New password: {self.new_password}"
@@ -220,6 +236,14 @@ class TestState:
 
         Args:
             action: CleanupAction to register
+
+        Returns:
+            None
+
+        Example:
+            >>> state = TestState(test_id="test-1", isolation_level="namespace", namespace="TEST")
+            >>> action = CleanupAction(priority=10, description="Drop tables", action=lambda: drop_tables())
+            >>> state.register_cleanup(action)
         """
         self.cleanup_registered.append(action)
         # Sort by priority descending (higher priority first)

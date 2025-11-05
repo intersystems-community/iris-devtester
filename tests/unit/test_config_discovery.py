@@ -58,7 +58,7 @@ class TestConfigDiscovery:
     @patch.dict(os.environ, {}, clear=True)
     @patch("builtins.open", mock_open(read_data="IRIS_HOST=dotenv.host\nIRIS_PORT=1974\n"))
     @patch("pathlib.Path.exists", return_value=True)
-    def test_discover_from_dotenv_file(self, mock_exists, mock_file):
+    def test_discover_from_dotenv_file(self, mock_exists):
         """Test discovery from .env file."""
         from iris_devtools.config.discovery import discover_config
 
@@ -69,7 +69,7 @@ class TestConfigDiscovery:
     @patch.dict(os.environ, {"IRIS_HOST": "env.host"}, clear=False)
     @patch("builtins.open", mock_open(read_data="IRIS_HOST=dotenv.host\n"))
     @patch("pathlib.Path.exists", return_value=True)
-    def test_environment_takes_precedence_over_dotenv(self, mock_exists, mock_file):
+    def test_environment_takes_precedence_over_dotenv(self, mock_exists):
         """Test that environment variables override .env file."""
         from iris_devtools.config.discovery import discover_config
 
@@ -94,7 +94,7 @@ class TestConfigPriorityHierarchy:
     @patch.dict(os.environ, {"IRIS_HOST": "env.host"}, clear=False)
     @patch("builtins.open", mock_open(read_data="IRIS_HOST=dotenv.host\n"))
     @patch("pathlib.Path.exists", return_value=True)
-    def test_priority_explicit_over_env(self, mock_exists, mock_file):
+    def test_priority_explicit_over_env(self, mock_exists):
         """Test priority: explicit > env > .env > defaults."""
         from iris_devtools.config.discovery import discover_config
         from iris_devtools.config import IRISConfig

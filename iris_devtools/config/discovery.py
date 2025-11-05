@@ -66,23 +66,26 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
         "timeout": DEFAULT_TIMEOUT,
     }
 
-    # Layer 4: Auto-detect from Docker/native instances (override defaults)
-    # Import here to avoid circular dependency
-    from iris_devtools.connections.auto_discovery import auto_detect_iris_host_and_port
-
-    auto_host, auto_port = auto_detect_iris_host_and_port()
-    if auto_host:
-        discovered["host"] = auto_host
-    if auto_port:
-        discovered["port"] = auto_port
-
-    # Layer 3: .env file (if exists)
+    # Layer 3: .env file (override defaults)
     dotenv_config = _load_from_dotenv()
     discovered.update(dotenv_config)
 
-    # Layer 2: Environment variables (override .env)
+    # Layer 2: Environment variables (override .env and defaults)
     env_config = _load_from_environment()
     discovered.update(env_config)
+
+    # Layer 4: Auto-detect from Docker/native instances (ONLY if not already set)
+    # Import here to avoid circular dependency
+    from iris_devtools.connections.auto_discovery import auto_detect_iris_host_and_port
+
+    # Only auto-detect if host AND port are still at defaults (not set by env or .env)
+    # This ensures we don't partially override user config with auto-detection
+    if discovered["host"] == DEFAULT_HOST and discovered["port"] == DEFAULT_PORT:
+        auto_host, auto_port = auto_detect_iris_host_and_port()
+        if auto_host:
+            discovered["host"] = auto_host
+        if auto_port:
+            discovered["port"] = auto_port
 
     # Create and return config
     return IRISConfig(**discovered)

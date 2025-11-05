@@ -26,6 +26,9 @@ def reset_namespace(connection: Any, namespace: str) -> None:
         connection: Database connection (DBAPI or iris.connect())
         namespace: Namespace to reset (e.g., "USER", "TEST")
 
+    Returns:
+        None
+
     Example:
         >>> conn = iris_container.get_connection()
         >>> reset_namespace(conn, "USER")
@@ -277,6 +280,13 @@ class SchemaResetter:
 
         Args:
             namespace: Namespace to reset
+
+        Returns:
+            None
+
+        Example:
+            >>> with SchemaResetter(conn) as resetter:
+            ...     resetter.reset_namespace("TEST")
         """
         reset_namespace(self.connection, namespace)
 
@@ -290,6 +300,11 @@ class SchemaResetter:
 
         Returns:
             True if all tables exist
+
+        Example:
+            >>> with SchemaResetter(conn) as resetter:
+            ...     exists = resetter.verify_tables("USER", ["Table1", "Table2"])
+            ...     print(f"All tables exist: {exists}")
         """
         all_exist, _ = verify_tables_exist(self.connection, namespace, expected_tables)
         return all_exist
@@ -303,6 +318,11 @@ class SchemaResetter:
 
         Returns:
             List of table names
+
+        Example:
+            >>> with SchemaResetter(conn) as resetter:
+            ...     tables = resetter.get_tables("USER")
+            ...     print(f"Found {len(tables)} tables: {tables}")
         """
         return get_namespace_tables(self.connection, namespace)
 
@@ -315,6 +335,11 @@ class SchemaResetter:
 
         Returns:
             Number of tables cleaned
+
+        Example:
+            >>> with SchemaResetter(conn) as resetter:
+            ...     count = resetter.cleanup_test_data("test-run-123")
+            ...     print(f"Cleaned {count} tables")
         """
         return cleanup_test_data(self.connection, test_id)
 
@@ -335,5 +360,12 @@ def reset_schema(connection: Any, namespace: str = "USER") -> None:
     Args:
         connection: Database connection
         namespace: Namespace to reset
+
+    Returns:
+        None
+
+    Example:
+        >>> conn = iris_container.get_connection()
+        >>> reset_schema(conn, "USER")  # Legacy - use reset_namespace() instead
     """
     reset_namespace(connection, namespace)

@@ -214,7 +214,7 @@ pytest tests/integration/test_fixture_performance.py -v
 - Feature 002: IRIS performance monitoring (^SystemPerformance)
 - Feature 003: Connection manager (DBAPI-first, JDBC fallback)
 - Feature 004: .DAT fixture management
-- CLI: `iris-devtools fixture` commands
+- CLI: `iris-devtester fixture` commands
 - pytest plugin: @pytest.mark.dat_fixture
 - Automatic password reset utilities
 - Zero-config IRIS discovery
@@ -265,7 +265,7 @@ python -c "from iris_devtools.fixtures import FixtureCreator"
 
 # Test CLI
 iris-devtools --help
-iris-devtools fixture --help
+iris-devtester fixture --help
 
 # Cleanup
 deactivate
@@ -354,7 +354,7 @@ python -m twine upload dist/*
 
 **Tasks**:
 - [ ] Upload to PyPI
-- [ ] Test installation: `pip install iris-devtools`
+- [ ] Test installation: `pip install iris-devtester`
 - [ ] Create GitHub release
 - [ ] Tag version: `git tag v1.0.0`
 - [ ] Push tags: `git push --tags`
@@ -424,7 +424,7 @@ python -m twine upload dist/*
 - [ ] Troubleshooting guide complete
 
 ### Package
-- [ ] Installs cleanly: `pip install iris-devtools`
+- [ ] Installs cleanly: `pip install iris-devtester`
 - [ ] CLI works: `iris-devtools --help`
 - [ ] Imports work
 - [ ] Zero-config viable

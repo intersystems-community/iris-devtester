@@ -20,6 +20,9 @@ def auto_detect_iris_port() -> Optional[int]:
     1. Docker containers (docker ps)
     2. Native IRIS instances (iris list)
 
+    Args:
+        (no arguments)
+
     Returns:
         Detected port number or None if not found
 
@@ -47,6 +50,9 @@ def auto_detect_iris_port() -> Optional[int]:
 def auto_detect_iris_host_and_port() -> Tuple[Optional[str], Optional[int]]:
     """
     Auto-detect both IRIS host and port from running instances.
+
+    Args:
+        (no arguments)
 
     Returns:
         Tuple of (host, port) or (None, None) if not found

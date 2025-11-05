@@ -228,7 +228,7 @@ Class MyApp.Installer Extends %RegisteredObject
 | **Database Access** | Via DBAPI (network) | Via `import iris` (in-process) |
 | **Latency** | ~2-3ms per query | <0.1ms (zero network overhead) |
 | **Deployment** | pip install, run externally | Deploy to IRIS, runs in-process |
-| **Testing** | iris-devtools fixtures | iris-devtools for test data! |
+| **Testing** | iris-devtester fixtures | iris-devtools for test data! |
 | **Package Install** | pip (external env) | irispip (embedded env) |
 | **Use Case** | External apps, microservices | High-performance APIs in IRIS |
 
@@ -688,7 +688,7 @@ deployment.deploy()
 
 1. **Modern Python Frameworks**: Run Flask/FastAPI/Django in IRIS
 2. **Developer Experience**: Familiar Python tools + IRIS performance
-3. **Low Barrier**: pip install iris-devtools, deploy WSGI apps
+3. **Low Barrier**: pip install iris-devtester, deploy WSGI apps
 4. **Best Practices**: Constitutional compliance, automatic remediation
 5. **Documentation**: Clear examples, migration paths
 

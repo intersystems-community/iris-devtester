@@ -2,6 +2,20 @@
 
 This directory contains practical examples demonstrating common use cases for iris-devtools.
 
+## Learning Path
+
+**New to iris-devtools?** Follow this recommended order:
+
+1. **Start Here**: `01_quickstart.py` - Basic container usage (~2 min)
+2. **Connections**: `02_connection_management.py` - DBAPI vs JDBC (~5 min)
+3. **Testing Basics**: `04_pytest_fixtures.py` - Simple pytest integration (~5 min)
+4. **Isolation**: `05_test_isolation.py` - Schema reset patterns (~5 min)
+5. **Auto-Discovery**: `08_auto_discovery.py` - Connect to existing IRIS (~5 min)
+6. **Production**: `09_production_patterns.py` - Real-world patterns (~10 min)
+7. **Advanced**: `06_dat_fixtures.py` - Fast fixture loading (~10 min)
+
+**Total time**: ~45 minutes to understand all capabilities
+
 ## Examples Overview
 
 ### Basic Usage
@@ -25,17 +39,28 @@ Each example is standalone and can be run directly:
 
 ```bash
 # Install iris-devtools with all features
-pip install iris-devtools[all]
+pip install iris-devtester[all]
 
 # Run an example
 python examples/01_quickstart.py
 ```
 
-## Requirements
+### Prerequisites
 
-- Python 3.9+
-- Docker (for testcontainers)
-- iris-devtools installed
+Before running examples, ensure you have:
+
+- ✅ **Python 3.9+** installed (`python --version`)
+- ✅ **Docker running** (`docker ps` should work)
+- ✅ **iris-devtools installed** (`pip install iris-devtester[all]`)
+
+### Expected Outputs
+
+Each example includes comments showing expected output. Look for:
+- `# Expected output: ...` - What you should see
+- `# ✅ Success:` - Successful operation
+- `# ⚠️ Note:` - Important information
+
+If your output differs significantly, check the [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtools/blob/main/docs/TROUBLESHOOTING.md).
 
 ## Constitutional Principles in Action
 
@@ -53,6 +78,6 @@ All examples follow the [8 core principles](../CONSTITUTION.md):
 ## Help
 
 If you run into issues:
-1. Check [docs/troubleshooting.md](../docs/troubleshooting.md)
-2. Review [docs/SQL_VS_OBJECTSCRIPT.md](../docs/SQL_VS_OBJECTSCRIPT.md)
+1. Check [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtools/blob/main/docs/TROUBLESHOOTING.md)
+2. Review [Codified Learnings](https://github.com/intersystems-community/iris-devtools/blob/main/docs/learnings/)
 3. Open an [issue](https://github.com/intersystems-community/iris-devtools/issues)

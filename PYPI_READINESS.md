@@ -57,16 +57,16 @@ rm -rf /tmp/test-iris-devtools
 python -c "from iris_devtools.connections import get_connection; ..."
 
 # Create fixture
-iris-devtools fixture create test-fixture USER ./test-fixture
+iris-devtester fixture create test-fixture USER ./test-fixture
 
 # Validate fixture
-iris-devtools fixture validate ./test-fixture
+iris-devtester fixture validate ./test-fixture
 
 # Load fixture
-iris-devtools fixture load ./test-fixture USER_TEST
+iris-devtester fixture load ./test-fixture USER_TEST
 
 # List fixtures
-iris-devtools fixture list ./
+iris-devtester fixture list ./
 
 # Clean up
 rm -rf ./test-fixture
@@ -119,7 +119,7 @@ Include:
 - iris_devtools.fixtures (all classes)
 - iris_devtools.connections (basic)
 - iris_devtools.utils (password reset)
-- CLI: `iris-devtools fixture` commands
+- CLI: `iris-devtester fixture` commands
 - pytest plugin: @pytest.mark.dat_fixture
 
 Exclude (for future releases):

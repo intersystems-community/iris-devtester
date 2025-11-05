@@ -77,7 +77,8 @@ class TestFixtureRoundtrip:
         cursor.close()
 
         # Step 2: Create fixture from source namespace
-        creator = FixtureCreator()
+        # Pass container for docker exec BACKUP operations
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-roundtrip"
 
         manifest = creator.create_fixture(
@@ -106,7 +107,8 @@ class TestFixtureRoundtrip:
         # Use iris_container to create target namespace (ObjectScript operation)
         target_namespace = iris_container.get_test_namespace(prefix="TARGET")
 
-        loader = DATFixtureLoader()
+        # Pass container for docker exec RESTORE operations
+        loader = DATFixtureLoader(container=iris_container)
 
         load_result = loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -121,11 +123,15 @@ class TestFixtureRoundtrip:
 
         # Step 5: Verify data in target namespace using SQL (DBAPI)
         # Get fresh connection to target namespace
+        # Update config to connect to target namespace
+        original_namespace = iris_container._config.namespace
+        iris_container._config.namespace = target_namespace
+
         target_conn = iris_container.get_connection()
         cursor = target_conn.cursor()
 
-        # Switch to target namespace
-        cursor.execute(f"SET NAMESPACE {target_namespace}")
+        # Restore original namespace config
+        iris_container._config.namespace = original_namespace
 
         # Count rows
         cursor.execute("SELECT COUNT(*) FROM TestData")
@@ -154,8 +160,8 @@ class TestChecksumMismatch:
         # Use test_namespace from fixture (already created)
         source_namespace = test_namespace
 
-        # Create fixture
-        creator = FixtureCreator()
+        # Create fixture (empty namespace is fine for checksum testing)
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-checksum"
 
         manifest = creator.create_fixture(
@@ -186,7 +192,7 @@ class TestChecksumMismatch:
         # Use test_namespace from fixture
         source_namespace = test_namespace
 
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-skip"
 
         creator.create_fixture(
@@ -217,7 +223,7 @@ class TestAtomicOperations:
         source_namespace = test_namespace
 
         # Create fixture from source namespace
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-atomic"
 
         creator.create_fixture(
@@ -227,7 +233,7 @@ class TestAtomicOperations:
         )
 
         # Load fixture should succeed
-        loader = DATFixtureLoader()
+        loader = DATFixtureLoader(container=iris_container)
         target_namespace = iris_container.get_test_namespace(prefix="ATOMIC_TARGET")
 
         result = loader.load_fixture(
@@ -246,8 +252,8 @@ class TestAtomicOperations:
         # Use test_namespace from fixture as source
         source_namespace = test_namespace
 
-        # Create fixture
-        creator = FixtureCreator()
+        # Create fixture (empty namespace is fine for cleanup testing)
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-cleanup"
 
         creator.create_fixture(
@@ -257,7 +263,7 @@ class TestAtomicOperations:
         )
 
         # Load into target namespace
-        loader = DATFixtureLoader()
+        loader = DATFixtureLoader(container=iris_container)
         target_namespace = iris_container.get_test_namespace(prefix="CLEANUP_TARGET")
 
         loader.load_fixture(

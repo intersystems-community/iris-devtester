@@ -32,18 +32,15 @@ class TestIRISContainer:
         assert hasattr(IRISContainer, "enterprise")
         assert callable(IRISContainer.enterprise)
 
-    @patch("iris_devtools.containers.iris_container.IRISContainer._create_container")
-    def test_community_creates_community_edition_container(self, mock_create):
-        """Test that .community() creates Community Edition container."""
+    def test_community_creates_container_object(self):
+        """Test that .community() returns a container instance."""
         from iris_devtools.containers import IRISContainer
-
-        mock_container = Mock()
-        mock_create.return_value = mock_container
 
         container = IRISContainer.community()
 
-        # Should create container (implementation may vary)
+        # Should return an IRISContainer instance
         assert container is not None
+        assert isinstance(container, IRISContainer)
 
     def test_get_connection_method_exists(self):
         """Test that get_connection() method exists."""

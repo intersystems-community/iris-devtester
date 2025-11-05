@@ -215,8 +215,10 @@ class FixtureValidator:
                     self.validate_checksum(
                         str(dat_file), manifest.checksum, chunk_size
                     )
-                except ChecksumMismatchError as e:
-                    errors.append(str(e))
+                except ChecksumMismatchError:
+                    # Re-raise ChecksumMismatchError - it's a critical failure
+                    # that requires immediate attention (Constitutional Principle #5)
+                    raise
                 except Exception as e:
                     errors.append(f"Checksum validation failed: {e}")
 

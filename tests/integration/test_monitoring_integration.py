@@ -37,20 +37,89 @@ from iris_devtools.containers.performance import (
 pytestmark = pytest.mark.integration
 
 
-# Use fixtures from tests/integration/conftest.py:
-# - iris_container (session scope) - Container management
-# - iris_connection (function scope) - DBAPI connection for SQL
-# - test_namespace (function scope) - Isolated test namespace
+# DEDICATED CONTAINER for monitoring tests
+# Monitoring tests get their own container to avoid conflicts with DAT fixture tests
+# Constitutional Principle #3: Isolation by Default
 
 @pytest.fixture(scope="module")
-def iris_conn(iris_container):
+def monitoring_container():
     """
-    IRIS connection for monitoring tests.
+    Dedicated IRIS container for monitoring tests only.
 
-    Monitoring tests typically use session/module scope since they configure
-    global monitoring settings that persist across tests.
+    Module-scoped so all monitoring tests share one container, but isolated
+    from other test files that might pollute the shared session container.
+
+    This prevents DAT fixture operations from breaking monitoring tests.
     """
-    return iris_container.get_connection()
+    from iris_devtools.containers import IRISContainer
+
+    with IRISContainer.community() as container:
+        # Wait for IRIS to be ready
+        container.wait_for_ready(timeout=60)
+
+        # Enable CallIn service for DBAPI connections
+        container.enable_callin_service()
+
+        # Unexpire passwords
+        from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+        container_name = container.get_container_name()
+        unexpire_all_passwords(container_name)
+
+        yield container
+
+
+@pytest.fixture(scope="function")
+def iris_conn(monitoring_container):
+    """
+    IRIS connection for monitoring tests with ObjectScript execution capability.
+
+    Uses dedicated monitoring_container (not shared iris_container) to avoid
+    conflicts with DAT fixture tests that can leave the database in a bad state.
+
+    Provides fresh connection AND cleans up monitoring state after each test.
+
+    NOTE: This connection includes an `execute_objectscript()` method for running
+    ObjectScript code. This is a TEST-ONLY workaround until Feature 003 implements
+    proper ObjectScript execution via JDBC.
+    """
+    conn = monitoring_container.get_connection()
+
+    # Add ObjectScript execution capability (TEST-ONLY workaround)
+    # Uses container.execute_objectscript() under the hood
+    def execute_objectscript(code):
+        """Execute ObjectScript code via container exec (TEST-ONLY)."""
+        return monitoring_container.execute_objectscript(code)
+
+    # Attach method to connection
+    conn.execute_objectscript = execute_objectscript
+
+    yield conn
+
+    # Cleanup: Disable monitoring and remove tasks to prevent state pollution
+    # NOTE: Don't close connection - container manages connection lifecycle
+    try:
+        # Try to disable monitoring (may fail if not configured, that's OK)
+        try:
+            disable_monitoring(conn)
+        except:
+            pass
+
+        # Delete all monitoring tasks created during test
+        try:
+            tasks = list_monitoring_tasks(conn)
+            for task in tasks:
+                if "task_id" in task:
+                    try:
+                        delete_task(conn, task["task_id"])
+                    except:
+                        pass
+        except:
+            pass
+
+        # Don't close connection - let container manage it
+        # Closing here breaks the next test because get_connection() caches it
+    except:
+        pass  # Ignore cleanup errors
 
 
 class TestConfigureMonitoringIntegration:

@@ -48,10 +48,15 @@ def iris_connection(iris_container, test_namespace):
 
     Use for SQL operations (3x faster than JDBC).
     """
+    # Update config to use test namespace before getting connection
+    original_namespace = iris_container._config.namespace
+    iris_container._config.namespace = test_namespace
+
     conn = iris_container.get_connection()
-    cursor = conn.cursor()
-    cursor.execute(f"SET NAMESPACE {test_namespace}")
-    cursor.close()
+
+    # Restore original namespace config
+    iris_container._config.namespace = original_namespace
+
     yield conn
 
 
@@ -64,9 +69,11 @@ class TestMyFeature:
         cursor = iris_connection.cursor()
         cursor.execute("SELECT 1")
         result = cursor.fetchone()
+        # Expected output: result = (1,)
         cursor.close()
 
         assert result[0] == 1
+        # ✅ Success: Basic connectivity verified
 
     def test_table_creation(self, iris_connection, test_namespace):
         """Test table creation in isolated namespace."""
@@ -86,10 +93,12 @@ class TestMyFeature:
         # Verify
         cursor.execute("SELECT COUNT(*) FROM TestData")
         count = cursor.fetchone()[0]
+        # Expected output: count = 1
         cursor.close()
 
         assert count == 1
         print(f"✓ Test passed in namespace: {test_namespace}")
+        # Expected output: ✓ Test passed in namespace: TESTNS_1234567890
 
     def test_isolation_from_other_tests(self, iris_connection):
         """Test that previous test's data is gone (isolation)."""
@@ -98,6 +107,8 @@ class TestMyFeature:
         # This should fail because we're in a NEW namespace
         with pytest.raises(Exception):
             cursor.execute("SELECT COUNT(*) FROM TestData")
+            # Expected output: Exception raised (table doesn't exist in new namespace)
+            # ✅ Success: Demonstrates test isolation - each test has clean state
 
         cursor.close()
 
@@ -105,3 +116,14 @@ class TestMyFeature:
 if __name__ == "__main__":
     # Run tests
     pytest.main([__file__, "-v"])
+    # Expected output:
+    # ============================= test session starts ==============================
+    # collected 3 items
+    #
+    # 04_pytest_fixtures.py::TestMyFeature::test_database_connection PASSED   [ 33%]
+    # 04_pytest_fixtures.py::TestMyFeature::test_table_creation PASSED        [ 66%]
+    # ✓ Test passed in namespace: TESTNS_1234567890
+    # 04_pytest_fixtures.py::TestMyFeature::test_isolation_from_other_tests PASSED [100%]
+    #
+    # ============================== 3 passed in 5.23s ===============================
+    # ✅ Success: All tests passed with proper isolation

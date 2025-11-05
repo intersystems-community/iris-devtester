@@ -11,7 +11,10 @@ Tests verify:
 - API is usable as documented
 """
 
+
 import pytest
+
+pytestmark = pytest.mark.contract
 from pathlib import Path
 from typing import Optional
 

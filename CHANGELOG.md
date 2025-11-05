@@ -149,7 +149,7 @@ N/A - Initial release
 
 ### v1.0.0 Highlights
 
-**Zero Configuration**: `pip install iris-devtools && pytest` works out of the box.
+**Zero Configuration**: `pip install iris-devtester && pytest` works out of the box.
 
 **Battle-Tested**: Every feature extracted from production code, representing years of debugging hours saved.
 

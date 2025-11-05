@@ -65,6 +65,15 @@ class IRISReadyWaitStrategy:
 
         Raises:
             TimeoutError: If container not ready within timeout
+
+        Example:
+            >>> strategy = IRISReadyWaitStrategy(timeout=30)
+            >>> with IRISContainer.community() as iris:
+            ...     iris.start()
+            ...     config = iris.get_config()
+            ...     ready = strategy.wait_until_ready(config.host, config.port)
+            ...     if ready:
+            ...         print("IRIS is ready to accept connections")
         """
         port = port or self.port
         timeout = timeout or self.timeout
@@ -122,6 +131,13 @@ class IRISReadyWaitStrategy:
             True if IRIS process is running
 
         Note: This requires Docker access and is optional for basic readiness.
+
+        Example:
+            >>> strategy = IRISReadyWaitStrategy()
+            >>> with IRISContainer.community() as iris:
+            ...     container_name = iris.get_container_name()
+            ...     if strategy.check_iris_running(container_name):
+            ...         print("IRIS process is active")
         """
         try:
             import subprocess

@@ -225,7 +225,7 @@ conn.close()
 
 **Deployment**:
 ```bash
-pip install iris-devtools
+pip install iris-devtester
 python app.py
 # Connects to IRIS over network
 ```
@@ -473,7 +473,7 @@ Production:
 Testing:
   - Use iris-devtools to set up test data ✅
   - Test WSGI app endpoints via HTTP ✅
-  - Automatic cleanup via iris-devtools fixtures ✅
+  - Automatic cleanup via iris-devtester fixtures ✅
 ```
 
 ### Decision Summary

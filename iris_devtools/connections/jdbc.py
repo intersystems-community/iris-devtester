@@ -25,8 +25,17 @@ def is_jdbc_available() -> bool:
     """
     Check if JDBC (jaydebeapi) is available.
 
+    Args:
+        (no arguments)
+
     Returns:
         True if jaydebeapi module can be imported
+
+    Example:
+        >>> if is_jdbc_available():
+        ...     print("JDBC driver available (fallback option)")
+        ... else:
+        ...     print("Install with: pip install jaydebeapi")
     """
     try:
         import jaydebeapi
@@ -42,8 +51,18 @@ def find_jdbc_driver() -> Optional[Path]:
 
     Searches multiple common locations for the InterSystems JDBC driver.
 
+    Args:
+        (no arguments)
+
     Returns:
         Path to JDBC JAR file, or None if not found
+
+    Example:
+        >>> jar_path = find_jdbc_driver()
+        >>> if jar_path:
+        ...     print(f"JDBC driver found at: {jar_path}")
+        ... else:
+        ...     print("JDBC driver not found - download from GitHub")
     """
     # Possible JDBC driver locations (in priority order)
     possible_paths = [

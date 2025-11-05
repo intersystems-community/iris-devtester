@@ -1,0 +1,93 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for IRIS DevTools
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please describe what you'd like to see added to IRIS DevTools.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? Is your feature request related to a frustration?
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see
+      placeholder: "I would like to see..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: "I've tried... but it doesn't work because..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: constitutional-alignment
+    attributes:
+      label: Constitutional Alignment
+      description: Which of the 8 constitutional principles does this feature support?
+      multiple: true
+      options:
+        - "1. Automatic Remediation Over Manual Intervention"
+        - "2. Choose the Right Tool"
+        - "3. Isolation by Default"
+        - "4. Zero Configuration Viable"
+        - "5. Fail Fast with Guidance"
+        - "6. Enterprise Ready, Community Friendly"
+        - "7. Medical-Grade Reliability"
+        - "8. Document the Blind Alleys"
+        - "Not applicable / Unsure"
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe a concrete use case for this feature
+      placeholder: |
+        As a developer, I want to...
+        So that I can...
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example Usage (Optional)
+      description: If applicable, show what the API or usage would look like
+      placeholder: |
+        ```python
+        from iris_devtools import NewFeature
+
+        feature = NewFeature(config=...)
+        feature.do_something()
+        ```
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues and feature requests
+          required: true
+        - label: I have clearly described the problem this feature solves
+          required: true
+        - label: I have described a concrete use case
+          required: true

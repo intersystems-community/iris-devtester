@@ -14,7 +14,10 @@ CRITICAL: These are contract tests - they validate API signatures,
 not functionality. They should pass immediately after CLI implementation.
 """
 
+
 import pytest
+
+pytestmark = pytest.mark.contract
 from click.testing import CliRunner
 from iris_devtools.cli.fixture_commands import fixture, create, load, validate, list, info
 

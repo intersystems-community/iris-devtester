@@ -1310,7 +1310,7 @@ config = IRISConfig(
 **Validation**: Run full test suite, benchmark performance
 
 #### Week 2: Test Fixtures
-**Goal**: Replace `tests/conftest.py` with iris-devtools fixtures
+**Goal**: Replace `tests/conftest.py` with iris-devtester fixtures
 
 **Steps**:
 1. Replace `iris_container` with `IRISContainer` from iris-devtools

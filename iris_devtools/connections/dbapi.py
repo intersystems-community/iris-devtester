@@ -17,8 +17,17 @@ def is_dbapi_available() -> bool:
     """
     Check if DBAPI (intersystems-irispython) is available.
 
+    Args:
+        (no arguments)
+
     Returns:
         True if DBAPI module can be imported and has connect attribute
+
+    Example:
+        >>> if is_dbapi_available():
+        ...     print("DBAPI driver available (3x faster than JDBC)")
+        ... else:
+        ...     print("Install with: pip install intersystems-irispython")
     """
     try:
         import iris.dbapi

@@ -464,7 +464,7 @@ def my_test_db(iris_db):
 **Example iris-devtools usage:**
 ```bash
 # New project setup
-pip install iris-devtools[all]
+pip install iris-devtester[all]
 
 # Create test file
 cat > test_my_app.py << 'EOF'

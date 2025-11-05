@@ -176,7 +176,7 @@ def iris_db_isolated():
 
 ### 4. ZERO CONFIGURATION VIABLE
 
-**The Principle**: `pip install iris-devtools && pytest` must work without configuration.
+**The Principle**: `pip install iris-devtester && pytest` must work without configuration.
 
 **Why It Matters**:
 - Reduces onboarding friction

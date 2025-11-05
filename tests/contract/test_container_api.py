@@ -7,7 +7,10 @@ specs/001-implement-iris-devtools/contracts/container-api.md
 These tests MUST FAIL until implementation is complete.
 """
 
+
 import pytest
+
+pytestmark = pytest.mark.contract
 
 
 class TestIRISContainer:
