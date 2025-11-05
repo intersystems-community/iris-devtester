@@ -12,6 +12,9 @@ license = {text = "MIT"}
 authors = [
     {name = "InterSystems Community", email = "community@intersystems.com"}
 ]
+maintainers = [
+    {name = "Thomas Dyar", email = "thomas.dyar@intersystems.com"}
+]
 keywords = [
     "intersystems",
     "iris",
