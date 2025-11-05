@@ -14,9 +14,9 @@ Constitutional Principle #2: DBAPI First (no JDBC fallback in this modern toolki
 import logging
 from typing import Any, Optional
 
-from iris_devtools.config import IRISConfig, discover_config
-from iris_devtools.connections.dbapi import create_dbapi_connection, is_dbapi_available
-from iris_devtools.connections.retry import create_connection_with_retry
+from iris_devtester.config import IRISConfig, discover_config
+from iris_devtester.connections.dbapi import create_dbapi_connection, is_dbapi_available
+from iris_devtester.connections.retry import create_connection_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def get_connection(
         >>> conn = get_connection()
 
         >>> # Explicit config
-        >>> from iris_devtools.config import IRISConfig
+        >>> from iris_devtester.config import IRISConfig
         >>> config = IRISConfig(host="localhost", port=1972)
         >>> conn = get_connection(config)
 

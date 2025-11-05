@@ -11,7 +11,7 @@ import pytest
 import time
 from datetime import datetime
 
-from iris_devtools.containers.monitoring import (
+from iris_devtester.containers.monitoring import (
     MonitoringPolicy,
     ResourceThresholds,
     configure_monitoring,
@@ -26,7 +26,7 @@ from iris_devtools.containers.monitoring import (
     list_monitoring_tasks,
     TaskSchedule,
 )
-from iris_devtools.containers.performance import (
+from iris_devtester.containers.performance import (
     get_resource_metrics,
     check_resource_thresholds,
     auto_disable_monitoring,
@@ -51,7 +51,7 @@ def monitoring_container():
 
     This prevents DAT fixture operations from breaking monitoring tests.
     """
-    from iris_devtools.containers import IRISContainer
+    from iris_devtester.containers import IRISContainer
 
     with IRISContainer.community() as container:
         # Wait for IRIS to be ready
@@ -61,7 +61,7 @@ def monitoring_container():
         container.enable_callin_service()
 
         # Unexpire passwords
-        from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+        from iris_devtester.utils.unexpire_passwords import unexpire_all_passwords
         container_name = container.get_container_name()
         unexpire_all_passwords(container_name)
 

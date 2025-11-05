@@ -13,8 +13,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from iris_devtools.config.models import IRISConfig
-from iris_devtools.config.defaults import (
+from iris_devtester.config.models import IRISConfig
+from iris_devtester.config.defaults import (
     DEFAULT_HOST,
     DEFAULT_PORT,
     DEFAULT_NAMESPACE,
@@ -47,7 +47,7 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
         >>> config = discover_config()
 
         >>> # Override specific values
-        >>> from iris_devtools.config import IRISConfig
+        >>> from iris_devtester.config import IRISConfig
         >>> explicit = IRISConfig(host="custom.host")
         >>> config = discover_config(explicit_config=explicit)
     """
@@ -76,7 +76,7 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
 
     # Layer 4: Auto-detect from Docker/native instances (ONLY if not already set)
     # Import here to avoid circular dependency
-    from iris_devtools.connections.auto_discovery import auto_detect_iris_host_and_port
+    from iris_devtester.connections.auto_discovery import auto_detect_iris_host_and_port
 
     # Only auto-detect if host AND port are still at defaults (not set by env or .env)
     # This ensures we don't partially override user config with auto-detection

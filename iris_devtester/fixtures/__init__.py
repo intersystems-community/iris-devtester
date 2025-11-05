@@ -11,7 +11,7 @@ Key Features:
 - CLI commands for fixture management
 
 Example:
-    >>> from iris_devtools.fixtures import DATFixtureLoader, FixtureCreator
+    >>> from iris_devtester.fixtures import DATFixtureLoader, FixtureCreator
     >>>
     >>> # Create fixture from existing namespace
     >>> creator = FixtureCreator(container=iris_container)

@@ -8,8 +8,8 @@ import time
 from pathlib import Path
 from typing import Optional, Any
 
-from iris_devtools.connections import get_connection, IRISConnection
-from iris_devtools.config import IRISConfig
+from iris_devtester.connections import get_connection, IRISConnection
+from iris_devtester.config import IRISConfig
 
 from .manifest import (
     FixtureManifest,
@@ -30,7 +30,7 @@ class DATFixtureLoader:
     4. Returning LoadResult with timing information
 
     Example:
-        >>> from iris_devtools.fixtures import DATFixtureLoader
+        >>> from iris_devtester.fixtures import DATFixtureLoader
         >>> loader = DATFixtureLoader()
         >>> result = loader.load_fixture("./fixtures/test-data")
         >>> print(f"Loaded {len(result.tables_loaded)} tables in {result.elapsed_seconds:.2f}s")
@@ -55,12 +55,12 @@ class DATFixtureLoader:
             >>> loader = DATFixtureLoader()
 
             >>> # With container (for docker exec)
-            >>> from iris_devtools.containers import IRISContainer
+            >>> from iris_devtester.containers import IRISContainer
             >>> with IRISContainer.community() as container:
             ...     loader = DATFixtureLoader(container=container)
 
             >>> # Explicit config
-            >>> from iris_devtools.config import IRISConfig
+            >>> from iris_devtester.config import IRISConfig
             >>> config = IRISConfig(host="localhost", port=1972)
             >>> loader = DATFixtureLoader(config)
         """
@@ -191,7 +191,7 @@ class DATFixtureLoader:
         try:
             # Auto-create container if not provided (Constitutional Principle #4: Zero Configuration)
             if not self.container:
-                from iris_devtools.containers import IRISContainer
+                from iris_devtester.containers import IRISContainer
                 import logging
 
                 logger = logging.getLogger(__name__)
@@ -204,7 +204,7 @@ class DATFixtureLoader:
                 self.container.enable_callin_service()
 
                 # Unexpire passwords
-                from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+                from iris_devtester.utils.unexpire_passwords import unexpire_all_passwords
                 unexpire_all_passwords(self.container.get_container_name())
 
                 # Update connection config to use the auto-created container
@@ -365,7 +365,7 @@ Halt"""
         tables_loaded = []
         try:
             # Get connection config and create connection to target namespace
-            from iris_devtools.config import discover_config
+            from iris_devtester.config import discover_config
             import dataclasses
 
             config = self.connection_config if self.connection_config else discover_config()

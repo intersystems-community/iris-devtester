@@ -15,12 +15,12 @@ import shutil
 import time
 from pathlib import Path
 
-from iris_devtools.fixtures import (
+from iris_devtester.fixtures import (
     FixtureCreator,
     DATFixtureLoader,
     FixtureValidator,
 )
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 
 # Use fixtures from tests/integration/conftest.py:

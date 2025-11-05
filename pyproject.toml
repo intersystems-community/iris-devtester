@@ -89,7 +89,7 @@ docs = [
 ]
 
 [project.scripts]
-iris-devtester = "iris_devtools.cli:main"
+iris-devtester = "iris_devtester.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/intersystems-community/iris-devtools"
@@ -100,7 +100,7 @@ Changelog = "https://github.com/intersystems-community/iris-devtools/blob/main/C
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["iris_devtools*"]
+include = ["iris_devtester*"]
 exclude = ["tests*", "docs*", "examples*"]
 
 [tool.black]
@@ -123,7 +123,7 @@ python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
     "--tb=short",
-    "--cov=iris_devtools",
+    "--cov=iris_devtester",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-fail-under=90",
@@ -145,7 +145,7 @@ disallow_untyped_defs = false
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["iris_devtools"]
+source = ["iris_devtester"]
 omit = [
     "*/tests/*",
     "*/test_*",

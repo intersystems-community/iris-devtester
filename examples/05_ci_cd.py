@@ -12,7 +12,7 @@ Constitutional Principle #7: Medical-Grade Reliability
 """
 
 import os
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 def example_basic_ci_test():

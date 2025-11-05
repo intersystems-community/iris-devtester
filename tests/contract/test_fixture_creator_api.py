@@ -23,21 +23,21 @@ class TestFixtureCreatorClass:
 
     def test_class_exists(self):
         """Test that FixtureCreator class can be imported."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         assert FixtureCreator is not None
 
     def test_constructor_signature_zero_config(self):
         """Test that FixtureCreator() constructor works with no args."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert creator is not None
 
     def test_constructor_signature_explicit_config(self):
         """Test that FixtureCreator accepts optional connection_config."""
-        from iris_devtools.fixtures import FixtureCreator
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.fixtures import FixtureCreator
+        from iris_devtester.config import IRISConfig
 
         config = IRISConfig(host="localhost", port=1972, namespace="USER")
         creator = FixtureCreator(connection_config=config)
@@ -45,7 +45,7 @@ class TestFixtureCreatorClass:
 
     def test_class_is_instantiable(self):
         """Test that FixtureCreator can be instantiated."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert isinstance(creator, FixtureCreator)
@@ -56,7 +56,7 @@ class TestCreateFixtureMethod:
 
     def test_method_exists(self):
         """Test that create_fixture method exists."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert hasattr(creator, 'create_fixture')
@@ -64,7 +64,7 @@ class TestCreateFixtureMethod:
 
     def test_signature_required_params(self):
         """Test create_fixture signature with required parameters."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -79,7 +79,7 @@ class TestCreateFixtureMethod:
 
     def test_signature_optional_description(self):
         """Test create_fixture accepts optional description parameter."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -93,7 +93,7 @@ class TestCreateFixtureMethod:
 
     def test_signature_optional_version(self):
         """Test create_fixture accepts optional version parameter."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -107,7 +107,7 @@ class TestCreateFixtureMethod:
 
     def test_signature_optional_features(self):
         """Test create_fixture accepts optional features parameter."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -121,7 +121,7 @@ class TestCreateFixtureMethod:
 
     def test_return_type_is_manifest(self):
         """Test that create_fixture returns FixtureManifest."""
-        from iris_devtools.fixtures import FixtureCreator, FixtureManifest
+        from iris_devtester.fixtures import FixtureCreator, FixtureManifest
 
         creator = FixtureCreator()
 
@@ -135,7 +135,7 @@ class TestExportNamespaceToDatMethod:
 
     def test_method_exists(self):
         """Test that export_namespace_to_dat method exists."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert hasattr(creator, 'export_namespace_to_dat')
@@ -143,7 +143,7 @@ class TestExportNamespaceToDatMethod:
 
     def test_signature_required_params(self):
         """Test export_namespace_to_dat signature with required parameters."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -154,7 +154,7 @@ class TestExportNamespaceToDatMethod:
 
     def test_return_type_is_string(self):
         """Test that export_namespace_to_dat returns string (file path)."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -168,7 +168,7 @@ class TestCalculateChecksumMethod:
 
     def test_method_exists(self):
         """Test that calculate_checksum method exists."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert hasattr(creator, 'calculate_checksum')
@@ -176,7 +176,7 @@ class TestCalculateChecksumMethod:
 
     def test_signature_required_params(self):
         """Test calculate_checksum signature with required parameters."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -189,7 +189,7 @@ class TestCalculateChecksumMethod:
         """Test that calculate_checksum returns string (sha256:...)."""
         import tempfile
         from pathlib import Path
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -211,7 +211,7 @@ class TestGetNamespaceTablesMethod:
 
     def test_method_exists(self):
         """Test that get_namespace_tables method exists."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert hasattr(creator, 'get_namespace_tables')
@@ -219,7 +219,7 @@ class TestGetNamespaceTablesMethod:
 
     def test_signature_required_params(self):
         """Test get_namespace_tables signature with required parameters."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -230,7 +230,7 @@ class TestGetNamespaceTablesMethod:
 
     def test_return_type_is_list_of_tableinfo(self):
         """Test that get_namespace_tables returns List[TableInfo]."""
-        from iris_devtools.fixtures import FixtureCreator, TableInfo
+        from iris_devtester.fixtures import FixtureCreator, TableInfo
 
         creator = FixtureCreator()
 
@@ -244,7 +244,7 @@ class TestRefreshFixtureMethod:
 
     def test_method_exists(self):
         """Test that refresh_fixture method exists."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert hasattr(creator, 'refresh_fixture')
@@ -252,7 +252,7 @@ class TestRefreshFixtureMethod:
 
     def test_signature_required_params(self):
         """Test refresh_fixture signature with required parameters."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -263,7 +263,7 @@ class TestRefreshFixtureMethod:
 
     def test_return_type_is_manifest(self):
         """Test that refresh_fixture returns FixtureManifest."""
-        from iris_devtools.fixtures import FixtureCreator, FixtureManifest
+        from iris_devtester.fixtures import FixtureCreator, FixtureManifest
 
         creator = FixtureCreator()
 
@@ -277,7 +277,7 @@ class TestGetConnectionMethod:
 
     def test_method_exists(self):
         """Test that get_connection method exists."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
         assert hasattr(creator, 'get_connection')
@@ -285,7 +285,7 @@ class TestGetConnectionMethod:
 
     def test_signature_no_params(self):
         """Test get_connection signature requires no parameters."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -302,8 +302,8 @@ class TestIntegrationWithConnectionManager:
 
     def test_uses_get_connection_from_feature_003(self):
         """Test that FixtureCreator uses get_connection from Feature 003."""
-        from iris_devtools.fixtures import FixtureCreator
-        from iris_devtools.connections import get_connection
+        from iris_devtester.fixtures import FixtureCreator
+        from iris_devtester.connections import get_connection
 
         creator = FixtureCreator()
 
@@ -312,8 +312,8 @@ class TestIntegrationWithConnectionManager:
 
     def test_accepts_iris_config_from_feature_003(self):
         """Test that FixtureCreator accepts IRISConfig from Feature 003."""
-        from iris_devtools.fixtures import FixtureCreator
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.fixtures import FixtureCreator
+        from iris_devtester.config import IRISConfig
 
         config = IRISConfig(
             host="localhost",
@@ -332,7 +332,7 @@ class TestConstitutionalCompliance:
 
     def test_principle_2_dbapi_first(self):
         """Test Principle #2: DBAPI First via Feature 003."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -341,7 +341,7 @@ class TestConstitutionalCompliance:
 
     def test_principle_4_zero_config(self):
         """Test Principle #4: Zero Configuration Viable."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         # Should be able to create creator with no config
         creator = FixtureCreator()
@@ -349,7 +349,7 @@ class TestConstitutionalCompliance:
 
     def test_principle_5_error_messages(self):
         """Test Principle #5: Fail Fast with Guidance."""
-        from iris_devtools.fixtures import FixtureCreator, FixtureCreateError
+        from iris_devtester.fixtures import FixtureCreator, FixtureCreateError
         import tempfile
         import os
 
@@ -376,7 +376,7 @@ class TestConstitutionalCompliance:
 
     def test_principle_7_medical_grade_reliability(self):
         """Test Principle #7: Medical-Grade Reliability."""
-        from iris_devtools.fixtures import FixtureCreator
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
@@ -391,13 +391,13 @@ class TestTableInfoDataclass:
 
     def test_tableinfo_exists(self):
         """Test that TableInfo can be imported."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         assert TableInfo is not None
 
     def test_tableinfo_fields(self):
         """Test that TableInfo has required fields."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         table = TableInfo(name="RAG.Entities", row_count=100)
 
@@ -406,7 +406,7 @@ class TestTableInfoDataclass:
 
     def test_tableinfo_str_method(self):
         """Test that TableInfo has __str__ method."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         table = TableInfo(name="RAG.Entities", row_count=100)
         table_str = str(table)
@@ -416,7 +416,7 @@ class TestTableInfoDataclass:
 
     def test_tableinfo_validation(self):
         """Test that TableInfo validates row_count."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         # Should reject negative row_count
         with pytest.raises(ValueError):

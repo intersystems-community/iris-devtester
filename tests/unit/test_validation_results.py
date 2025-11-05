@@ -13,13 +13,13 @@ class TestPasswordResetResult:
 
     def test_can_import(self):
         """Test that PasswordResetResult can be imported."""
-        from iris_devtools.testing.models import PasswordResetResult
+        from iris_devtester.testing.models import PasswordResetResult
 
         assert PasswordResetResult is not None
 
     def test_success_result(self):
         """Test that PasswordResetResult can represent success."""
-        from iris_devtools.testing.models import PasswordResetResult
+        from iris_devtester.testing.models import PasswordResetResult
 
         result = PasswordResetResult(
             success=True,
@@ -32,7 +32,7 @@ class TestPasswordResetResult:
 
     def test_failure_result(self):
         """Test that PasswordResetResult can represent failure."""
-        from iris_devtools.testing.models import PasswordResetResult
+        from iris_devtester.testing.models import PasswordResetResult
 
         result = PasswordResetResult(
             success=False,
@@ -45,7 +45,7 @@ class TestPasswordResetResult:
 
     def test_get_message(self):
         """Test that PasswordResetResult has get_message method."""
-        from iris_devtools.testing.models import PasswordResetResult
+        from iris_devtester.testing.models import PasswordResetResult
 
         result = PasswordResetResult(success=True, new_password="test")
         message = result.get_message()
@@ -57,13 +57,13 @@ class TestCleanupAction:
 
     def test_can_import(self):
         """Test that CleanupAction can be imported."""
-        from iris_devtools.testing.models import CleanupAction
+        from iris_devtester.testing.models import CleanupAction
 
         assert CleanupAction is not None
 
     def test_required_fields(self):
         """Test that CleanupAction requires action_type and target."""
-        from iris_devtools.testing.models import CleanupAction
+        from iris_devtester.testing.models import CleanupAction
 
         action = CleanupAction(
             action_type="drop_table",
@@ -75,7 +75,7 @@ class TestCleanupAction:
 
     def test_with_priority(self):
         """Test that CleanupAction supports priority."""
-        from iris_devtools.testing.models import CleanupAction
+        from iris_devtester.testing.models import CleanupAction
 
         action = CleanupAction(
             action_type="stop_container",
@@ -90,13 +90,13 @@ class TestTestState:
 
     def test_can_import(self):
         """Test that TestState can be imported."""
-        from iris_devtools.testing.models import TestState
+        from iris_devtester.testing.models import TestState
 
         assert TestState is not None
 
     def test_required_fields(self):
         """Test that TestState requires test_id, isolation_level, namespace."""
-        from iris_devtools.testing.models import TestState
+        from iris_devtester.testing.models import TestState
 
         state = TestState(
             test_id="test_001",
@@ -109,7 +109,7 @@ class TestTestState:
 
     def test_default_fields(self):
         """Test that TestState has default values."""
-        from iris_devtools.testing.models import TestState
+        from iris_devtester.testing.models import TestState
 
         state = TestState(
             test_id="test_001",
@@ -124,7 +124,7 @@ class TestTestState:
 
     def test_register_cleanup(self):
         """Test that TestState has register_cleanup method."""
-        from iris_devtools.testing.models import TestState, CleanupAction
+        from iris_devtester.testing.models import TestState, CleanupAction
 
         state = TestState(
             test_id="test_001",
@@ -149,13 +149,13 @@ class TestContainerConfig:
 
     def test_can_import(self):
         """Test that ContainerConfig can be imported."""
-        from iris_devtools.testing.models import ContainerConfig
+        from iris_devtester.testing.models import ContainerConfig
 
         assert ContainerConfig is not None
 
     def test_default_values(self):
         """Test that ContainerConfig has default values."""
-        from iris_devtools.testing.models import ContainerConfig
+        from iris_devtester.testing.models import ContainerConfig
 
         config = ContainerConfig()
         assert config.edition == "community"
@@ -166,14 +166,14 @@ class TestContainerConfig:
 
     def test_enterprise_requires_license(self):
         """Test that enterprise edition requires license_key."""
-        from iris_devtools.testing.models import ContainerConfig
+        from iris_devtester.testing.models import ContainerConfig
 
         with pytest.raises(ValueError):
             ContainerConfig(edition="enterprise")
 
     def test_enterprise_with_license(self):
         """Test that enterprise edition works with license_key."""
-        from iris_devtools.testing.models import ContainerConfig
+        from iris_devtester.testing.models import ContainerConfig
 
         config = ContainerConfig(
             edition="enterprise",
@@ -184,7 +184,7 @@ class TestContainerConfig:
 
     def test_timeout_validation(self):
         """Test that timeouts must be positive."""
-        from iris_devtools.testing.models import ContainerConfig
+        from iris_devtester.testing.models import ContainerConfig
 
         with pytest.raises(ValueError):
             ContainerConfig(wait_timeout=0)

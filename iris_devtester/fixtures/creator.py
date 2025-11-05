@@ -8,8 +8,8 @@ import datetime
 from pathlib import Path
 from typing import Optional, Any, List, Dict
 
-from iris_devtools.connections import get_connection
-from iris_devtools.config import IRISConfig
+from iris_devtester.connections import get_connection
+from iris_devtester.config import IRISConfig
 
 from .manifest import (
     FixtureManifest,
@@ -30,7 +30,7 @@ class FixtureCreator:
     4. Generating manifest.json
 
     Example:
-        >>> from iris_devtools.fixtures import FixtureCreator
+        >>> from iris_devtester.fixtures import FixtureCreator
         >>> creator = FixtureCreator()
         >>> manifest = creator.create_fixture(
         ...     fixture_id="test-data",
@@ -60,12 +60,12 @@ class FixtureCreator:
             >>> creator = FixtureCreator()
 
             >>> # With container (for docker exec)
-            >>> from iris_devtools.containers import IRISContainer
+            >>> from iris_devtester.containers import IRISContainer
             >>> with IRISContainer.community() as container:
             ...     creator = FixtureCreator(container=container)
 
             >>> # Explicit config
-            >>> from iris_devtools.config import IRISConfig
+            >>> from iris_devtester.config import IRISConfig
             >>> config = IRISConfig(host="localhost", port=1972)
             >>> creator = FixtureCreator(config)
         """
@@ -474,7 +474,7 @@ Halt"""
         """
         try:
             # Get connection config and create connection to target namespace
-            from iris_devtools.config import discover_config
+            from iris_devtester.config import discover_config
             config = self.connection_config if self.connection_config else discover_config()
 
             # Update config to use the target namespace

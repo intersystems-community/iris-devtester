@@ -35,7 +35,7 @@ def unexpire_all_passwords(container_name: str = "iris_db", timeout: int = 30) -
         >>> unexpire_all_passwords("iris-4way-embedded")
         >>>
         >>> # Or use the convenience function:
-        >>> from iris_devtools.utils import unexpire_passwords_for_containers
+        >>> from iris_devtester.utils import unexpire_passwords_for_containers
         >>> unexpire_passwords_for_containers(["iris-4way", "iris-4way-embedded"])
 
     Note:

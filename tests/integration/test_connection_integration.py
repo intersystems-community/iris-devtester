@@ -9,8 +9,8 @@ Tests verify:
 """
 
 import pytest
-from iris_devtools.connections import get_connection, IRISConnection
-from iris_devtools.config import IRISConfig
+from iris_devtester.connections import get_connection, IRISConnection
+from iris_devtester.config import IRISConfig
 
 
 class TestModernConnectionManager:

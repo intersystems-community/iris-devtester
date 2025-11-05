@@ -39,7 +39,7 @@ class TestPgwireConfigProblem:
         NOTE: We use IRIS_HOST (not IRIS_HOSTNAME) as the standard.
         Projects using IRIS_HOSTNAME should switch to IRIS_HOST.
         """
-        from iris_devtools.config import discover_config
+        from iris_devtester.config import discover_config
 
         config = discover_config()
 
@@ -57,7 +57,7 @@ class TestPgwireConfigProblem:
 
         Demonstrates zero-config discovery that prevents hanging connections.
         """
-        from iris_devtools.config import discover_config
+        from iris_devtester.config import discover_config
 
         config = discover_config()
 
@@ -76,7 +76,7 @@ class TestPgwireConfigProblem:
 
         This prevents the "connects to wrong host" issue entirely.
         """
-        from iris_devtools.config import discover_config
+        from iris_devtester.config import discover_config
 
         # Default config
         default_config = discover_config()
@@ -88,7 +88,7 @@ class TestPgwireConfigProblem:
             assert prod_config.host == "production.iris.com"  # Overridden!
 
         # Explicit config wins over everything
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
         explicit = IRISConfig(host="explicit.host")
         final_config = discover_config(explicit_config=explicit)
         assert final_config.host == "explicit.host"  # Highest priority!
@@ -116,7 +116,7 @@ class TestVectorGraphCallInProblem:
         This was the core issue - every manual approach hit "Access Denied"
         or required interactive authentication.
         """
-        from iris_devtools.containers import IRISContainer
+        from iris_devtester.containers import IRISContainer
 
         # Mock successful CallIn enablement
         mock_result = Mock()
@@ -162,7 +162,7 @@ class TestVectorGraphCallInProblem:
         This means users NEVER see ACCESS_DENIED - it just works!
         Constitutional Principle #1: Automatic Remediation
         """
-        from iris_devtools.containers import IRISContainer
+        from iris_devtester.containers import IRISContainer
 
         # Mock CallIn enablement
         callin_result = Mock()
@@ -198,7 +198,7 @@ class TestVectorGraphCallInProblem:
 
         This helps diagnose the ACCESS_DENIED issue before it happens.
         """
-        from iris_devtools.containers import IRISContainer
+        from iris_devtester.containers import IRISContainer
 
         mock_base.return_value = Mock()
         container = IRISContainer.community()
@@ -226,7 +226,7 @@ class TestPgwireBenchmarkPasswordExpiration:
         """
         Test unexpiring passwords for a single benchmark container.
         """
-        from iris_devtools.utils import unexpire_all_passwords
+        from iris_devtester.utils import unexpire_all_passwords
 
         # Mock successful unexpiration (must include "UNEXPIRED" in stdout)
         mock_result = Mock()
@@ -251,7 +251,7 @@ class TestPgwireBenchmarkPasswordExpiration:
 
         This replaces those two manual docker exec commands with ONE function call!
         """
-        from iris_devtools.utils import unexpire_passwords_for_containers
+        from iris_devtester.utils import unexpire_passwords_for_containers
 
         # Mock successful unexpiration (must include "UNEXPIRED" in stdout)
         mock_result = Mock()
@@ -292,7 +292,7 @@ class TestPgwireBenchmarkPasswordExpiration:
 
         Constitutional Principle #1: Automatic Remediation!
         """
-        from iris_devtools.utils import unexpire_passwords_for_containers
+        from iris_devtester.utils import unexpire_passwords_for_containers
 
         # Mock successful operations (must include "UNEXPIRED" in stdout)
         mock_result = Mock()
@@ -331,8 +331,8 @@ class TestDBAPIFirstJDBCFallbackInAction:
 
     def test_uses_dbapi_when_available(self, iris_container):
         """Test DBAPI is tried first (3x faster) with REAL connection."""
-        from iris_devtools.connections import get_connection
-        from iris_devtools.connections.dbapi import is_dbapi_available
+        from iris_devtester.connections import get_connection
+        from iris_devtester.connections.dbapi import is_dbapi_available
 
         # Use real container config
         config = iris_container.get_config()
@@ -359,8 +359,8 @@ class TestDBAPIFirstJDBCFallbackInAction:
         This prevents hanging connections - just switches to JDBC automatically!
         User never knows the difference.
         """
-        from iris_devtools.connections import get_connection
-        from iris_devtools.connections.jdbc import is_jdbc_available
+        from iris_devtester.connections import get_connection
+        from iris_devtester.connections.jdbc import is_jdbc_available
 
         # Get config but force JDBC by setting driver explicitly
         config = iris_container.get_config()
@@ -393,8 +393,8 @@ class TestDBAPIFirstJDBCFallbackInAction:
         where drivers ARE installed. The mock is minimal and focused on testing the
         error message quality per Constitutional Principle #5.
         """
-        from iris_devtools.connections import get_connection
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.connections import get_connection
+        from iris_devtester.config import IRISConfig
 
         # Minimal mocking: Mock at the connection.py module level where it's used
         with patch("iris_devtools.connections.connection.is_dbapi_available", return_value=False):

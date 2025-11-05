@@ -11,7 +11,7 @@ Constitutional Principles:
 """
 
 import pytest
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 # conftest.py pattern

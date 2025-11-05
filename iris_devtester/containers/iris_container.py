@@ -8,16 +8,16 @@ password reset, and better wait strategies.
 import logging
 from typing import Any, Optional
 
-from iris_devtools.config.models import IRISConfig
-from iris_devtools.connections.manager import get_connection
-from iris_devtools.utils.password_reset import reset_password_if_needed
-from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
-from iris_devtools.containers.monitoring import (
+from iris_devtester.config.models import IRISConfig
+from iris_devtester.connections.manager import get_connection
+from iris_devtester.utils.password_reset import reset_password_if_needed
+from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
+from iris_devtester.containers.monitoring import (
     MonitoringPolicy,
     configure_monitoring,
     disable_monitoring,
 )
-from iris_devtools.containers.performance import get_resource_metrics
+from iris_devtester.containers.performance import get_resource_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +159,7 @@ class IRISContainer(BaseIRISContainer):
         if not auto_discover:
             return None
 
-        from iris_devtools.config.auto_discovery import auto_discover_iris
+        from iris_devtester.config.auto_discovery import auto_discover_iris
 
         config_dict = auto_discover_iris()
 
@@ -282,7 +282,7 @@ class IRISContainer(BaseIRISContainer):
 
         # CRITICAL: Unexpire passwords to prevent "password change required" errors
         # (Constitutional Principle #1: Automatic Remediation)
-        from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+        from iris_devtester.utils.unexpire_passwords import unexpire_all_passwords
         container_name = self.get_container_name()
         success, msg = unexpire_all_passwords(container_name)
         if success:
@@ -388,7 +388,7 @@ class IRISContainer(BaseIRISContainer):
             ...     if iris.reset_password():
             ...         print("Password reset successful")
         """
-        from iris_devtools.utils.password_reset import reset_password
+        from iris_devtester.utils.password_reset import reset_password
 
         success, message = reset_password(
             container_name=self.get_container_name(),

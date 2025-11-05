@@ -11,9 +11,9 @@ import logging
 from datetime import datetime
 from typing import Any, Literal, Tuple
 
-from iris_devtools.config.models import IRISConfig
-from iris_devtools.connections.models import ConnectionInfo
-from iris_devtools.connections import dbapi, jdbc
+from iris_devtester.config.models import IRISConfig
+from iris_devtester.connections.models import ConnectionInfo
+from iris_devtester.connections import dbapi, jdbc
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def get_connection(config: IRISConfig) -> Any:
         ConnectionError: If connection fails (with remediation guidance)
 
     Example:
-        >>> from iris_devtools.config import IRISConfig, discover_config
+        >>> from iris_devtester.config import IRISConfig, discover_config
         >>> # Zero-config (auto-discovers from environment)
         >>> config = discover_config()
         >>> conn = get_connection(config)
@@ -70,7 +70,7 @@ def get_connection_with_info(config: IRISConfig) -> Tuple[Any, ConnectionInfo]:
         Tuple of (connection, connection_info)
 
     Example:
-        >>> from iris_devtools.config import IRISConfig
+        >>> from iris_devtester.config import IRISConfig
         >>> config = IRISConfig()
         >>> conn, info = get_connection_with_info(config)
         >>> print(f"Connected using {info.driver_type} at {info.connection_time}")

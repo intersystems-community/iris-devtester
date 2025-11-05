@@ -18,14 +18,14 @@ from unittest.mock import Mock
 import inspect
 from datetime import datetime
 
-from iris_devtools.containers.performance import (
+from iris_devtester.containers.performance import (
     PerformanceMetrics,
     get_resource_metrics,
     check_resource_thresholds,
     auto_disable_monitoring,
     auto_enable_monitoring,
 )
-from iris_devtools.containers.monitoring import ResourceThresholds
+from iris_devtester.containers.monitoring import ResourceThresholds
 
 
 class TestGetResourceMetricsContract:

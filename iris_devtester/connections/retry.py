@@ -91,7 +91,7 @@ def create_connection_with_retry(
         Database connection
 
     Example:
-        >>> from iris_devtools.connections.dbapi import create_dbapi_connection
+        >>> from iris_devtester.connections.dbapi import create_dbapi_connection
         >>> config = IRISConfig(host="localhost", port=1972)
         >>> conn = create_connection_with_retry(
         ...     lambda: create_dbapi_connection(config),

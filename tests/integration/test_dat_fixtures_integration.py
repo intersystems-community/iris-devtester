@@ -14,14 +14,14 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from iris_devtools.fixtures import (
+from iris_devtester.fixtures import (
     FixtureCreator,
     DATFixtureLoader,
     FixtureValidator,
     ChecksumMismatchError,
     FixtureValidationError,
 )
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 import time
 
 
@@ -297,7 +297,7 @@ class TestErrorScenarios:
         fixture_path.mkdir(parents=True)
 
         # Create manifest without DAT file
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
         manifest = FixtureManifest(
             fixture_id="test",
             version="1.0.0",

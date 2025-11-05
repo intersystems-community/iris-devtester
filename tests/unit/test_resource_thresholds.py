@@ -6,7 +6,7 @@ Constitutional Principle #1: Automatic Remediation - Auto-disable under pressure
 """
 
 import pytest
-from iris_devtools.containers.monitoring import ResourceThresholds
+from iris_devtester.containers.monitoring import ResourceThresholds
 
 
 class TestResourceThresholdsDefaults:

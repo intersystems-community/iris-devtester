@@ -1,7 +1,7 @@
 """Container management for InterSystems IRIS testcontainers."""
 
-from iris_devtools.containers.iris_container import IRISContainer
-from iris_devtools.containers.wait_strategies import (
+from iris_devtester.containers.iris_container import IRISContainer
+from iris_devtester.containers.wait_strategies import (
     IRISReadyWaitStrategy,
     wait_for_iris_ready,
 )

@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from iris_devtools.fixtures import (
+from iris_devtester.fixtures import (
     FixtureCreator,
     DATFixtureLoader,
     FixtureValidator,

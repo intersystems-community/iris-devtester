@@ -9,7 +9,7 @@ This package provides automatic, reliable infrastructure for IRIS development:
 - Zero-configuration defaults
 
 Quick Start:
-    >>> from iris_devtools.containers import IRISContainer
+    >>> from iris_devtester.containers import IRISContainer
     >>> with IRISContainer.community() as iris:
     ...     conn = iris.get_connection()
     ...     cursor = conn.cursor()
@@ -22,9 +22,9 @@ __author__ = "InterSystems Community"
 __license__ = "MIT"
 
 # Convenience imports for common usage
-from iris_devtools.connections import get_connection
-from iris_devtools.containers import IRISContainer
-from iris_devtools.config import IRISConfig
+from iris_devtester.connections import get_connection
+from iris_devtester.containers import IRISContainer
+from iris_devtester.config import IRISConfig
 
 __all__ = [
     "__version__",

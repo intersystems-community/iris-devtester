@@ -17,7 +17,7 @@ pytestmark = pytest.mark.contract
 from unittest.mock import Mock
 import inspect
 
-from iris_devtools.containers.monitoring import (
+from iris_devtester.containers.monitoring import (
     TaskSchedule,
     create_task,
     get_task_status,

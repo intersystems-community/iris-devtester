@@ -8,8 +8,8 @@ Constitutional Principle #7: Medical-Grade Reliability - All parsing paths teste
 import json
 import pytest
 from datetime import datetime
-from iris_devtools.containers.performance import PerformanceMetrics
-from iris_devtools.containers.monitoring import ResourceThresholds
+from iris_devtester.containers.performance import PerformanceMetrics
+from iris_devtester.containers.monitoring import ResourceThresholds
 
 
 class TestPerformanceMetricsCreation:

@@ -196,7 +196,7 @@ def wait_for_iris_ready(
         True if IRIS is ready, False if timeout
 
     Example:
-        >>> from iris_devtools.containers import wait_for_iris_ready
+        >>> from iris_devtester.containers import wait_for_iris_ready
         >>> if wait_for_iris_ready("localhost", 1972, timeout=30):
         ...     print("IRIS is ready!")
         ... else:

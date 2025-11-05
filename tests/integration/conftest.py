@@ -5,7 +5,7 @@ Provides fixtures for IRIS container and connections.
 """
 
 import pytest
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 @pytest.fixture(scope="session")
@@ -25,7 +25,7 @@ def iris_container():
             container.enable_callin_service()
 
             # Unexpire passwords to prevent "password change required" errors
-            from iris_devtools.utils.unexpire_passwords import unexpire_all_passwords
+            from iris_devtester.utils.unexpire_passwords import unexpire_all_passwords
             container_name = container.get_container_name()
             unexpire_all_passwords(container_name)
 
@@ -74,7 +74,7 @@ def iris_connection(iris_container, test_namespace):
     # Get DBAPI connection to the test namespace
     # Note: Create a fresh connection for each test to avoid stale connections
     import dataclasses
-    from iris_devtools.connections import get_connection
+    from iris_devtester.connections import get_connection
 
     config = iris_container.get_config()
     test_config = dataclasses.replace(config, namespace=test_namespace)

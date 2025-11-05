@@ -14,7 +14,7 @@ class TestConfigDiscovery:
 
     def test_can_import(self):
         """Test that discover_config function can be imported."""
-        from iris_devtools.config.discovery import discover_config
+        from iris_devtester.config.discovery import discover_config
 
         assert callable(discover_config)
 
@@ -27,7 +27,7 @@ class TestConfigDiscovery:
     }, clear=False)
     def test_discover_from_environment(self):
         """Test discovery from environment variables."""
-        from iris_devtools.config.discovery import discover_config
+        from iris_devtester.config.discovery import discover_config
 
         config = discover_config()
         assert config.host == "iris.example.com"
@@ -39,7 +39,7 @@ class TestConfigDiscovery:
     @patch.dict(os.environ, {}, clear=True)
     def test_discover_uses_defaults_when_no_env(self):
         """Test that defaults are used when no environment variables."""
-        from iris_devtools.config.discovery import discover_config
+        from iris_devtester.config.discovery import discover_config
 
         config = discover_config()
         assert config.host == "localhost"
@@ -49,7 +49,7 @@ class TestConfigDiscovery:
     @patch.dict(os.environ, {"IRIS_HOST": "custom.host"}, clear=False)
     def test_partial_environment_merges_with_defaults(self):
         """Test that partial env vars merge with defaults."""
-        from iris_devtools.config.discovery import discover_config
+        from iris_devtester.config.discovery import discover_config
 
         config = discover_config()
         assert config.host == "custom.host"  # From env
@@ -60,7 +60,7 @@ class TestConfigDiscovery:
     @patch("pathlib.Path.exists", return_value=True)
     def test_discover_from_dotenv_file(self, mock_exists):
         """Test discovery from .env file."""
-        from iris_devtools.config.discovery import discover_config
+        from iris_devtester.config.discovery import discover_config
 
         config = discover_config()
         assert config.host == "dotenv.host"
@@ -71,7 +71,7 @@ class TestConfigDiscovery:
     @patch("pathlib.Path.exists", return_value=True)
     def test_environment_takes_precedence_over_dotenv(self, mock_exists):
         """Test that environment variables override .env file."""
-        from iris_devtools.config.discovery import discover_config
+        from iris_devtester.config.discovery import discover_config
 
         config = discover_config()
         # Environment should win
@@ -79,8 +79,8 @@ class TestConfigDiscovery:
 
     def test_explicit_config_overrides_discovery(self):
         """Test that explicit config parameters override discovery."""
-        from iris_devtools.config.discovery import discover_config
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config.discovery import discover_config
+        from iris_devtester.config import IRISConfig
 
         explicit = IRISConfig(host="explicit.host", port=9999)
         config = discover_config(explicit_config=explicit)
@@ -96,8 +96,8 @@ class TestConfigPriorityHierarchy:
     @patch("pathlib.Path.exists", return_value=True)
     def test_priority_explicit_over_env(self, mock_exists):
         """Test priority: explicit > env > .env > defaults."""
-        from iris_devtools.config.discovery import discover_config
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config.discovery import discover_config
+        from iris_devtester.config import IRISConfig
 
         # Explicit should override everything
         explicit = IRISConfig(host="explicit.host")

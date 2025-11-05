@@ -15,7 +15,7 @@ Constitutional Principle #6: Enterprise Ready, Community Friendly
 
 import os
 from pathlib import Path
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 def find_license_key():

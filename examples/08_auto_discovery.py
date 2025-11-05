@@ -9,13 +9,13 @@ This example demonstrates automatic discovery of IRIS instances:
 Constitutional Principle #4: Zero Configuration Viable
 """
 
-from iris_devtools.config.auto_discovery import (
+from iris_devtester.config.auto_discovery import (
     auto_discover_iris,
     discover_docker_iris,
     discover_native_iris,
     discover_iris_port,
 )
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 def example_auto_discover():

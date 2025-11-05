@@ -18,7 +18,7 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
 import inspect
 
-from iris_devtools.containers.monitoring import (
+from iris_devtester.containers.monitoring import (
     MonitoringPolicy,
     configure_monitoring,
     get_monitoring_status,

@@ -10,7 +10,7 @@ This example demonstrates:
 Constitutional Principle #2: Choose the Right Tool
 """
 
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 import time
 
 

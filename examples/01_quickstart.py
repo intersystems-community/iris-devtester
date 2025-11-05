@@ -9,7 +9,7 @@ This example demonstrates the simplest possible usage:
 Constitutional Principle #4: Zero Configuration Viable
 """
 
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 def main():

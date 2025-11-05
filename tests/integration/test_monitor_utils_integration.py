@@ -6,7 +6,7 @@ via SQL, even if data collection is not active by default.
 """
 
 import pytest
-from iris_devtools.containers.monitor_utils import (
+from iris_devtester.containers.monitor_utils import (
     check_monitor_tables,
     is_monitor_collecting,
     get_monitoring_status,

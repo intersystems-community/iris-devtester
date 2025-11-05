@@ -13,13 +13,13 @@ class TestConnectionInfo:
 
     def test_can_import(self):
         """Test that ConnectionInfo can be imported."""
-        from iris_devtools.connections.models import ConnectionInfo
+        from iris_devtester.connections.models import ConnectionInfo
 
         assert ConnectionInfo is not None
 
     def test_required_fields(self):
         """Test that ConnectionInfo requires certain fields."""
-        from iris_devtools.connections.models import ConnectionInfo
+        from iris_devtester.connections.models import ConnectionInfo
 
         info = ConnectionInfo(
             driver_type="dbapi",
@@ -36,7 +36,7 @@ class TestConnectionInfo:
 
     def test_default_fields(self):
         """Test that ConnectionInfo has default values for optional fields."""
-        from iris_devtools.connections.models import ConnectionInfo
+        from iris_devtester.connections.models import ConnectionInfo
 
         info = ConnectionInfo(
             driver_type="dbapi",
@@ -51,7 +51,7 @@ class TestConnectionInfo:
 
     def test_optional_fields(self):
         """Test that ConnectionInfo accepts optional fields."""
-        from iris_devtools.connections.models import ConnectionInfo
+        from iris_devtester.connections.models import ConnectionInfo
 
         now = datetime.now()
         info = ConnectionInfo(

@@ -8,7 +8,7 @@ This is the preferred connection method per Constitutional Principle #2.
 import logging
 from typing import Any, Optional
 
-from iris_devtools.config.models import IRISConfig
+from iris_devtester.config.models import IRISConfig
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
         ConnectionError: If connection fails (with remediation guidance)
 
     Example:
-        >>> from iris_devtools.config import IRISConfig
+        >>> from iris_devtester.config import IRISConfig
         >>> config = IRISConfig(host="localhost", port=1972)
         >>> conn = create_dbapi_connection(config)
     """
@@ -128,7 +128,7 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
                 "\n"
                 "How to fix it:\n"
                 "  1. Use the password reset utility:\n"
-                "     from iris_devtools.utils import reset_password_if_needed\n"
+                "     from iris_devtester.utils import reset_password_if_needed\n"
                 "     reset_password_if_needed()\n"
                 "\n"
                 "  2. Or manually reset via Management Portal:\n"

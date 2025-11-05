@@ -27,7 +27,7 @@ def iris_db():
 
     Example:
         def test_monitoring(iris_db):
-            from iris_devtools.containers.monitoring import configure_monitoring
+            from iris_devtester.containers.monitoring import configure_monitoring
             success, msg = configure_monitoring(iris_db)
             assert success is True
     """
@@ -96,15 +96,15 @@ def iris_db_shared():
 
     Example:
         def test_read_metrics(iris_db_shared):
-            from iris_devtools.containers.performance import get_resource_metrics
+            from iris_devtester.containers.performance import get_resource_metrics
             metrics = get_resource_metrics(iris_db_shared)
             assert metrics.cpu_percent >= 0
     """
     # Start IRIS container (shared for module)
     with IRISContainer() as iris:
         # Use Feature 003 modern connection manager
-        from iris_devtools.connections import get_connection
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.connections import get_connection
+        from iris_devtester.config import IRISConfig
 
         # Parse connection details from container
         host = iris.get_container_host_ip()

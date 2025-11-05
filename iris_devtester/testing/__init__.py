@@ -1,6 +1,6 @@
 """Testing utilities and pytest fixtures for IRIS development."""
 
-from iris_devtools.testing.models import (
+from iris_devtester.testing.models import (
     CleanupAction,
     ColumnDefinition,
     ContainerConfig,
@@ -12,7 +12,7 @@ from iris_devtools.testing.models import (
     TableDefinition,
     TestState,
 )
-from iris_devtools.testing.schema_reset import (
+from iris_devtester.testing.schema_reset import (
     SchemaResetter,
     cleanup_test_data,
     get_namespace_tables,

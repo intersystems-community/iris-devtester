@@ -8,7 +8,7 @@ import subprocess
 from unittest.mock import MagicMock, patch
 import pytest
 
-from iris_devtools.connections.auto_discovery import (
+from iris_devtester.connections.auto_discovery import (
     auto_detect_iris_port,
     auto_detect_iris_host_and_port,
     _detect_port_from_docker,

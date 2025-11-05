@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from iris_devtools.containers.monitoring import ResourceThresholds
+    from iris_devtester.containers.monitoring import ResourceThresholds
 
 __all__ = [
     "PerformanceMetrics",
@@ -123,7 +123,7 @@ def get_resource_metrics(conn) -> PerformanceMetrics:
     try:
         # Check if monitoring is currently enabled by checking for active tasks
         # (monitoring_enabled field in metrics)
-        from iris_devtools.containers.monitoring import list_monitoring_tasks
+        from iris_devtester.containers.monitoring import list_monitoring_tasks
 
         tasks = list_monitoring_tasks(conn)
         has_active_task = any(not task.get("suspended", True) for task in tasks)
@@ -183,7 +183,7 @@ def check_resource_thresholds(
         RuntimeError: If metrics query fails
 
     Example:
-        >>> from iris_devtools.containers.monitoring import ResourceThresholds
+        >>> from iris_devtester.containers.monitoring import ResourceThresholds
         >>> with IRISContainer.community() as iris:
         ...     conn = iris.get_connection()
         ...     thresholds = ResourceThresholds(
@@ -238,7 +238,7 @@ def auto_disable_monitoring(conn, reason: str) -> bool:
         ...     success = auto_disable_monitoring(conn, "CPU >90%")
         ...     print(f"Auto-disabled: {success}")
     """
-    from iris_devtools.containers.monitoring import disable_monitoring
+    from iris_devtester.containers.monitoring import disable_monitoring
 
     try:
         logger.warning(f"⚠ Auto-disabling monitoring: {reason}")
@@ -298,7 +298,7 @@ def auto_enable_monitoring(conn) -> bool:
         ...     success = auto_enable_monitoring(conn)
         ...     print(f"Auto-re-enabled: {success}")
     """
-    from iris_devtools.containers.monitoring import enable_monitoring
+    from iris_devtester.containers.monitoring import enable_monitoring
 
     try:
         logger.info("✓ Resources recovered, auto-enabling monitoring")
