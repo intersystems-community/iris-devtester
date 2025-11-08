@@ -88,6 +88,13 @@ pytest  # Just works! 🎉
 - No port conflicts
 - No test data pollution
 
+### 🐋 Docker-Compose Support (NEW in v1.0.1)
+- Attach to existing IRIS containers without lifecycle management
+- Works with licensed IRIS via docker-compose
+- CLI commands for quick operations (status, enable-callin, test-connection)
+- Standalone utilities for shell scripts and automation
+- Auto-discovery of container ports
+
 ### ⚡ DBAPI-First Performance
 - Automatically uses fastest connection method
 - DBAPI (Database API): 3x faster than JDBC (Java Database Connectivity)
@@ -183,6 +190,66 @@ with IRISContainer.community() as iris:
     # Automatically disables monitoring if CPU > 90%
     # Automatically re-enables when CPU < 85%
 ```
+
+## Example: Docker-Compose Integration (NEW in v1.0.1)
+
+Work with existing IRIS containers (docker-compose, licensed IRIS, external containers):
+
+```python
+from iris_devtools.containers import IRISContainer
+from iris_devtools.utils import enable_callin_service, test_connection, get_container_status
+
+# Approach 1: Attach to existing container
+iris = IRISContainer.attach("iris_db")  # Your docker-compose service name
+conn = iris.get_connection()  # Auto-enables CallIn, discovers port
+cursor = conn.cursor()
+cursor.execute("SELECT $ZVERSION")
+
+# Approach 2: Standalone utilities (shell-friendly)
+success, msg = enable_callin_service("iris_db")
+success, msg = test_connection("iris_db", namespace="USER")
+success, report = get_container_status("iris_db")
+```
+
+### CLI Usage
+
+```bash
+# Check container status (aggregates running, health, connection)
+iris-devtester container status iris_db
+
+# Enable CallIn service (required for DBAPI connections)
+iris-devtester container enable-callin iris_db
+
+# Test database connection
+iris-devtester container test-connection iris_db --namespace USER
+
+# Reset password if needed
+iris-devtester container reset-password iris_db --user _SYSTEM --password SYS
+```
+
+### Docker-Compose Example
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  iris_db:
+    image: intersystemsdc/iris:latest  # Licensed IRIS
+    container_name: iris_db
+    ports:
+      - "1972:1972"
+      - "52773:52773"
+```
+
+Then use iris-devtester with your existing container:
+
+```python
+# No testcontainers overhead - use existing container
+iris = IRISContainer.attach("iris_db")
+conn = iris.get_connection()
+```
+
+See [examples/10_docker_compose_integration.py](examples/10_docker_compose_integration.py) for complete examples.
 
 ## Architecture
 
