@@ -20,15 +20,15 @@ Based on plan.md Phase 1 design and API contracts:
 
 ## Phase 3.1: Setup
 
-- [ ] **T001** Create Python module stubs for new utilities
+- [x] **T001** Create Python module stubs for new utilities
   Files: `iris_devtester/utils/enable_callin.py`, `iris_devtester/utils/test_connection.py`, `iris_devtester/utils/container_status.py`
   Purpose: Establish file structure per plan.md Phase 1
 
-- [ ] **T002** Create CLI module stub for container commands
+- [x] **T002** Create CLI module stub for container commands
   File: `iris_devtester/cli/container_commands.py`
   Purpose: New Click command group for container operations
 
-- [ ] **T003** [P] Verify dependencies in pyproject.toml
+- [x] **T003** [P] Verify dependencies in pyproject.toml
   Check: `click>=8.0.0`, `docker>=6.0.0` already present (per plan.md)
   No changes needed - document verification
 
