@@ -86,6 +86,7 @@ class IRISContainer(BaseIRISContainer):
         self._connection = None
         self._config = None
         self._callin_enabled = False
+        self._is_attached = False  # True if attached to external container
 
     @classmethod
     def community(
@@ -253,14 +254,13 @@ class IRISContainer(BaseIRISContainer):
         context manager) will raise errors.
 
         Args:
-            container_name: Name of the existing Docker container (default: "iris_db")
+            container_name: Name of the existing Docker container
 
         Returns:
             IRISContainer instance configured for existing container
 
         Raises:
             ValueError: If container not found or not running
-            NotImplementedError: Until T019 implementation complete
 
         Examples:
             >>> # Attach to docker-compose container
@@ -275,8 +275,130 @@ class IRISContainer(BaseIRISContainer):
             - Principle #6: Enterprise Ready, Community Friendly
               Enables docker-compose workflows with licensed IRIS
         """
-        # TODO: Implement in Phase 3.3 (T019)
-        raise NotImplementedError("To be implemented in Phase 3.3 (T019)")
+        import subprocess
+
+        # Verify container exists and is running
+        try:
+            check_cmd = [
+                "docker",
+                "ps",
+                "--filter",
+                f"name={container_name}",
+                "--format",
+                "{{.Names}}",
+            ]
+
+            result = subprocess.run(
+                check_cmd, capture_output=True, text=True, timeout=10
+            )
+
+            if container_name not in result.stdout:
+                raise ValueError(
+                    f"Container '{container_name}' not found or not running\n"
+                    "\n"
+                    "What went wrong:\n"
+                    "  The specified container is not running or doesn't exist.\n"
+                    "\n"
+                    "How to fix it:\n"
+                    "  1. Check running containers:\n"
+                    "     docker ps\n"
+                    "\n"
+                    "  2. Check all containers (including stopped):\n"
+                    "     docker ps -a\n"
+                    "\n"
+                    "  3. Start the container if stopped:\n"
+                    f"     docker start {container_name}\n"
+                    "\n"
+                    "  4. Or start with docker-compose:\n"
+                    "     docker-compose up -d\n"
+                )
+
+        except subprocess.TimeoutExpired:
+            raise ValueError(
+                "Timeout checking for container\n"
+                "\n"
+                "What went wrong:\n"
+                "  Docker command took too long to respond.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Check if Docker is running:\n"
+                "     docker --version\n"
+                "\n"
+                "  2. Restart Docker Desktop if needed\n"
+            )
+
+        except FileNotFoundError:
+            raise ValueError(
+                "Docker command not found\n"
+                "\n"
+                "What went wrong:\n"
+                "  Docker CLI is not installed or not in PATH.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Install Docker Desktop:\n"
+                "     https://www.docker.com/products/docker-desktop\n"
+                "\n"
+                "  2. Verify installation:\n"
+                "     docker --version\n"
+            )
+
+        # Get container port mapping for SuperServer (1972)
+        try:
+            port_cmd = [
+                "docker",
+                "port",
+                container_name,
+                "1972",
+            ]
+
+            result = subprocess.run(
+                port_cmd, capture_output=True, text=True, timeout=10
+            )
+
+            # Parse output like "0.0.0.0:1972" or "0.0.0.0:55000"
+            if result.returncode == 0 and result.stdout.strip():
+                port_mapping = result.stdout.strip()
+                # Extract port number (after the colon)
+                exposed_port = int(port_mapping.split(":")[-1])
+            else:
+                # No port mapping found, assume container uses 1972 directly
+                exposed_port = 1972
+                logger.debug(
+                    f"No port mapping found for {container_name}:1972, "
+                    "assuming direct access on port 1972"
+                )
+
+        except Exception as e:
+            logger.warning(f"Could not determine port mapping: {e}, using default 1972")
+            exposed_port = 1972
+
+        # Create instance without calling BaseIRISContainer.__init__
+        # (we don't want testcontainers to try to manage this container)
+        instance = cls.__new__(cls)
+
+        # Initialize instance variables directly
+        instance._connection = None
+        instance._callin_enabled = False
+        instance._is_attached = True  # Mark as attached
+
+        # Store config with discovered port
+        instance._config = IRISConfig(
+            host="localhost",
+            port=exposed_port,
+            namespace="USER",
+            username="SuperUser",
+            password="SYS",
+        )
+
+        # Store container name for utility methods
+        instance._container_name = container_name
+
+        logger.info(
+            f"Attached to existing container '{container_name}' "
+            f"(localhost:{exposed_port})"
+        )
+
+        return instance
 
     def get_connection(self, enable_callin: bool = True) -> Any:
         """
@@ -453,6 +575,11 @@ class IRISContainer(BaseIRISContainer):
             ...     name = iris.get_container_name()
             ...     print(f"Container name: {name}")
         """
+        # If attached to external container, return stored name
+        if hasattr(self, "_is_attached") and self._is_attached:
+            return self._container_name
+
+        # Otherwise get from testcontainers
         if HAS_TESTCONTAINERS_IRIS:
             try:
                 return self.get_wrapped_container().name

@@ -12,11 +12,10 @@ Pattern: Follows fixture_commands.py Click structure.
 
 import click
 
-# TODO: Import utilities when implemented in Phase 3.3
-# from iris_devtester.utils.password_reset import reset_password
-# from iris_devtester.utils.enable_callin import enable_callin_service
-# from iris_devtester.utils.test_connection import test_connection
-# from iris_devtester.utils.container_status import get_container_status
+from iris_devtester.utils.password_reset import reset_password
+from iris_devtester.utils.enable_callin import enable_callin_service
+from iris_devtester.utils.test_connection import test_connection
+from iris_devtester.utils.container_status import get_container_status
 
 
 @click.group()
@@ -44,9 +43,15 @@ def reset_password_command(container_name: str, user: str, password: str):
         iris-devtester container reset-password iris-fhir
         iris-devtester container reset-password iris-fhir --user _SYSTEM --password ISCDEMO
     """
-    # TODO: Implement in Phase 3.3 (T017)
-    click.echo("Command stub - to be implemented in Phase 3.3")
-    raise NotImplementedError("To be implemented in Phase 3.3 (T017)")
+    success, msg = reset_password(
+        container_name=container_name, username=user, new_password=password
+    )
+
+    if success:
+        click.echo(click.style(msg, fg="green"))
+    else:
+        click.echo(click.style(msg, fg="red"))
+        raise click.Abort()
 
 
 @container.command("enable-callin")
@@ -63,9 +68,13 @@ def enable_callin_command(container_name: str):
     Examples:
         iris-devtester container enable-callin iris-fhir
     """
-    # TODO: Implement in Phase 3.3 (T017)
-    click.echo("Command stub - to be implemented in Phase 3.3")
-    raise NotImplementedError("To be implemented in Phase 3.3 (T017)")
+    success, msg = enable_callin_service(container_name=container_name)
+
+    if success:
+        click.echo(click.style(msg, fg="green"))
+    else:
+        click.echo(click.style(msg, fg="red"))
+        raise click.Abort()
 
 
 @container.command("test-connection")
@@ -81,9 +90,13 @@ def test_connection_command(container_name: str, namespace: str):
         iris-devtester container test-connection iris-fhir
         iris-devtester container test-connection iris-fhir --namespace FHIR
     """
-    # TODO: Implement in Phase 3.3 (T017)
-    click.echo("Command stub - to be implemented in Phase 3.3")
-    raise NotImplementedError("To be implemented in Phase 3.3 (T017)")
+    success, msg = test_connection(container_name=container_name, namespace=namespace)
+
+    if success:
+        click.echo(click.style(msg, fg="green"))
+    else:
+        click.echo(click.style(msg, fg="red"))
+        raise click.Abort()
 
 
 @container.command("status")
@@ -102,6 +115,12 @@ def status_command(container_name: str):
     Examples:
         iris-devtester container status iris-fhir
     """
-    # TODO: Implement in Phase 3.3 (T017)
-    click.echo("Command stub - to be implemented in Phase 3.3")
-    raise NotImplementedError("To be implemented in Phase 3.3 (T017)")
+    success, msg = get_container_status(container_name=container_name)
+
+    # Status report is informational, always show in default color
+    # Use color only for Overall status line
+    if success:
+        click.echo(msg)
+    else:
+        click.echo(msg)
+        raise click.Abort()
