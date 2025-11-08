@@ -444,7 +444,7 @@ class IRISContainer(BaseIRISContainer):
         container_name = self.get_container_name()
         success, msg = unexpire_all_passwords(container_name)
         if success:
-            logger.debug(f"✓ Passwords unexpired: {msg}")
+            logger.info(f"✓ Passwords unexpired: {msg}")
         else:
             logger.warning(f"⚠️  Could not unexpire passwords: {msg}")
 

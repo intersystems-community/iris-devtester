@@ -12,6 +12,17 @@ from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
+# Authentication method constants for IRIS services
+# These values are bitmasks that can be combined
+AUTHE_UNAUTHENTICATED = 0  # 0x00: No authentication
+AUTHE_KERBEROS = 32  # 0x20: Kerberos authentication
+AUTHE_PASSWORD = 16  # 0x10: Password authentication
+AUTHE_PASSWORD_KERBEROS = 48  # 0x30: Password (0x10) + Kerberos (0x20) authentication
+
+# Standard configuration for CallIn service
+# Uses both Password and Kerberos to support maximum compatibility
+DEFAULT_AUTHENABLED = AUTHE_PASSWORD_KERBEROS
+
 
 def enable_callin_service(
     container_name: str = "iris_db",
@@ -95,8 +106,9 @@ def enable_callin_service(
 
         # Use ObjectScript to modify %Service_CallIn:
         # - Set Enabled=1 (enable the service)
-        # - Set AutheEnabled=48 (Password authentication, 32 + 16)
-        #   32 = Password, 16 = Kerberos (standard IRIS configuration)
+        # - Set AutheEnabled=DEFAULT_AUTHENABLED (Password + Kerberos authentication)
+        #   DEFAULT_AUTHENABLED = 48 = 0x30 = AUTHE_PASSWORD (0x10) + AUTHE_KERBEROS (0x20)
+        #   This supports both password-based and Kerberos authentication methods
         enable_cmd = [
             "docker",
             "exec",
@@ -104,7 +116,7 @@ def enable_callin_service(
             container_name,
             "bash",
             "-c",
-            '''echo "set prop(\\"Enabled\\")=1 set prop(\\"AutheEnabled\\")=48 write ##class(Security.Services).Modify(\\"%Service_CallIn\\",.prop)" | iris session IRIS -U %SYS''',
+            f'''echo "set prop(\\"Enabled\\")=1 set prop(\\"AutheEnabled\\")={DEFAULT_AUTHENABLED} write ##class(Security.Services).Modify(\\"%Service_CallIn\\",.prop)" | iris session IRIS -U %SYS''',
         ]
 
         result = subprocess.run(
