@@ -2,6 +2,7 @@
 
 import click
 from .fixture_commands import fixture
+from .container_commands import container
 
 
 @click.group()
@@ -17,6 +18,7 @@ def main():
 
 # Register subcommands
 main.add_command(fixture)
+main.add_command(container)
 
 
-__all__ = ["main", "fixture"]
+__all__ = ["main", "fixture", "container"]

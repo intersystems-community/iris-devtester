@@ -242,6 +242,42 @@ class IRISContainer(BaseIRISContainer):
 
         return container
 
+    @classmethod
+    def attach(cls, container_name: str) -> "IRISContainer":
+        """
+        Attach to existing IRIS container without lifecycle management.
+
+        Use this when IRIS is running via docker-compose or was started externally.
+        The returned IRISContainer instance can use all utility methods
+        (get_connection, enable_callin, etc.) but lifecycle methods (start, stop,
+        context manager) will raise errors.
+
+        Args:
+            container_name: Name of the existing Docker container (default: "iris_db")
+
+        Returns:
+            IRISContainer instance configured for existing container
+
+        Raises:
+            ValueError: If container not found or not running
+            NotImplementedError: Until T019 implementation complete
+
+        Examples:
+            >>> # Attach to docker-compose container
+            >>> iris = IRISContainer.attach("iris_db")
+            >>> conn = iris.get_connection()
+            >>>
+            >>> # Enable CallIn service on existing container
+            >>> iris = IRISContainer.attach("my-iris")
+            >>> iris.enable_callin_service()
+
+        Constitutional Compliance:
+            - Principle #6: Enterprise Ready, Community Friendly
+              Enables docker-compose workflows with licensed IRIS
+        """
+        # TODO: Implement in Phase 3.3 (T019)
+        raise NotImplementedError("To be implemented in Phase 3.3 (T019)")
+
     def get_connection(self, enable_callin: bool = True) -> Any:
         """
         Get database connection to this container.
