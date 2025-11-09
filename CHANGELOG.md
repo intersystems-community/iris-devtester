@@ -5,6 +5,18 @@ All notable changes to iris-devtools will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-01-09
+
+### Fixed
+- **CRITICAL**: Fixed `reset_password()` bug where function reported success but password was not actually set
+  - Now uses correct IRIS Security API property `Password` (not `ExternalPassword`)
+  - Now calls `Security.Users.Get()` before `Modify()` per IRIS API requirements
+  - Now sets `PasswordNeverExpires=1` to prevent password expiration (not `ChangePassword=0`)
+  - Fixes "Access Denied" errors after password reset
+  - Verified on AWS EC2, IRIS Community 2025.1
+  - Works on both IRIS Community and Enterprise editions
+- Issue reported in production user feedback
+
 ## [1.0.0] - 2025-10-18
 
 ### 🎉 Initial Release

@@ -108,8 +108,12 @@ def reset_password(
         # Step 2: Reset password using IRIS session
         logger.info(f"Resetting IRIS password for user '{username}'...")
 
-        # Use ObjectScript to change password AND disable "change password on next login" flag
-        # This fixes the DBAPI authentication issue
+        # Use ObjectScript to change password AND set PasswordNeverExpires
+        # CRITICAL FIX (Feature 007): Use correct IRIS Security API pattern:
+        # 1. Get() retrieves current properties
+        # 2. Set Password property (not ExternalPassword)
+        # 3. Set PasswordNeverExpires=1 (not ChangePassword=0)
+        # 4. Modify() saves changes
         reset_cmd = [
             "docker",
             "exec",
@@ -117,7 +121,7 @@ def reset_password(
             container_name,
             "bash",
             "-c",
-            f'''echo "set props(\\"ChangePassword\\")=0 set props(\\"ExternalPassword\\")=\\"{new_password}\\" write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
+            f'''echo "set sc = ##class(Security.Users).Get(\\"{username}\\",.props) set props(\\"Password\\")=\\"{new_password}\\" set props(\\"PasswordNeverExpires\\")=1 write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
         ]
 
         result = subprocess.run(
@@ -159,17 +163,18 @@ def reset_password(
         )
 
         if result.returncode == 0:
-            # Also try to disable ChangePassword flag separately
-            disable_flag_cmd = [
+            # Also set PasswordNeverExpires=1 using correct IRIS Security API
+            # CRITICAL FIX (Feature 007): Same fix as primary method
+            set_never_expires_cmd = [
                 "docker",
                 "exec",
                 "-i",
                 container_name,
                 "bash",
                 "-c",
-                f'''echo "set props(\\"ChangePassword\\")=0 write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
+                f'''echo "set sc = ##class(Security.Users).Get(\\"{username}\\",.props) set props(\\"PasswordNeverExpires\\")=1 write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
             ]
-            subprocess.run(disable_flag_cmd, capture_output=True, text=True, timeout=timeout)
+            subprocess.run(set_never_expires_cmd, capture_output=True, text=True, timeout=timeout)
 
             os.environ["IRIS_USERNAME"] = username
             os.environ["IRIS_PASSWORD"] = new_password
