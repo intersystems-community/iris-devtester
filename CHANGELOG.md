@@ -1,9 +1,111 @@
 # Changelog
 
-All notable changes to iris-devtools will be documented in this file.
+All notable changes to iris-devtester will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.0] - 2025-01-11
+
+### Changed
+
+#### Refactored CLI to use testcontainers-iris
+- **BREAKING**: None - All CLI commands maintain identical interface and behavior
+- Replaced custom Docker SDK wrapper (461 lines) with thin adapter layer (247 lines)
+- Container lifecycle commands now leverage `testcontainers-iris` for container operations
+- **46% code reduction** in container management layer (214 lines removed)
+- **Benefits**:
+  - Shared bug fixes from testcontainers-iris community
+  - Reduced maintenance burden
+  - Battle-tested implementation from wider Python ecosystem
+  - Automatic improvements as testcontainers-iris evolves
+
+#### Technical Implementation (Feature 009)
+- **Added**: `iris_container_adapter.py` (247 lines) - Adapter between CLI and testcontainers-iris
+  - `IRISContainerManager.create_from_config()` - Maps ContainerConfig to IRISContainer
+  - `IRISContainerManager.get_existing()` - Gets existing containers by name
+  - `translate_docker_error()` - Constitutional error translation (4-part format preserved)
+- **Moved**: `get_container_state()` → `ContainerState.from_container()` classmethod
+  - Better architecture: Logic now lives in the right place (ContainerState class)
+  - More intuitive API for querying container state
+- **Deleted**: `docker_utils.py` (461 lines) - Replaced by testcontainers-iris + adapter
+- **Preserved**: All functionality from v1.1.0
+  - 7 CLI commands unchanged (up, start, stop, restart, status, logs, remove)
+  - Progress indicators and emoji-based status updates
+  - Constitutional error messages (What/Why/How/Docs format)
+  - Configuration management (YAML, environment variables, zero-config)
+  - Multi-layer health checks
+  - Automatic CallIn service enablement
+
+#### Quality Assurance
+- **Tests**: All 35 contract tests passing (100%)
+- **Tests**: All 20 adapter unit tests passing (100%)
+- **Zero breaking changes** verified - Same CLI interface, same exit codes, same behavior
+- **Performance**: No regression in container operations
+- **Documentation**: Updated examples and docstrings to reflect new API
+
+### Dependencies
+- No new dependencies - Leverages existing `testcontainers-iris>=1.2.2` dependency
+
+## [1.1.0] - 2025-01-11
+
+### Added
+
+#### Container Lifecycle CLI Commands
+- **NEW**: Complete container lifecycle management via CLI
+  - `iris-devtester container up` - Create and start IRIS container with zero-config support
+  - `iris-devtester container start` - Start existing container
+  - `iris-devtester container stop` - Gracefully stop running container
+  - `iris-devtester container restart` - Restart container with health checks
+  - `iris-devtester container status` - Display container state (text/JSON output)
+  - `iris-devtester container logs` - View container logs (with --follow support)
+  - `iris-devtester container remove` - Remove container with optional volume cleanup
+
+#### Configuration Management
+- `ContainerConfig` - Pydantic v2 model for container configuration
+  - Support for both Community and Enterprise editions
+  - YAML configuration file support (`iris-config.yml`)
+  - Environment variable configuration (`IRIS_*` variables)
+  - Zero-config mode with sensible defaults
+  - Configuration hierarchy: explicit config → local file → env → defaults
+- `ContainerState` - Runtime container state tracking with health status
+- Configuration validation with helpful error messages
+
+#### Multi-Layer Health Checks
+- Progressive health validation for containers:
+  - Layer 1: Container running (fast fail on crashes)
+  - Layer 2: Docker health check (if defined)
+  - Layer 3: IRIS SuperServer port accessible
+- Automatic CallIn service enablement (required for DBAPI)
+- Progress indicators and status updates during container operations
+
+#### Docker SDK Integration
+- Comprehensive Docker SDK wrapper with constitutional error messages
+- Automatic image pulling with fallback to local images
+- Port conflict detection with remediation guidance
+- Idempotent operations (safe retries)
+- Proper exit codes: 0 (success), 1 (error), 2 (config), 3 (running), 5 (timeout)
+
+#### Examples and Documentation
+- Example configurations:
+  - `examples/iris-config-community.yml` - Community Edition template
+  - `examples/iris-config-enterprise.yml` - Enterprise Edition template with license setup
+  - `examples/demo-workflow.sh` - Complete lifecycle demonstration script
+
+### Changed
+- Updated package version to 1.1.0
+- Fixed CLI prog_name to match package name (iris-devtester)
+- Added PyYAML and Pydantic dependencies
+
+### Technical Details
+- 33 implementation tasks completed (77% of Feature 008)
+- 35 contract tests (all passing)
+- 50+ unit tests for configuration and validation
+- Constitutional principles compliance:
+  - Principle #2: DBAPI First (automatic CallIn enablement)
+  - Principle #4: Zero Configuration Viable (works without config files)
+  - Principle #5: Fail Fast with Guidance (4-part error messages: What/Why/How/Docs)
+  - Principle #6: Enterprise Ready, Community Friendly (both editions supported)
 
 ## [1.0.2] - 2025-01-09
 

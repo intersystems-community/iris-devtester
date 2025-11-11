@@ -2,14 +2,14 @@
 
 import click
 from .fixture_commands import fixture
-from .container_commands import container
+from .container import container_group as container
 
 
 @click.group()
-@click.version_option(version="1.0.0", prog_name="iris-devtools")
+@click.version_option(version="1.1.0", prog_name="iris-devtester")
 def main():
     """
-    iris-devtools - Battle-tested InterSystems IRIS infrastructure utilities.
+    iris-devtester - Battle-tested InterSystems IRIS infrastructure utilities.
 
     Provides tools for container management, fixture handling, and testing.
     """
