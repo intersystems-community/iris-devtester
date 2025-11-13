@@ -1,0 +1,106 @@
+{
+  "contract_id": "error-handling-improvement",
+  "feature": "010-fix-critical-bugs",
+  "description": "Docker errors are translated to constitutional format with clear remediation",
+  "requirements": ["FR-005", "FR-006", "FR-007", "FR-008", "FR-009"],
+  "test_scenarios": [
+    {
+      "name": "image_not_found_error",
+      "description": "ImageNotFound exception is translated to constitutional format",
+      "given": {
+        "error_type": "docker.errors.ImageNotFound",
+        "image": "intersystems/nonexistent:latest"
+      },
+      "when": "translate_docker_error() is called",
+      "then": {
+        "exception_type": "ValueError",
+        "message_contains": [
+          "Docker image",
+          "not found",
+          "What went wrong:",
+          "How to fix it:",
+          "docker pull"
+        ],
+        "message_not_contains": ["Failed to create container: 0"]
+      }
+    },
+    {
+      "name": "port_conflict_error",
+      "description": "Port conflict APIError is translated with port-specific guidance",
+      "given": {
+        "error_type": "docker.errors.APIError",
+        "message_contains": "port is already allocated"
+      },
+      "when": "translate_docker_error() is called with port=1972",
+      "then": {
+        "exception_type": "ValueError",
+        "message_contains": [
+          "Port 1972 is already in use",
+          "What went wrong:",
+          "How to fix it:",
+          "docker ps",
+          "lsof"
+        ]
+      }
+    },
+    {
+      "name": "permission_denied_error",
+      "description": "Permission denied APIError provides user group guidance",
+      "given": {
+        "error_type": "docker.errors.APIError",
+        "message_contains": "permission denied"
+      },
+      "when": "translate_docker_error() is called",
+      "then": {
+        "exception_type": "ConnectionError",
+        "message_contains": [
+          "permission denied",
+          "What went wrong:",
+          "How to fix it:",
+          "usermod -aG docker"
+        ]
+      }
+    },
+    {
+      "name": "docker_daemon_not_running",
+      "description": "DockerException indicates daemon is not running",
+      "given": {
+        "error_type": "docker.errors.DockerException"
+      },
+      "when": "translate_docker_error() is called",
+      "then": {
+        "exception_type": "ConnectionError",
+        "message_contains": [
+          "Docker daemon",
+          "What went wrong:",
+          "How to fix it:",
+          "docker ps"
+        ]
+      }
+    },
+    {
+      "name": "constitutional_format_compliance",
+      "description": "All error messages follow constitutional 4-part format",
+      "given": {
+        "any_docker_error": true
+      },
+      "when": "translate_docker_error() is called",
+      "then": {
+        "message_structure": {
+          "has_what_section": true,
+          "has_how_section": true,
+          "has_numbered_steps": true,
+          "no_stack_traces": true
+        }
+      }
+    }
+  ],
+  "validation_method": "unit_test",
+  "test_file": "tests/unit/utils/test_iris_container_adapter.py",
+  "success_criteria": [
+    "All 5 test scenarios pass",
+    "No 'Failed to create container: 0' messages",
+    "All error messages include remediation steps",
+    "Error types are appropriate (ValueError for config, ConnectionError for Docker)"
+  ]
+}

@@ -11,7 +11,10 @@ Tests verify:
 - API is usable as documented
 """
 
+
 import pytest
+
+pytestmark = pytest.mark.contract
 from pathlib import Path
 from typing import Optional
 
@@ -21,20 +24,20 @@ class TestFixtureValidatorClass:
 
     def test_class_exists(self):
         """Test that FixtureValidator class can be imported."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         assert FixtureValidator is not None
 
     def test_constructor_signature(self):
         """Test that FixtureValidator() constructor works with no args."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert validator is not None
 
     def test_class_is_instantiable(self):
         """Test that FixtureValidator can be instantiated."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert isinstance(validator, FixtureValidator)
@@ -45,7 +48,7 @@ class TestCalculateSHA256Method:
 
     def test_method_exists(self):
         """Test that calculate_sha256 method exists."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert hasattr(validator, 'calculate_sha256')
@@ -53,7 +56,7 @@ class TestCalculateSHA256Method:
 
     def test_signature_required_params(self):
         """Test calculate_sha256 signature with required parameters."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
         import tempfile
 
         validator = FixtureValidator()
@@ -73,7 +76,7 @@ class TestCalculateSHA256Method:
 
     def test_signature_optional_chunk_size(self):
         """Test calculate_sha256 accepts optional chunk_size parameter."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
         import tempfile
 
         validator = FixtureValidator()
@@ -91,7 +94,7 @@ class TestCalculateSHA256Method:
 
     def test_raises_filenotfound_for_missing_file(self):
         """Test that calculate_sha256 raises FileNotFoundError for missing file."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
@@ -104,7 +107,7 @@ class TestValidateChecksumMethod:
 
     def test_method_exists(self):
         """Test that validate_checksum method exists."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert hasattr(validator, 'validate_checksum')
@@ -112,7 +115,7 @@ class TestValidateChecksumMethod:
 
     def test_signature_required_params(self):
         """Test validate_checksum signature with required parameters."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
         import tempfile
 
         validator = FixtureValidator()
@@ -133,7 +136,7 @@ class TestValidateChecksumMethod:
 
     def test_raises_checksum_mismatch_error(self):
         """Test that validate_checksum raises ChecksumMismatchError on mismatch."""
-        from iris_devtools.fixtures import FixtureValidator, ChecksumMismatchError
+        from iris_devtester.fixtures import FixtureValidator, ChecksumMismatchError
         import tempfile
 
         validator = FixtureValidator()
@@ -162,7 +165,7 @@ class TestValidateManifestMethod:
 
     def test_method_exists(self):
         """Test that validate_manifest method exists."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert hasattr(validator, 'validate_manifest')
@@ -170,7 +173,7 @@ class TestValidateManifestMethod:
 
     def test_signature_accepts_manifest(self):
         """Test validate_manifest accepts FixtureManifest object."""
-        from iris_devtools.fixtures import FixtureValidator, FixtureManifest, TableInfo, ValidationResult
+        from iris_devtester.fixtures import FixtureValidator, FixtureManifest, TableInfo, ValidationResult
 
         validator = FixtureValidator()
 
@@ -197,7 +200,7 @@ class TestValidateFixtureMethod:
 
     def test_method_exists(self):
         """Test that validate_fixture method exists."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert hasattr(validator, 'validate_fixture')
@@ -205,7 +208,7 @@ class TestValidateFixtureMethod:
 
     def test_signature_required_params(self):
         """Test validate_fixture signature with required parameters."""
-        from iris_devtools.fixtures import FixtureValidator, ValidationResult
+        from iris_devtester.fixtures import FixtureValidator, ValidationResult
 
         validator = FixtureValidator()
 
@@ -215,7 +218,7 @@ class TestValidateFixtureMethod:
 
     def test_signature_optional_validate_checksum(self):
         """Test validate_fixture accepts optional validate_checksum parameter."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
@@ -229,7 +232,7 @@ class TestRecalculateChecksumsMethod:
 
     def test_method_exists(self):
         """Test that recalculate_checksums method exists."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert hasattr(validator, 'recalculate_checksums')
@@ -237,7 +240,7 @@ class TestRecalculateChecksumsMethod:
 
     def test_signature_required_params(self):
         """Test recalculate_checksums signature with required parameters."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
@@ -251,7 +254,7 @@ class TestGetFixtureSizeMethod:
 
     def test_method_exists(self):
         """Test that get_fixture_size method exists."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
         assert hasattr(validator, 'get_fixture_size')
@@ -259,7 +262,7 @@ class TestGetFixtureSizeMethod:
 
     def test_signature_required_params(self):
         """Test get_fixture_size signature with required parameters."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
@@ -273,7 +276,7 @@ class TestConstitutionalCompliance:
 
     def test_principle_5_error_messages(self):
         """Test that errors follow Principle #5 (Fail Fast with Guidance)."""
-        from iris_devtools.fixtures import FixtureValidator, ChecksumMismatchError
+        from iris_devtester.fixtures import FixtureValidator, ChecksumMismatchError
         import tempfile
 
         validator = FixtureValidator()
@@ -301,7 +304,7 @@ class TestConstitutionalCompliance:
 
     def test_stateless_validator(self):
         """Test that FixtureValidator is stateless (no IRIS connection required)."""
-        from iris_devtools.fixtures import FixtureValidator
+        from iris_devtester.fixtures import FixtureValidator
 
         # Should be able to create multiple validators
         validator1 = FixtureValidator()

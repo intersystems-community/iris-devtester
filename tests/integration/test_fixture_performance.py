@@ -15,25 +15,18 @@ import shutil
 import time
 from pathlib import Path
 
-from iris_devtools.fixtures import (
+from iris_devtester.fixtures import (
     FixtureCreator,
     DATFixtureLoader,
     FixtureValidator,
 )
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 
-@pytest.fixture(scope="module")
-def iris_connection():
-    """Provide IRIS connection for performance tests."""
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        cursor.close()
-        yield conn
-    except Exception as e:
-        pytest.skip(f"IRIS not available: {e}")
+# Use fixtures from tests/integration/conftest.py:
+# - iris_container (session scope)
+# - iris_connection (function scope)
+# - test_namespace (function scope)
 
 
 @pytest.fixture(scope="function")
@@ -47,54 +40,39 @@ def temp_dir():
 class TestFixtureCreationPerformance:
     """Test fixture creation performance (NFR-001)."""
 
-    def test_create_fixture_10k_rows_under_30s(self, iris_connection, temp_dir):
+    def test_create_fixture_10k_rows_under_30s(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test creating fixture with 10K rows completes in <30 seconds."""
-        # Create namespace with 10K rows
-        source_namespace = "PERF_TEST_10K"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture
+        source_namespace = test_namespace
+        cursor = iris_connection.cursor()
 
-        # Create namespace
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Drop table if it exists (cleanup from previous test failures)
+        try:
+            cursor.execute("DROP TABLE PerfTestData")
+        except Exception:
+            pass  # Table doesn't exist, that's fine
+
+        # Create table using SQL (DBAPI, 3x faster)
+        cursor.execute("""
+            CREATE TABLE PerfTestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100),
+                Value DECIMAL(10,2),
+                Description VARCHAR(500)
+            )
         """)
 
-        # Create table and insert 10K rows
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
-
-                &sql(CREATE TABLE PerfTestData (
-                    ID INT PRIMARY KEY,
-                    Name VARCHAR(100),
-                    Value DECIMAL(10,2),
-                    Description VARCHAR(500)
-                ))
-
-                // Insert 10K rows
-                for i=1:1:10000 {{
-                    &sql(INSERT INTO PerfTestData VALUES (
-                        :i,
-                        'Name_' _ i,
-                        i * 1.5,
-                        'Description for row ' _ i
-                    ))
-                }}
-
-                quit
-            ")
-        """)
+        # Insert 10K rows using SQL (batch insert for performance)
+        for i in range(1, 10001):
+            cursor.execute(
+                "INSERT INTO PerfTestData (ID, Name, Value, Description) VALUES (?, ?, ?, ?)",
+                (i, f"Name_{i}", i * 1.5, f"Description for row {i}")
+            )
         cursor.close()
 
         # Measure creation time
         fixture_path = Path(temp_dir) / "perf-10k"
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
 
         start_time = time.time()
         manifest = creator.create_fixture(
@@ -114,41 +92,31 @@ class TestFixtureCreationPerformance:
         assert table_info is not None
         assert table_info.row_count == 10000
 
-    def test_create_small_fixture_under_5s(self, iris_connection, temp_dir):
+    def test_create_small_fixture_under_5s(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test creating small fixture (<1K rows) completes in <5 seconds."""
-        source_namespace = "PERF_TEST_SMALL"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture
+        source_namespace = test_namespace
+        cursor = iris_connection.cursor()
 
-        # Create namespace with 100 rows
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Create table with 100 rows using SQL
+        cursor.execute("""
+            CREATE TABLE SmallTestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100)
+            )
         """)
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
-
-                &sql(CREATE TABLE SmallData (ID INT PRIMARY KEY, Name VARCHAR(100)))
-
-                for i=1:1:100 {{
-                    &sql(INSERT INTO SmallData VALUES (:i, 'Name_' _ i))
-                }}
-
-                quit
-            ")
-        """)
+        # Insert 100 rows
+        for i in range(1, 101):
+            cursor.execute(
+                "INSERT INTO SmallTestData (ID, Name) VALUES (?, ?)",
+                (i, f"Name_{i}")
+            )
         cursor.close()
 
         # Measure creation time
         fixture_path = Path(temp_dir) / "perf-small"
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
 
         start_time = time.time()
         creator.create_fixture(
@@ -165,28 +133,39 @@ class TestFixtureLoadingPerformance:
     """Test fixture loading performance (NFR-002)."""
 
     @pytest.mark.slow
-    def test_load_fixture_10k_rows_under_10s(self, iris_connection, temp_dir):
+    def test_load_fixture_10k_rows_under_10s(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test loading fixture with 10K rows completes in <10 seconds."""
-        # First create a fixture with 10K rows (from previous test)
-        # For this test, we'll create a minimal fixture and measure load time
+        # Use test_namespace provided by fixture (already created)
+        source_namespace = test_namespace
 
-        # Create source fixture
-        source_namespace = "LOAD_PERF_SOURCE"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Create test data in source namespace
+        cursor = iris_connection.cursor()
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Drop table if it exists (cleanup from previous test failures)
+        try:
+            cursor.execute("DROP TABLE PerfTestData")
+        except Exception:
+            pass  # Table doesn't exist, that's fine
+
+        cursor.execute("""
+            CREATE TABLE PerfTestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100),
+                Value DECIMAL(10,2)
+            )
         """)
+
+        # Insert 10K rows
+        for i in range(10000):
+            cursor.execute(
+                "INSERT INTO PerfTestData (ID, Name, Value) VALUES (?, ?, ?)",
+                (i, f"Name_{i}", i * 1.5)
+            )
         cursor.close()
 
+        # Create fixture from source namespace
         fixture_path = Path(temp_dir) / "load-perf"
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
         creator.create_fixture(
             fixture_id="load-perf",
             namespace=source_namespace,
@@ -194,8 +173,8 @@ class TestFixtureLoadingPerformance:
         )
 
         # Measure load time
-        loader = DATFixtureLoader()
-        target_namespace = "LOAD_PERF_TARGET"
+        loader = DATFixtureLoader(container=iris_container)
+        target_namespace = iris_container.get_test_namespace(prefix="LOAD_PERF_TARGET")
 
         start_time = time.time()
         result = loader.load_fixture(
@@ -208,50 +187,55 @@ class TestFixtureLoadingPerformance:
         assert result.success
         assert elapsed < 10.0, f"Load took {elapsed:.2f}s, expected <10s"
 
-        # Cleanup
-        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        # Cleanup target namespace
+        try:
+            loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        except Exception:
+            pass  # Ignore cleanup errors
 
-    def test_load_without_checksum_faster(self, iris_connection, temp_dir):
+    def test_load_without_checksum_faster(self, iris_container, test_namespace, iris_connection, temp_dir):
         """Test that skipping checksum validation speeds up loading."""
-        # Create a fixture
-        source_namespace = "CHECKSUM_PERF_SOURCE"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace provided by fixture
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        # Create a small table for the fixture (need at least one table for valid manifest)
+        cursor = iris_connection.cursor()
+        cursor.execute("""
+            CREATE TABLE ChecksumTest (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(50)
+            )
         """)
+        cursor.execute("INSERT INTO ChecksumTest (ID, Name) VALUES (1, 'test')")
         cursor.close()
 
+        # Create fixture
         fixture_path = Path(temp_dir) / "checksum-perf"
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
         creator.create_fixture(
             fixture_id="checksum-perf",
             namespace=source_namespace,
             output_dir=str(fixture_path)
         )
 
-        loader = DATFixtureLoader()
+        loader = DATFixtureLoader(container=iris_container)
 
         # Load with checksum validation
+        namespace_with = iris_container.get_test_namespace(prefix="CHECKSUM_WITH")
         start_with = time.time()
         result_with = loader.load_fixture(
             fixture_path=str(fixture_path),
-            target_namespace="CHECKSUM_WITH",
+            target_namespace=namespace_with,
             validate_checksum=True
         )
         elapsed_with = time.time() - start_with
 
         # Load without checksum validation
+        namespace_without = iris_container.get_test_namespace(prefix="CHECKSUM_WITHOUT")
         start_without = time.time()
         result_without = loader.load_fixture(
             fixture_path=str(fixture_path),
-            target_namespace="CHECKSUM_WITHOUT",
+            target_namespace=namespace_without,
             validate_checksum=False
         )
         elapsed_without = time.time() - start_without
@@ -262,33 +246,28 @@ class TestFixtureLoadingPerformance:
         # Loading without checksum should be faster (or at least not slower)
         assert elapsed_without <= elapsed_with * 1.1  # Allow 10% margin
 
-        # Cleanup
-        loader.cleanup_fixture("CHECKSUM_WITH", delete_namespace=True)
-        loader.cleanup_fixture("CHECKSUM_WITHOUT", delete_namespace=True)
+        # Cleanup namespaces (use actual namespace names from get_test_namespace)
+        try:
+            loader.cleanup_fixture(namespace_with, delete_namespace=True)
+        except Exception:
+            pass  # Ignore cleanup errors
+        try:
+            loader.cleanup_fixture(namespace_without, delete_namespace=True)
+        except Exception:
+            pass  # Ignore cleanup errors
 
 
 class TestFixtureValidationPerformance:
     """Test fixture validation performance (NFR-003)."""
 
-    def test_validate_fixture_under_5s(self, iris_connection, temp_dir):
+    def test_validate_fixture_under_5s(self, iris_container, test_namespace, temp_dir):
         """Test fixture validation completes in <5 seconds."""
-        # Create a fixture
-        source_namespace = "VALIDATE_PERF"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace provided by fixture (already created)
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
+        # Create fixture from source namespace (empty is fine for validation performance test)
         fixture_path = Path(temp_dir) / "validate-perf"
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
         creator.create_fixture(
             fixture_id="validate-perf",
             namespace=source_namespace,

@@ -8,6 +8,21 @@
 
 This constitution codifies the hard-won lessons, blind alleys avoided, and battle-tested practices from years of InterSystems IRIS development. Every principle herein represents real production experience, real failures overcome, and real solutions that work.
 
+## CRITICAL: Read This First
+
+**Before writing ANY code that interacts with IRIS, read `docs/SQL_VS_OBJECTSCRIPT.md`.**
+
+This single document answers the most critical question in IRIS development: "How do I execute this operation?"
+
+**Why This Matters**:
+- Using the wrong execution method causes mysterious failures
+- 53 integration tests failed because of this misunderstanding
+- DBAPI is 3x faster for SQL but CANNOT execute ObjectScript
+- iris.connect() is required for namespace/Task Manager operations
+- Getting this wrong wastes hours of debugging
+
+**The Rule**: When you don't know which tool to use, check `docs/SQL_VS_OBJECTSCRIPT.md` FIRST, not after your code fails.
+
 ## Core Principles
 
 ### 1. AUTOMATIC REMEDIATION OVER MANUAL INTERVENTION
@@ -42,34 +57,86 @@ if "Password change required" in str(error):
     retry_connection()
 ```
 
-### 2. DBAPI FIRST, JDBC FALLBACK
+### 2. CHOOSE THE RIGHT TOOL FOR THE JOB
 
-**The Principle**: Always prefer `intersystems-irispython` (DBAPI) over JDBC connections.
+**The Principle**: Use the appropriate connection method based on what operation you need to perform.
 
 **Why It Matters**:
-- DBAPI is 3x faster than JDBC for typical workloads
-- DBAPI has better Python integration (no JVM overhead)
-- JDBC requires external jar files (deployment complexity)
-- DBAPI works in restrictive environments (no Java required)
+- IRIS has **two distinct execution paths**: SQL (via DBAPI) and ObjectScript (via iris.connect())
+- Using the wrong tool causes mysterious failures
+- DBAPI is 3x faster for SQL operations
+- ObjectScript operations require iris.connect() or docker exec
+- **Getting this wrong breaks everything**
+
+**The Decision Matrix**:
+
+| Operation Type | Use | Speed | Example |
+|----------------|-----|-------|---------|
+| SQL queries (SELECT, INSERT, UPDATE, DELETE) | **DBAPI** | Fast (3x) | `cursor.execute("SELECT * FROM MyTable")` |
+| SQL DDL (CREATE TABLE, DROP TABLE) | **DBAPI** | Fast (3x) | `cursor.execute("CREATE TABLE ...")` |
+| Backup/Restore namespace | **DBAPI** + $SYSTEM.OBJ.Execute() | Medium | `cursor.execute("SELECT $SYSTEM.OBJ.Execute('...')")` |
+| Create/Delete namespace | **iris.connect()** | Medium | `iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")` |
+| Task Manager operations | **iris.connect()** | Medium | `iris_obj.execute("Set task = ##class(%SYS.Task).%New()")` |
+| Global variables | **iris.connect()** | Medium | `iris_obj.set("^MyGlobal", "value")` |
+| User/password management | **docker exec** | Slow | `docker exec iris_db iris session IRIS ...` |
 
 **Implementation Requirements**:
-- ✅ Attempt DBAPI connection first
-- ✅ Fall back to JDBC only if DBAPI unavailable
-- ✅ Log connection type used
-- ✅ Support both connection types in parallel
+- ✅ Use DBAPI for all SQL operations (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE)
+- ✅ Use iris.connect() for ObjectScript operations (namespaces, Task Manager, globals)
+- ✅ Use docker exec only for admin operations (password reset, system config)
+- ✅ Never try to execute ObjectScript directly through DBAPI cursor.execute()
+- ✅ Log which connection type is used for each operation
 
 **Forbidden**:
-- ❌ JDBC-only implementations
-- ❌ Silently falling back without logging
-- ❌ Requiring JDBC when DBAPI available
+- ❌ `cursor.execute("DO ##class(...)...")` - DBAPI cannot execute ObjectScript
+- ❌ `cursor.execute("Set ^GlobalData = 'value'")` - DBAPI cannot set globals
+- ❌ Using iris.connect() for simple SQL queries (3x slower than DBAPI)
+- ❌ Wrapping ObjectScript in SELECT without understanding limitations
 
-**Evidence**:
+**Critical Examples**:
+
+```python
+# ✅ RIGHT - SQL via DBAPI
+cursor.execute("SELECT COUNT(*) FROM MyTable")
+cursor.execute("INSERT INTO MyTable VALUES (1, 'Alice')")
+cursor.execute("CREATE TABLE TestData (ID INT, Name VARCHAR(100))")
+
+# ✅ RIGHT - ObjectScript via iris.connect()
+import iris
+conn = iris.connect(hostname="localhost", port=1972, namespace="%SYS",
+                    username="_SYSTEM", password="SYS")
+iris_obj = iris.createIRIS(conn)
+iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")
+iris_obj.set("^MyGlobal", "value")
+
+# ✅ RIGHT - Limited ObjectScript via $SYSTEM.OBJ.Execute()
+cursor.execute("""
+    SELECT $SYSTEM.OBJ.Execute('
+        Set sc = ##class(SYS.Database).BackupNamespace("USER", "/tmp/backup.dat")
+        If sc { Write "SUCCESS" } Else { Write "FAILED" }
+    ')
+""")
+
+# ❌ WRONG - ObjectScript through DBAPI (FAILS!)
+cursor.execute("DO ##class(Config.Namespaces).Create('TEST')")  # BREAKS!
+cursor.execute("Set ^GlobalData = 'value'")  # BREAKS!
+cursor.execute("SELECT $SYSTEM.OBJ.Execute('Do ##class(Config.Namespaces).Create(\"TEST\")')")  # SECURITY ERROR!
+```
+
+**Performance Evidence**:
 ```
 Benchmark Results (1000 simple queries):
 - DBAPI: 2.3 seconds
-- JDBC:  7.1 seconds
-- Speedup: 3.09x
+- iris.connect(): 7.1 seconds
+- docker exec: ~600 seconds
+- Speedup (DBAPI vs iris.connect()): 3.09x
+
+For SQL operations → Always use DBAPI
+For ObjectScript → Use iris.connect() (not DBAPI)
+For admin ops → Use docker exec (when iris.connect() unavailable)
 ```
+
+**Reference**: See `docs/SQL_VS_OBJECTSCRIPT.md` for complete guide
 
 ### 3. ISOLATION BY DEFAULT
 
@@ -109,7 +176,7 @@ def iris_db_isolated():
 
 ### 4. ZERO CONFIGURATION VIABLE
 
-**The Principle**: `pip install iris-devtools && pytest` must work without configuration.
+**The Principle**: `pip install iris-devtester && pytest` must work without configuration.
 
 **Why It Matters**:
 - Reduces onboarding friction

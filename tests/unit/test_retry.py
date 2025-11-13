@@ -8,7 +8,7 @@ import time
 from unittest.mock import MagicMock, patch
 import pytest
 
-from iris_devtools.connections.retry import (
+from iris_devtester.connections.retry import (
     retry_with_backoff,
     create_connection_with_retry,
 )

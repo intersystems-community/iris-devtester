@@ -20,7 +20,7 @@ class TestTableInfo:
 
     def test_create_with_valid_data(self):
         """Test creating TableInfo with valid data."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         table = TableInfo(name="RAG.Entities", row_count=100)
 
@@ -29,7 +29,7 @@ class TestTableInfo:
 
     def test_str_representation(self):
         """Test TableInfo string representation."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         table = TableInfo(name="RAG.Entities", row_count=100)
         result = str(table)
@@ -39,7 +39,7 @@ class TestTableInfo:
 
     def test_rejects_negative_row_count(self):
         """Test that TableInfo rejects negative row_count."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         with pytest.raises(ValueError) as exc_info:
             TableInfo(name="Test.Table", row_count=-1)
@@ -48,7 +48,7 @@ class TestTableInfo:
 
     def test_accepts_zero_row_count(self):
         """Test that TableInfo accepts zero row_count (empty table)."""
-        from iris_devtools.fixtures import TableInfo
+        from iris_devtester.fixtures import TableInfo
 
         table = TableInfo(name="Empty.Table", row_count=0)
         assert table.row_count == 0
@@ -59,7 +59,7 @@ class TestFixtureManifestSerialization:
 
     def test_to_json_basic(self):
         """Test basic manifest serialization to JSON."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test-fixture",
@@ -87,7 +87,7 @@ class TestFixtureManifestSerialization:
 
     def test_to_json_with_optional_fields(self):
         """Test manifest serialization with optional fields."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -112,7 +112,7 @@ class TestFixtureManifestSerialization:
 
     def test_to_json_custom_indent(self):
         """Test manifest serialization with custom indentation."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -137,7 +137,7 @@ class TestFixtureManifestDeserialization:
 
     def test_from_json_basic(self):
         """Test basic manifest deserialization from JSON."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         json_str = """
         {
@@ -166,7 +166,7 @@ class TestFixtureManifestDeserialization:
 
     def test_from_json_invalid_json(self):
         """Test that from_json raises ValueError for invalid JSON."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         with pytest.raises(ValueError) as exc_info:
             FixtureManifest.from_json("not valid json{")
@@ -175,7 +175,7 @@ class TestFixtureManifestDeserialization:
 
     def test_from_json_missing_required_field(self):
         """Test that from_json raises ValueError for missing required fields."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         json_str = """
         {
@@ -191,7 +191,7 @@ class TestFixtureManifestDeserialization:
 
     def test_roundtrip_serialization(self):
         """Test that serialization -> deserialization preserves data."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         original = FixtureManifest(
             fixture_id="test",
@@ -225,7 +225,7 @@ class TestFixtureManifestFileOperations:
 
     def test_to_file_creates_file(self):
         """Test that to_file creates manifest.json file."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -249,7 +249,7 @@ class TestFixtureManifestFileOperations:
 
     def test_to_file_creates_parent_dirs(self):
         """Test that to_file creates parent directories if needed."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -272,7 +272,7 @@ class TestFixtureManifestFileOperations:
 
     def test_from_file_reads_manifest(self):
         """Test that from_file reads manifest from disk."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         original = FixtureManifest(
             fixture_id="test",
@@ -298,7 +298,7 @@ class TestFixtureManifestFileOperations:
 
     def test_from_file_missing_file_raises_error(self):
         """Test that from_file raises FileNotFoundError for missing file."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         with pytest.raises(FileNotFoundError):
             FixtureManifest.from_file("/nonexistent/manifest.json")
@@ -309,7 +309,7 @@ class TestFixtureManifestValidation:
 
     def test_validate_valid_manifest(self):
         """Test validation of valid manifest."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -331,7 +331,7 @@ class TestFixtureManifestValidation:
 
     def test_validate_empty_fixture_id(self):
         """Test validation catches empty fixture_id."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         manifest = FixtureManifest(
             fixture_id="",  # Empty
@@ -353,7 +353,7 @@ class TestFixtureManifestValidation:
 
     def test_validate_invalid_checksum_format(self):
         """Test validation catches invalid checksum format."""
-        from iris_devtools.fixtures import FixtureManifest
+        from iris_devtester.fixtures import FixtureManifest
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -375,7 +375,7 @@ class TestFixtureManifestValidation:
 
     def test_validate_duplicate_table_names(self):
         """Test validation catches duplicate table names."""
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -404,7 +404,7 @@ class TestValidationResult:
 
     def test_create_valid_result(self):
         """Test creating valid ValidationResult."""
-        from iris_devtools.fixtures import ValidationResult
+        from iris_devtester.fixtures import ValidationResult
 
         result = ValidationResult(valid=True, errors=[], warnings=[])
 
@@ -413,7 +413,7 @@ class TestValidationResult:
 
     def test_create_invalid_result(self):
         """Test creating invalid ValidationResult."""
-        from iris_devtools.fixtures import ValidationResult
+        from iris_devtester.fixtures import ValidationResult
 
         result = ValidationResult(
             valid=False,
@@ -427,7 +427,7 @@ class TestValidationResult:
 
     def test_raise_if_invalid_raises_on_invalid(self):
         """Test that raise_if_invalid raises error for invalid result."""
-        from iris_devtools.fixtures import ValidationResult, FixtureValidationError
+        from iris_devtester.fixtures import ValidationResult, FixtureValidationError
 
         result = ValidationResult(valid=False, errors=["Test error"])
 
@@ -438,7 +438,7 @@ class TestValidationResult:
 
     def test_raise_if_invalid_no_raise_on_valid(self):
         """Test that raise_if_invalid doesn't raise for valid result."""
-        from iris_devtools.fixtures import ValidationResult
+        from iris_devtester.fixtures import ValidationResult
 
         result = ValidationResult(valid=True)
 
@@ -447,7 +447,7 @@ class TestValidationResult:
 
     def test_str_representation_valid(self):
         """Test ValidationResult string for valid result."""
-        from iris_devtools.fixtures import ValidationResult
+        from iris_devtester.fixtures import ValidationResult
 
         result = ValidationResult(valid=True, warnings=["Minor issue"])
         result_str = str(result)
@@ -456,7 +456,7 @@ class TestValidationResult:
 
     def test_str_representation_invalid(self):
         """Test ValidationResult string for invalid result."""
-        from iris_devtools.fixtures import ValidationResult
+        from iris_devtester.fixtures import ValidationResult
 
         result = ValidationResult(valid=False, errors=["Error 1"])
         result_str = str(result)
@@ -469,7 +469,7 @@ class TestLoadResult:
 
     def test_create_successful_result(self):
         """Test creating successful LoadResult."""
-        from iris_devtools.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -499,7 +499,7 @@ class TestLoadResult:
 
     def test_str_representation_success(self):
         """Test LoadResult string for successful load."""
-        from iris_devtools.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -530,7 +530,7 @@ class TestLoadResult:
 
     def test_summary_includes_table_info(self):
         """Test that summary includes table information."""
-        from iris_devtools.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",

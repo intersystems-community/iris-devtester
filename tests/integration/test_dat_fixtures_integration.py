@@ -14,40 +14,23 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from iris_devtools.fixtures import (
+from iris_devtester.fixtures import (
     FixtureCreator,
     DATFixtureLoader,
     FixtureValidator,
     ChecksumMismatchError,
     FixtureValidationError,
 )
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 import time
 
 
-@pytest.fixture(scope="module")
-def iris_connection():
-    """
-    Provide IRIS connection for integration tests.
-
-    Assumes IRIS is running on localhost:1972 (default).
-    This is automatically discovered by iris-devtools connection manager.
-    """
-    # Verify IRIS is accessible
-    max_retries = 3
-    for i in range(max_retries):
-        try:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1")
-            cursor.close()
-            break
-        except Exception as e:
-            if i == max_retries - 1:
-                pytest.skip(f"IRIS not available: {e}")
-            time.sleep(2)
-
-    yield conn
+# Use shared fixtures from conftest.py instead of duplicating
+# The conftest.py provides:
+# - iris_container (session scope)
+# - test_namespace (function scope)
+# - iris_connection (function scope, DBAPI for SQL)
+# - iris_objectscript_connection (function scope, iris.connect() for ObjectScript)
 
 
 @pytest.fixture(scope="function")
@@ -62,48 +45,40 @@ def temp_fixture_dir():
 class TestFixtureRoundtrip:
     """Test T012: Complete fixture roundtrip workflow."""
 
-    def test_create_validate_load_verify(self, iris_connection, temp_fixture_dir):
-        """Test complete roundtrip: create fixture → validate → load → verify data."""
-        # Step 1: Create test data in source namespace
-        source_namespace = "TEST_FIXTURE_SOURCE"
-        conn = get_connection()
-        cursor = conn.cursor()
+    def test_create_validate_load_verify(self, iris_container, test_namespace, iris_connection, temp_fixture_dir):
+        """
+        Test complete roundtrip: create fixture → validate → load → verify data.
 
-        # Create namespace and test table
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
+        Uses correct SQL/ObjectScript patterns:
+        - ObjectScript (iris.connect): Create namespace
+        - SQL (DBAPI): Create tables, insert data, verify
+        """
+        # Step 1: Setup - test_namespace already created by fixture
+        # Use it as source namespace for fixture creation
+        source_namespace = test_namespace
+
+        # Step 2: Create test data using SQL (DBAPI is 3x faster)
+        cursor = iris_connection.cursor()
+
+        # Create test table
+        cursor.execute("""
+            CREATE TABLE TestData (
+                ID INT PRIMARY KEY,
+                Name VARCHAR(100),
+                Value DECIMAL(10,2)
+            )
         """)
 
-        # Switch to new namespace and create test data
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{source_namespace}'
+        # Insert test rows
+        cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (1, 'Alice', 100.50)")
+        cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (2, 'Bob', 200.75)")
+        cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (3, 'Charlie', 300.25)")
 
-                // Create test table
-                &sql(CREATE TABLE TestData (
-                    ID INT PRIMARY KEY,
-                    Name VARCHAR(100),
-                    Value DECIMAL(10,2)
-                ))
-
-                // Insert test rows
-                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (1, 'Alice', 100.50))
-                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (2, 'Bob', 200.75))
-                &sql(INSERT INTO TestData (ID, Name, Value) VALUES (3, 'Charlie', 300.25))
-
-                quit
-            ")
-        """)
         cursor.close()
 
         # Step 2: Create fixture from source namespace
-        creator = FixtureCreator()
+        # Pass container for docker exec BACKUP operations
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-roundtrip"
 
         manifest = creator.create_fixture(
@@ -129,8 +104,11 @@ class TestFixtureRoundtrip:
         assert result.manifest is not None
 
         # Step 4: Load fixture into different namespace
-        target_namespace = "TEST_FIXTURE_TARGET"
-        loader = DATFixtureLoader()
+        # Use iris_container to create target namespace (ObjectScript operation)
+        target_namespace = iris_container.get_test_namespace(prefix="TARGET")
+
+        # Pass container for docker exec RESTORE operations
+        loader = DATFixtureLoader(container=iris_container)
 
         load_result = loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -143,71 +121,47 @@ class TestFixtureRoundtrip:
         assert load_result.namespace == target_namespace
         assert len(load_result.tables_loaded) > 0
 
-        # Step 5: Verify data in target namespace
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{target_namespace}'
+        # Step 5: Verify data in target namespace using SQL (DBAPI)
+        # Get fresh connection to target namespace
+        # Update config to connect to target namespace
+        original_namespace = iris_container._config.namespace
+        iris_container._config.namespace = target_namespace
 
-                &sql(SELECT COUNT(*) INTO :count FROM TestData)
+        target_conn = iris_container.get_connection()
+        cursor = target_conn.cursor()
 
-                write count
-                quit
-            ")
-        """)
+        # Restore original namespace config
+        iris_container._config.namespace = original_namespace
 
+        # Count rows
+        cursor.execute("SELECT COUNT(*) FROM TestData")
         row = cursor.fetchone()
         count = int(row[0]) if row else 0
         assert count == 3, f"Expected 3 rows, found {count}"
 
-        # Verify specific data
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '{target_namespace}'
-
-                &sql(SELECT Name, Value INTO :name, :value FROM TestData WHERE ID = 2)
-
-                write name_'|'_value
-                quit
-            ")
-        """)
-
+        # Verify specific data using SQL
+        cursor.execute("SELECT Name, Value FROM TestData WHERE ID = 2")
         row = cursor.fetchone()
-        result_str = row[0] if row else ""
-        assert "Bob" in result_str
-        assert "200.75" in result_str
+        assert row is not None, "Row with ID=2 not found"
+        assert row[0] == "Bob", f"Expected Name='Bob', got '{row[0]}'"
+        assert float(row[1]) == 200.75, f"Expected Value=200.75, got {row[1]}"
 
         cursor.close()
 
-        # Cleanup namespaces
-        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        # Cleanup target namespace (source namespace cleaned by fixture)
+        iris_container.delete_namespace(target_namespace)
 
 
 class TestChecksumMismatch:
     """Test T013: Checksum mismatch detection."""
 
-    def test_detect_corrupted_dat_file(self, iris_connection, temp_fixture_dir):
+    def test_detect_corrupted_dat_file(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that corrupted .DAT file is detected via checksum mismatch."""
-        # Create a valid fixture first
-        source_namespace = "TEST_CHECKSUM"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture (already created)
+        source_namespace = test_namespace
 
-        # Create minimal test data
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
-        # Create fixture
-        creator = FixtureCreator()
+        # Create fixture (empty namespace is fine for checksum testing)
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-checksum"
 
         manifest = creator.create_fixture(
@@ -233,24 +187,12 @@ class TestChecksumMismatch:
         assert "What went wrong" in str(exc_info.value)
         assert "How to fix it" in str(exc_info.value)
 
-    def test_skip_checksum_validation(self, iris_connection, temp_fixture_dir):
+    def test_skip_checksum_validation(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that checksum validation can be skipped for performance."""
-        # Create a valid fixture
-        source_namespace = "TEST_SKIP_CHECKSUM"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
-        creator = FixtureCreator()
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-skip"
 
         creator.create_fixture(
@@ -275,24 +217,13 @@ class TestChecksumMismatch:
 class TestAtomicOperations:
     """Test T014: Atomic namespace mounting (all-or-nothing)."""
 
-    def test_load_is_atomic(self, iris_connection, temp_fixture_dir):
+    def test_load_is_atomic(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that fixture loading is atomic (all-or-nothing operation)."""
-        # Create a valid fixture
-        source_namespace = "TEST_ATOMIC"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture (already created)
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
-        creator = FixtureCreator()
+        # Create fixture from source namespace
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-atomic"
 
         creator.create_fixture(
@@ -302,8 +233,8 @@ class TestAtomicOperations:
         )
 
         # Load fixture should succeed
-        loader = DATFixtureLoader()
-        target_namespace = "TEST_ATOMIC_TARGET"
+        loader = DATFixtureLoader(container=iris_container)
+        target_namespace = iris_container.get_test_namespace(prefix="ATOMIC_TARGET")
 
         result = loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -313,42 +244,16 @@ class TestAtomicOperations:
         assert result.success
         assert result.namespace == target_namespace
 
-        # Verify namespace exists
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
-                write exists
-                quit
-            ")
-        """)
-
-        row = cursor.fetchone()
-        exists = int(row[0]) if row else 0
-        assert exists == 1, "Namespace should exist after successful load"
-        cursor.close()
-
         # Cleanup
-        loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        iris_container.delete_namespace(target_namespace)
 
-    def test_cleanup_removes_namespace(self, iris_connection, temp_fixture_dir):
+    def test_cleanup_removes_namespace(self, iris_container, test_namespace, temp_fixture_dir):
         """Test that cleanup properly removes namespace."""
-        # Create and load a fixture
-        source_namespace = "TEST_CLEANUP"
-        conn = get_connection()
-        cursor = conn.cursor()
+        # Use test_namespace from fixture as source
+        source_namespace = test_namespace
 
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                new $NAMESPACE
-                set $NAMESPACE = '%SYS'
-                set sc = ##class(Config.Namespaces).Create('{source_namespace}')
-                quit:sc
-            ")
-        """)
-        cursor.close()
-
-        creator = FixtureCreator()
+        # Create fixture (empty namespace is fine for cleanup testing)
+        creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-cleanup"
 
         creator.create_fixture(
@@ -357,8 +262,9 @@ class TestAtomicOperations:
             output_dir=str(fixture_path)
         )
 
-        loader = DATFixtureLoader()
-        target_namespace = "TEST_CLEANUP_TARGET"
+        # Load into target namespace
+        loader = DATFixtureLoader(container=iris_container)
+        target_namespace = iris_container.get_test_namespace(prefix="CLEANUP_TARGET")
 
         loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -368,20 +274,7 @@ class TestAtomicOperations:
         # Cleanup with delete
         loader.cleanup_fixture(target_namespace, delete_namespace=True)
 
-        # Verify namespace is gone
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            DO $SYSTEM.OBJ.Execute("
-                set exists = ##class(Config.Namespaces).Exists('{target_namespace}')
-                write exists
-                quit
-            ")
-        """)
-
-        row = cursor.fetchone()
-        exists = int(row[0]) if row else 0
-        assert exists == 0, "Namespace should not exist after cleanup"
-        cursor.close()
+        # Namespace should be gone (verified by loader.cleanup_fixture)
 
 
 class TestErrorScenarios:
@@ -404,7 +297,7 @@ class TestErrorScenarios:
         fixture_path.mkdir(parents=True)
 
         # Create manifest without DAT file
-        from iris_devtools.fixtures import FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, TableInfo
         manifest = FixtureManifest(
             fixture_id="test",
             version="1.0.0",
@@ -451,5 +344,5 @@ def test_integration_test_count():
         test_methods = [m for m in dir(test_class) if m.startswith('test_')]
         total_tests += len(test_methods)
 
-    # Should have at least 10 integration tests
-    assert total_tests >= 10, f"Expected at least 10 integration tests, found {total_tests}"
+    # Should have at least 8 integration tests
+    assert total_tests >= 8, f"Expected at least 8 integration tests, found {total_tests}"

@@ -10,11 +10,14 @@ IRIS instance.
 Constitutional Principle #7: Medical-Grade Reliability - All API contracts validated.
 """
 
+
 import pytest
+
+pytestmark = pytest.mark.contract
 from unittest.mock import Mock
 import inspect
 
-from iris_devtools.containers.monitoring import (
+from iris_devtester.containers.monitoring import (
     TaskSchedule,
     create_task,
     get_task_status,
@@ -34,11 +37,11 @@ class TestCreateTaskContract:
 
     def test_signature_accepts_connection_and_schedule(self):
         """Test function accepts required parameters."""
-        mock_conn = Mock()
-        schedule = TaskSchedule()
-
-        with pytest.raises(NotImplementedError):
-            create_task(mock_conn, schedule)
+        # Verify function accepts the parameters (signature check only)
+        sig = inspect.signature(create_task)
+        params = list(sig.parameters.keys())
+        assert 'conn' in params
+        assert 'schedule' in params
 
     def test_returns_string_task_id(self):
         """Test function signature returns str (task ID)."""
@@ -48,23 +51,22 @@ class TestCreateTaskContract:
 
     def test_accepts_task_schedule_with_defaults(self):
         """Test default TaskSchedule works."""
-        mock_conn = Mock()
-        schedule = TaskSchedule()  # Uses all defaults
-
-        with pytest.raises(NotImplementedError):
-            create_task(mock_conn, schedule)
+        # Verify TaskSchedule can be created with defaults
+        schedule = TaskSchedule()
+        assert schedule.name == "iris-devtools-monitor"
+        assert schedule.daily_increment == 30
 
     def test_accepts_custom_task_schedule(self):
         """Test custom TaskSchedule configuration."""
-        mock_conn = Mock()
+        # Verify custom TaskSchedule configuration works
         schedule = TaskSchedule(
             name="custom-monitor",
             daily_increment=10,  # 10-second intervals
             description="Custom monitoring task",
         )
-
-        with pytest.raises(NotImplementedError):
-            create_task(mock_conn, schedule)
+        assert schedule.name == "custom-monitor"
+        assert schedule.daily_increment == 10
+        assert schedule.description == "Custom monitoring task"
 
 
 class TestGetTaskStatusContract:
@@ -76,10 +78,11 @@ class TestGetTaskStatusContract:
 
     def test_signature_accepts_connection_and_task_id(self):
         """Test function accepts required parameters."""
-        mock_conn = Mock()
-
-        with pytest.raises(NotImplementedError):
-            get_task_status(mock_conn, task_id="test-123")
+        # Verify function signature
+        sig = inspect.signature(get_task_status)
+        params = list(sig.parameters.keys())
+        assert 'conn' in params
+        assert 'task_id' in params
 
     def test_returns_dict(self):
         """Test function signature returns dict."""
@@ -97,10 +100,11 @@ class TestSuspendTaskContract:
 
     def test_signature_accepts_connection_and_task_id(self):
         """Test function accepts required parameters."""
-        mock_conn = Mock()
-
-        with pytest.raises(NotImplementedError):
-            suspend_task(mock_conn, task_id="test-123")
+        # Verify function signature
+        sig = inspect.signature(suspend_task)
+        params = list(sig.parameters.keys())
+        assert 'conn' in params
+        assert 'task_id' in params
 
     def test_returns_bool(self):
         """Test function signature returns bool."""
@@ -118,10 +122,11 @@ class TestResumeTaskContract:
 
     def test_signature_accepts_connection_and_task_id(self):
         """Test function accepts required parameters."""
-        mock_conn = Mock()
-
-        with pytest.raises(NotImplementedError):
-            resume_task(mock_conn, task_id="test-123")
+        # Verify function signature
+        sig = inspect.signature(resume_task)
+        params = list(sig.parameters.keys())
+        assert 'conn' in params
+        assert 'task_id' in params
 
     def test_returns_bool(self):
         """Test function signature returns bool."""
@@ -139,10 +144,11 @@ class TestDeleteTaskContract:
 
     def test_signature_accepts_connection_and_task_id(self):
         """Test function accepts required parameters."""
-        mock_conn = Mock()
-
-        with pytest.raises(NotImplementedError):
-            delete_task(mock_conn, task_id="test-123")
+        # Verify function signature
+        sig = inspect.signature(delete_task)
+        params = list(sig.parameters.keys())
+        assert 'conn' in params
+        assert 'task_id' in params
 
     def test_returns_bool(self):
         """Test function signature returns bool."""
@@ -160,10 +166,10 @@ class TestListMonitoringTasksContract:
 
     def test_signature_accepts_connection(self):
         """Test function accepts connection parameter."""
-        mock_conn = Mock()
-
-        with pytest.raises(NotImplementedError):
-            list_monitoring_tasks(mock_conn)
+        # Verify function signature
+        sig = inspect.signature(list_monitoring_tasks)
+        params = list(sig.parameters.keys())
+        assert 'conn' in params
 
     def test_returns_list(self):
         """Test function signature returns list."""
@@ -259,33 +265,26 @@ class TestTaskManagerAPIConstitutionalCompliance:
         # 1. Return existing task ID, or
         # 2. Raise clear error
         # (Implementation will determine exact behavior)
-        mock_conn = Mock()
-        schedule = TaskSchedule(name="duplicate-test")
-
-        with pytest.raises(NotImplementedError):
-            create_task(mock_conn, schedule)
+        # This is a contract test - just verify function signature exists
+        sig = inspect.signature(create_task)
+        assert 'conn' in sig.parameters
+        assert 'schedule' in sig.parameters
 
     def test_suspend_task_idempotency(self):
         """Test suspending already-suspended task is safe."""
-        mock_conn = Mock()
-
-        # Should be safe to suspend twice
-        with pytest.raises(NotImplementedError):
-            suspend_task(mock_conn, task_id="test")
-
-        with pytest.raises(NotImplementedError):
-            suspend_task(mock_conn, task_id="test")
+        # Contract test - verify function signature for idempotent operation
+        sig = inspect.signature(suspend_task)
+        assert 'conn' in sig.parameters
+        assert 'task_id' in sig.parameters
+        # Implementation should be idempotent (safe to call multiple times)
 
     def test_resume_task_idempotency(self):
         """Test resuming already-active task is safe."""
-        mock_conn = Mock()
-
-        # Should be safe to resume twice
-        with pytest.raises(NotImplementedError):
-            resume_task(mock_conn, task_id="test")
-
-        with pytest.raises(NotImplementedError):
-            resume_task(mock_conn, task_id="test")
+        # Contract test - verify function signature for idempotent operation
+        sig = inspect.signature(resume_task)
+        assert 'conn' in sig.parameters
+        assert 'task_id' in sig.parameters
+        # Implementation should be idempotent (safe to call multiple times)
 
 
 class TestTaskManagerAPIPerformanceContract:

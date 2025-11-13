@@ -14,13 +14,13 @@ class TestIRISReadyWaitStrategy:
 
     def test_can_import(self):
         """Test that IRISReadyWaitStrategy can be imported."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         assert IRISReadyWaitStrategy is not None
 
     def test_wait_strategy_checks_port(self):
         """Test that wait strategy verifies port is open."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         strategy = IRISReadyWaitStrategy(port=1972)
 
@@ -34,7 +34,7 @@ class TestIRISReadyWaitStrategy:
 
     def test_wait_strategy_checks_iris_process(self):
         """Test that wait strategy verifies IRIS process is running."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         strategy = IRISReadyWaitStrategy()
 
@@ -43,7 +43,7 @@ class TestIRISReadyWaitStrategy:
 
     def test_wait_strategy_checks_database_ready(self):
         """Test that wait strategy verifies database accepts queries."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         strategy = IRISReadyWaitStrategy()
 
@@ -52,7 +52,7 @@ class TestIRISReadyWaitStrategy:
 
     def test_wait_strategy_timeout(self):
         """Test that wait strategy respects timeout."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         strategy = IRISReadyWaitStrategy(timeout=5)
 
@@ -62,7 +62,7 @@ class TestIRISReadyWaitStrategy:
     @patch("time.time")
     def test_wait_strategy_timeout_raises(self, mock_time):
         """Test that wait strategy raises on timeout."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         # Mock time to simulate timeout
         mock_time.side_effect = [0, 0, 100]  # Start, check, timeout
@@ -74,7 +74,7 @@ class TestIRISReadyWaitStrategy:
 
     def test_wait_strategy_default_timeout(self):
         """Test that wait strategy has reasonable default timeout."""
-        from iris_devtools.containers.wait_strategies import IRISReadyWaitStrategy
+        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
 
         strategy = IRISReadyWaitStrategy()
 
@@ -87,14 +87,14 @@ class TestWaitForIRISReady:
 
     def test_can_import_convenience_function(self):
         """Test that wait_for_iris_ready function exists."""
-        from iris_devtools.containers.wait_strategies import wait_for_iris_ready
+        from iris_devtester.containers.wait_strategies import wait_for_iris_ready
 
         assert callable(wait_for_iris_ready)
 
     @patch("socket.socket")
     def test_waits_for_port_open(self, mock_socket):
         """Test that wait function checks port connectivity."""
-        from iris_devtools.containers.wait_strategies import wait_for_iris_ready
+        from iris_devtester.containers.wait_strategies import wait_for_iris_ready
 
         mock_sock = Mock()
         mock_sock.connect.return_value = None
@@ -107,7 +107,7 @@ class TestWaitForIRISReady:
 
     def test_wait_function_with_timeout(self):
         """Test wait function respects timeout parameter."""
-        from iris_devtools.containers.wait_strategies import wait_for_iris_ready
+        from iris_devtester.containers.wait_strategies import wait_for_iris_ready
 
         # Should not hang forever
         start = time.time()

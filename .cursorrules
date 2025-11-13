@@ -1,0 +1,230 @@
+# Cursor AI Rules for IRIS DevTools
+
+## Project Background
+
+IRIS DevTools is a production-grade Python package providing automatic, reliable infrastructure for InterSystems IRIS development. The package codifies years of production experience and debugging into reusable utilities for connection management, test containers, password reset, and schema management.
+
+**Tech Stack**: Python 3.9+, pytest, testcontainers, DBAPI/JDBC, Docker
+**Target**: Developers building applications with InterSystems IRIS database
+**Quality Bar**: Medical-grade reliability (95%+ test coverage), production-tested patterns
+
+## Constitutional Principles (CRITICAL)
+
+All code MUST follow these 8 principles from CONSTITUTION.md:
+
+1. **Automatic Remediation Over Manual Intervention** - NO "run this command" errors
+2. **DBAPI First, JDBC Fallback** - Always try fastest option first (DBAPI is 3x faster)
+3. **Isolation by Default** - Each test gets its own container or unique namespace
+4. **Zero Configuration Viable** - `pip install && pytest` must work without configuration
+5. **Fail Fast with Guidance** - Errors must include "what went wrong" + "how to fix it"
+6. **Enterprise Ready, Community Friendly** - Support both IRIS editions
+7. **Medical-Grade Reliability** - 95%+ test coverage required, all error paths tested
+8. **Document the Blind Alleys** - Explain "why not X" in docs/learnings/
+
+## Code Style
+
+### Python Standards
+- **Formatter**: black (line length: 100)
+- **Import sorting**: isort (compatible with black)
+- **Linting**: flake8
+- **Type checking**: mypy (when possible)
+- **Naming**: snake_case for functions/variables, PascalCase for classes, UPPER_CASE for constants
+
+### Imports
+```python
+# Standard library
+import os
+from pathlib import Path
+
+# Third-party
+import pytest
+from testcontainers.core.container import DockerContainer
+
+# Local
+from iris_devtools.connections import get_dbapi_connection
+from iris_devtools.containers import IRISContainer
+```
+
+### Error Messages (Constitutional Requirement)
+ALWAYS use structured error format:
+```python
+raise ConnectionError(
+    f"Failed to connect to IRIS at {host}:{port}\n"
+    "\n"
+    "What went wrong:\n"
+    "  The IRIS database is not running or not accessible.\n"
+    "\n"
+    "How to fix it:\n"
+    "  1. Start IRIS: docker-compose up -d\n"
+    "  2. Wait 30 seconds for startup\n"
+    "  3. Verify: docker logs iris_db\n"
+    "\n"
+    f"Documentation: {DOCS_URL}/troubleshooting/\n"
+)
+```
+
+## File Structure
+
+```
+iris_devtools/
+├── connections/      # DBAPI/JDBC connection management
+├── containers/       # Testcontainers wrapper with auto-remediation
+├── fixtures/         # DAT fixture management
+├── testing/          # pytest fixtures and utilities
+├── config/           # Configuration auto-discovery
+├── utils/            # Helper utilities
+└── cli/              # CLI commands
+
+tests/
+├── unit/            # Fast tests, mock external dependencies
+├── integration/     # Real IRIS containers, full integration
+└── e2e/             # End-to-end workflow validation
+
+examples/           # Runnable code examples with expected outputs
+docs/              # Documentation (learnings, troubleshooting)
+```
+
+## Preferred Libraries
+
+- **Container management**: testcontainers>=4.0.0, testcontainers-iris>=1.2.2
+- **IRIS connections**: intersystems-irispython (DBAPI, preferred), jaydebeapi (JDBC, fallback)
+- **Configuration**: python-dotenv>=1.0.0
+- **Testing**: pytest>=8.0.0, pytest-cov, pytest-asyncio
+- **CLI**: click>=8.0.0
+- **Type hints**: typing (from standard library)
+
+## Testing Requirements
+
+### Coverage
+- **Minimum**: 95% overall coverage
+- **Unit tests**: 100% coverage for core utilities
+- **Integration tests**: All public APIs tested against real IRIS
+
+### Test Organization
+```python
+# Unit test (tests/unit/) - Mock IRIS
+def test_connection_config_parsing():
+    """Unit test - no external dependencies"""
+    config = ConnectionConfig.from_dict({"host": "localhost"})
+    assert config.host == "localhost"
+
+# Integration test (tests/integration/) - Real IRIS
+@pytest.mark.integration
+def test_iris_connection(iris_container):
+    """Integration test - uses real IRIS"""
+    conn = iris_container.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1")
+    assert cursor.fetchone()[0] == 1
+```
+
+### Fixtures
+- **Function scope**: Each test gets isolated namespace
+- **Session scope**: One container for entire test session (performance optimization)
+- Always use context managers for cleanup
+
+## Documentation Requirements
+
+All public APIs MUST have:
+
+```python
+def get_iris_connection(config: Optional[dict] = None) -> Connection:
+    """
+    Get IRIS database connection with automatic remediation.
+
+    Tries DBAPI first (3x faster), falls back to JDBC if unavailable.
+    Automatically resets password if "Password change required" detected.
+
+    Args:
+        config: Optional connection configuration. If None, auto-discovers
+                from environment variables, .env file, or Docker.
+
+    Returns:
+        Database connection ready to use.
+
+    Raises:
+        ConnectionError: If connection fails after auto-remediation attempts.
+                        Error message includes remediation steps.
+
+    Examples:
+        >>> # Zero-config (auto-discovers)
+        >>> conn = get_iris_connection()
+
+        >>> # Explicit config
+        >>> conn = get_iris_connection({
+        ...     "host": "localhost",
+        ...     "port": 1972,
+        ...     "namespace": "USER"
+        ... })
+    """
+```
+
+## Performance Guidelines
+
+- **DBAPI first**: Always try DBAPI before JDBC (3x faster: ~80ms vs ~250ms)
+- **Connection pooling**: Reuse connections where appropriate
+- **Container lifecycle**: Session-scoped containers for test suites
+- **Lazy loading**: Import heavy dependencies only when needed
+
+## Error Handling
+
+### Always Include
+1. What went wrong (specific, not generic)
+2. How to fix it (concrete steps)
+3. Documentation link
+
+### Patterns
+```python
+# Automatic retry with guidance
+try:
+    conn = get_dbapi_connection()
+except Exception:
+    logger.warning("DBAPI failed, falling back to JDBC")
+    conn = get_jdbc_connection()
+
+# Context managers for cleanup
+with IRISContainer.community() as iris:
+    conn = iris.get_connection()
+    # Automatic cleanup on exit
+```
+
+## Security Considerations
+
+- Never commit IRIS credentials to git
+- Use .env files for local credentials (in .gitignore)
+- Default passwords are auto-reset (see password_reset.py)
+- Enterprise license keys must be user-provided (never hardcoded)
+
+## Git Workflow
+
+- **Branch naming**: `feature/description`, `fix/description`, `docs/description`
+- **Commits**: Descriptive, atomic, NO Claude attribution
+- **PRs**: Follow template, include constitutional compliance checklist
+
+## Testing Before Commit
+
+```bash
+# Run ALL quality checks
+black . && isort . && flake8 iris_devtools/ && mypy iris_devtools/ && pytest --cov=iris_devtools
+```
+
+## Common Pitfalls to Avoid
+
+❌ Hardcoding connection details
+❌ Skipping error path tests
+❌ Using JDBC when DBAPI available
+❌ Not using context managers for containers
+❌ Vague error messages
+❌ Forgetting to enable CallIn service for DBAPI
+❌ Adding emoji to code/docs (unless explicitly requested)
+
+## When in Doubt
+
+- Check CONSTITUTION.md for principles
+- Look at docs/learnings/ for "why not X" decisions
+- See examples/ for working patterns
+- Reference tests/ for how features are tested
+
+---
+
+**Remember**: This package embodies production experience. Every feature represents real debugging hours saved. Maintain that standard.

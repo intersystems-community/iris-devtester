@@ -1,0 +1,83 @@
+# Example IRIS configuration for Enterprise Edition
+#
+# Usage:
+#   iris-devtester container up --config examples/iris-config-enterprise.yml
+#
+# This configuration uses InterSystems IRIS Enterprise Edition,
+# which requires a valid license key.
+
+# Edition: community or enterprise
+edition: enterprise
+
+# Container name (must be unique)
+container_name: iris_enterprise
+
+# License key (REQUIRED for enterprise edition)
+# Options:
+#   1. Set here directly (not recommended for version control)
+#   2. Use environment variable: export IRIS_LICENSE_KEY="your-key-here"
+#   3. Load from separate file (not shown, custom implementation)
+license_key: "${IRIS_LICENSE_KEY}"
+
+# Port mappings (host:container)
+# Different ports to avoid conflicts with community edition
+ports:
+  superserver: 1973    # SuperServer port for DBAPI/JDBC connections
+  webserver: 52774     # Web portal and REST API port
+
+# Default namespace for connections
+namespace: USER
+
+# Default password for _SYSTEM user
+password: SYS
+
+# Docker image tag (default: latest)
+# Enterprise options: 2024.1, 2023.3, etc.
+image_tag: latest
+
+# Volume mounts (recommended for enterprise)
+# Persist data across container restarts
+volumes:
+  - ./iris-data:/dur/config:rw
+  - ./iris-backups:/backups:rw
+
+# Notes:
+#
+# 1. License Key Requirements:
+#    - Enterprise edition REQUIRES a valid license key
+#    - Set via IRIS_LICENSE_KEY environment variable (recommended)
+#    - Or hardcode in config (not recommended for security)
+#    - Contact InterSystems for evaluation/production licenses
+#
+# 2. Docker Registry Authentication:
+#    Enterprise images require Docker login:
+#      docker login containers.intersystems.com
+#      Username: Your WRC credentials
+#      Password: Your WRC password
+#
+# 3. Production Considerations:
+#    - Use volumes for data persistence
+#    - Regular backups to mounted volume
+#    - Monitor health checks and logs
+#    - Use strong passwords (not default SYS)
+#    - Consider secrets management (HashiCorp Vault, etc.)
+#
+# 4. Volume Persistence:
+#    Mounted volumes ensure data survives container removal:
+#    - /dur/config: IRIS configuration and databases
+#    - /backups: External backup storage
+#
+# 5. Port Selection:
+#    Enterprise uses different ports (1973, 52774) to allow
+#    running alongside community edition for testing.
+#
+# 6. Environment Variable Substitution:
+#    The ${IRIS_LICENSE_KEY} syntax is a placeholder.
+#    Set the actual license key via environment:
+#      export IRIS_LICENSE_KEY="your-actual-license-key"
+#
+# 7. Multi-Environment Setup:
+#    Create separate configs for dev/staging/prod:
+#      - iris-config-dev.yml
+#      - iris-config-staging.yml
+#      - iris-config-prod.yml

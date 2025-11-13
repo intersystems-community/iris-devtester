@@ -1,0 +1,19 @@
+{
+  "fixture_id": "static-pytest-test",
+  "version": "1.0.0",
+  "schema_version": "1.0",
+  "description": "Static fixture for pytest plugin integration tests",
+  "created_at": "2025-11-04T14:29:15.506023Z",
+  "iris_version": "unknown",
+  "namespace": "STATIC_FIXTURE_02E0CBC3",
+  "dat_file": "IRIS.DAT",
+  "checksum": "sha256:b8984445acd847e173cee0f9ff3856e69a89b3548470347b54ad75c149a7717d",
+  "tables": [
+    {
+      "name": "SQLUser.PluginTestData",
+      "row_count": 2
+    }
+  ],
+  "features": null,
+  "known_queries": null
+}

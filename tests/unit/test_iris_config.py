@@ -12,13 +12,13 @@ class TestIRISConfig:
 
     def test_can_import(self):
         """Test that IRISConfig can be imported."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         assert IRISConfig is not None
 
     def test_default_values(self):
         """Test that IRISConfig has correct default values."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         config = IRISConfig()
         assert config.host == "localhost"
@@ -31,7 +31,7 @@ class TestIRISConfig:
 
     def test_explicit_values(self):
         """Test that IRISConfig accepts explicit values."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         config = IRISConfig(
             host="iris.example.com",
@@ -52,7 +52,7 @@ class TestIRISConfig:
 
     def test_port_validation_range(self):
         """Test that port must be in valid range 1-65535."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         # Valid ports
         config = IRISConfig(port=1)
@@ -70,14 +70,14 @@ class TestIRISConfig:
 
     def test_namespace_validation(self):
         """Test that namespace cannot be empty."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         with pytest.raises(ValueError):
             IRISConfig(namespace="")
 
     def test_timeout_validation(self):
         """Test that timeout must be positive."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         with pytest.raises(ValueError):
             IRISConfig(timeout=0)
@@ -87,7 +87,7 @@ class TestIRISConfig:
 
     def test_driver_validation(self):
         """Test that driver must be one of allowed values."""
-        from iris_devtools.config import IRISConfig
+        from iris_devtester.config import IRISConfig
 
         # Valid drivers
         config = IRISConfig(driver="dbapi")

@@ -1,0 +1,65 @@
+# Example IRIS configuration for Community Edition
+#
+# Usage:
+#   iris-devtester container up --config examples/iris-config-community.yml
+#
+# This configuration uses the free InterSystems IRIS Community Edition,
+# suitable for development and testing.
+
+# Edition: community or enterprise
+edition: community
+
+# Container name (must be unique)
+container_name: iris_db
+
+# Port mappings (host:container)
+ports:
+  superserver: 1972    # SuperServer port for DBAPI/JDBC connections
+  webserver: 52773     # Web portal and REST API port
+
+# Default namespace for connections
+namespace: USER
+
+# Default password for _SYSTEM user
+password: SYS
+
+# Docker image tag (default: latest)
+# Other options: 2024.1, 2023.3, etc.
+image_tag: latest
+
+# Volume mounts (optional)
+# Format: host_path:container_path[:mode]
+# Example:
+# volumes:
+#   - ./data:/external:rw
+#   - ./src:/opt/app/src:ro
+volumes: []
+
+# Notes:
+#
+# 1. Zero-Config Alternative:
+#    You can run `iris-devtester container up` without any config file.
+#    It will use these defaults automatically.
+#
+# 2. Environment Variables:
+#    Individual settings can be overridden with environment variables:
+#      export IRIS_SUPERSERVER_PORT=2000
+#      export IRIS_WEBSERVER_PORT=53000
+#      export IRIS_NAMESPACE=MYAPP
+#
+# 3. Configuration Priority:
+#    1. Explicit --config flag (highest)
+#    2. ./iris-config.yml in current directory
+#    3. Environment variables
+#    4. Zero-config defaults (lowest)
+#
+# 4. Health Checks:
+#    Container lifecycle commands use multi-layer health checks:
+#    - Container running (fast fail if crashed)
+#    - Docker health check (if defined)
+#    - IRIS SuperServer port accessible
+#
+# 5. Automatic Features:
+#    - CallIn service enabled automatically (required for DBAPI)
+#    - Password reset on first startup
+#    - Port conflict detection with helpful errors

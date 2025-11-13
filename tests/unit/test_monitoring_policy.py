@@ -6,7 +6,7 @@ Constitutional Principle #7: Medical-Grade Reliability - All error paths tested.
 """
 
 import pytest
-from iris_devtools.containers.monitoring import MonitoringPolicy, CollectionInterval
+from iris_devtester.containers.monitoring import MonitoringPolicy, CollectionInterval
 
 
 class TestMonitoringPolicyDefaults:

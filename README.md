@@ -2,10 +2,10 @@
 
 **Battle-tested InterSystems IRIS infrastructure utilities for Python development**
 
-[![PyPI version](https://badge.fury.io/py/iris-devtools.svg)](https://badge.fury.io/py/iris-devtools)
-[![Python Versions](https://img.shields.io/pypi/pyversions/iris-devtools.svg)](https://pypi.org/project/iris-devtools/)
+[![PyPI version](https://badge.fury.io/py/iris-devtester.svg)](https://badge.fury.io/py/iris-devtester)
+[![Python Versions](https://img.shields.io/pypi/pyversions/iris-devtester.svg)](https://pypi.org/project/iris-devtester/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Test Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/yourusername/iris-devtools)
+[![Test Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](https://github.com/intersystems-community/iris-devtools)
 
 ## What is This?
 
@@ -29,13 +29,13 @@ Ever experienced these?
 
 ```bash
 # Basic installation
-pip install iris-devtools
+pip install iris-devtester
 
 # With DBAPI support (recommended - 3x faster)
-pip install iris-devtools[dbapi]
+pip install iris-devtester[dbapi]
 
 # With all features
-pip install iris-devtools[all]
+pip install iris-devtester[all]
 ```
 
 ### Zero-Config Usage
@@ -88,17 +88,38 @@ pytest  # Just works! 🎉
 - No port conflicts
 - No test data pollution
 
+### 🐋 Docker-Compose Support (NEW in v1.0.1)
+- Attach to existing IRIS containers without lifecycle management
+- Works with licensed IRIS via docker-compose
+- CLI commands for quick operations (status, enable-callin, test-connection)
+- Standalone utilities for shell scripts and automation
+- Auto-discovery of container ports
+
 ### ⚡ DBAPI-First Performance
 - Automatically uses fastest connection method
-- DBAPI: 3x faster than JDBC
+- DBAPI (Database API): 3x faster than JDBC (Java Database Connectivity)
 - Falls back to JDBC if DBAPI unavailable
 - All transparent to your code
+
+### 📦 DAT Fixture Management
+- Create reproducible test fixtures from IRIS tables
+- 10-100x faster than programmatic data creation
+- SHA256 checksum validation for data integrity
+- Load 10K rows in <10 seconds
+- CLI commands for create, load, validate
+
+### 📊 Performance Monitoring
+- Auto-configure ^SystemPerformance monitoring
+- Task Manager integration for scheduled monitoring
+- Resource-aware auto-disable under high load
+- Automatic re-enable when resources recover
+- Zero-config monitoring setup
 
 ### 🧪 Production-Ready Testing
 - Schema validation & auto-reset
 - Test data isolation
 - Pre-flight checks
-- Medical-grade reliability (95%+ coverage)
+- Medical-grade reliability (94%+ coverage)
 
 ### 📦 Zero Configuration
 - Sensible defaults
@@ -117,16 +138,129 @@ with IRISContainer.enterprise(namespace="PRODUCTION") as iris:
     # Use your enterprise IRIS instance
 ```
 
+## Example: DAT Fixtures
+
+Create reproducible test fixtures 10-100x faster than programmatic data creation:
+
+```python
+from iris_devtools.fixtures import FixtureCreator, DATFixtureLoader
+
+# Create fixture from existing data
+creator = FixtureCreator()
+manifest = creator.create_fixture(
+    fixture_id="test-users-100",
+    namespace="USER",
+    output_dir="./fixtures/test-users-100"
+)
+
+# Load fixture in tests (10K rows in <10 seconds)
+loader = DATFixtureLoader()
+result = loader.load_fixture("./fixtures/test-users-100")
+print(f"Loaded {len(result.tables_loaded)} tables in {result.elapsed_seconds:.2f}s")
+```
+
+### CLI Usage
+
+```bash
+# Create fixture
+iris-devtester fixture create --name test-100 --namespace USER --output ./fixtures/test-100
+
+# Validate integrity
+iris-devtester fixture validate --fixture ./fixtures/test-100
+
+# Load fixture
+iris-devtester fixture load --fixture ./fixtures/test-100
+```
+
+## Example: Performance Monitoring
+
+Auto-configure IRIS performance monitoring with resource-aware auto-disable:
+
+```python
+from iris_devtools.containers.monitoring import configure_monitoring
+from iris_devtools.containers import IRISContainer
+
+with IRISContainer.community() as iris:
+    conn = iris.get_connection()
+
+    # Zero-config monitoring setup
+    success, message = configure_monitoring(conn)
+    print(f"Monitoring configured: {message}")
+
+    # Automatically disables monitoring if CPU > 90%
+    # Automatically re-enables when CPU < 85%
+```
+
+## Example: Docker-Compose Integration (NEW in v1.0.1)
+
+Work with existing IRIS containers (docker-compose, licensed IRIS, external containers):
+
+```python
+from iris_devtools.containers import IRISContainer
+from iris_devtools.utils import enable_callin_service, test_connection, get_container_status
+
+# Approach 1: Attach to existing container
+iris = IRISContainer.attach("iris_db")  # Your docker-compose service name
+conn = iris.get_connection()  # Auto-enables CallIn, discovers port
+cursor = conn.cursor()
+cursor.execute("SELECT $ZVERSION")
+
+# Approach 2: Standalone utilities (shell-friendly)
+success, msg = enable_callin_service("iris_db")
+success, msg = test_connection("iris_db", namespace="USER")
+success, report = get_container_status("iris_db")
+```
+
+### CLI Usage
+
+```bash
+# Check container status (aggregates running, health, connection)
+iris-devtester container status iris_db
+
+# Enable CallIn service (required for DBAPI connections)
+iris-devtester container enable-callin iris_db
+
+# Test database connection
+iris-devtester container test-connection iris_db --namespace USER
+
+# Reset password if needed
+iris-devtester container reset-password iris_db --user _SYSTEM --password SYS
+```
+
+### Docker-Compose Example
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  iris_db:
+    image: intersystemsdc/iris:latest  # Licensed IRIS
+    container_name: iris_db
+    ports:
+      - "1972:1972"
+      - "52773:52773"
+```
+
+Then use iris-devtester with your existing container:
+
+```python
+# No testcontainers overhead - use existing container
+iris = IRISContainer.attach("iris_db")
+conn = iris.get_connection()
+```
+
+See [examples/10_docker_compose_integration.py](examples/10_docker_compose_integration.py) for complete examples.
+
 ## Architecture
 
 Built on proven foundations:
 - **testcontainers-python**: Industry-standard container management
 - **testcontainers-iris-python** (caretdev): IRIS-specific extensions
-- **Battle-tested code**: Extracted from production RAG systems
+- **Battle-tested code**: Extracted from production RAG (Retrieval-Augmented Generation) systems
 
 ## Constitution
 
-This library follows [8 core principles](CONSTITUTION.md) learned through production experience:
+This library follows [8 core principles](https://github.com/intersystems-community/iris-devtools/blob/main/CONSTITUTION.md) learned through production experience:
 
 1. **Automatic Remediation Over Manual Intervention** - No "run this command" errors
 2. **DBAPI First, JDBC Fallback** - Always use the fastest option
@@ -139,20 +273,18 @@ This library follows [8 core principles](CONSTITUTION.md) learned through produc
 
 ## Documentation
 
-- [Quickstart Guide](docs/quickstart.md)
-- [Best Practices](docs/best-practices.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Codified Learnings](docs/learnings/) - Our hard-won knowledge
-- [API Reference](https://iris-devtools.readthedocs.io)
+- [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtools/blob/main/docs/TROUBLESHOOTING.md)
+- [Codified Learnings](https://github.com/intersystems-community/iris-devtools/blob/main/docs/learnings/) - Our hard-won knowledge
+- [Examples](https://github.com/intersystems-community/iris-devtools/blob/main/examples/) - Runnable code samples
 
 ## Real-World Use Cases
 
-### Use Case 1: CI/CD Testing
+### Use Case 1: CI/CD (Continuous Integration/Continuous Deployment) Testing
 ```yaml
 # .github/workflows/test.yml
 - name: Run tests
   run: |
-    pip install iris-devtools[all]
+    pip install iris-devtester[all]
     pytest  # IRIS spins up automatically!
 ```
 
@@ -190,11 +322,21 @@ Benchmarks on MacBook Pro M1:
 - Docker (for testcontainers)
 - InterSystems IRIS (Community or Enterprise)
 
+## AI-Assisted Development
+
+This project is optimized for AI coding assistants:
+
+- **[AGENTS.md](AGENTS.md)** - Vendor-neutral AI configuration (build commands, CI/CD)
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code-specific context and patterns
+- **[.cursorrules](.cursorrules)** - Cursor IDE configuration
+- **Comprehensive examples** - All examples include expected outputs
+- **Structured documentation** - Clear architecture, conventions, and troubleshooting
+
 ## Contributing
 
 We welcome contributions! This library embodies real production experience. If you've solved an IRIS infrastructure problem, please contribute it so others don't repeat the same journey.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtools/blob/main/CONTRIBUTING.md) for guidelines.
 
 ## Credits
 
@@ -207,12 +349,12 @@ Special thanks to all the developers who debugged these issues so you don't have
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+MIT License - See [LICENSE](https://github.com/intersystems-community/iris-devtools/blob/main/LICENSE)
 
 ## Support
 
-- [GitHub Issues](https://github.com/yourusername/iris-devtools/issues)
-- [Documentation](https://iris-devtools.readthedocs.io)
+- [GitHub Issues](https://github.com/intersystems-community/iris-devtools/issues)
+- [Documentation](https://github.com/intersystems-community/iris-devtools#readme)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/intersystems-iris) (tag: intersystems-iris)
 
 ---
