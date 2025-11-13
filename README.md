@@ -88,7 +88,15 @@ pytest  # Just works! 🎉
 - No port conflicts
 - No test data pollution
 
-### 🐋 Docker-Compose Support (NEW in v1.0.1)
+### 🐋 Container Lifecycle Management (NEW in v1.2.2)
+- Complete CLI for IRIS container management (`container up`, `start`, `stop`, `remove`)
+- Zero-config defaults work out of the box
+- Persistent containers for long-running tests (benchmark infrastructure)
+- Volume mounting support with read-only mode
+- Automatic health checks and CallIn enablement
+- Works with both Community and Enterprise editions
+
+### 🐋 Docker-Compose Support
 - Attach to existing IRIS containers without lifecycle management
 - Works with licensed IRIS via docker-compose
 - CLI commands for quick operations (status, enable-callin, test-connection)
@@ -126,6 +134,65 @@ pytest  # Just works! 🎉
 - Auto-discovery of IRIS instances
 - Environment variable overrides
 - Works with both Community & Enterprise editions
+
+## Example: Container Lifecycle Management (NEW in v1.2.2)
+
+Manage IRIS containers like docker-compose, but with zero configuration:
+
+```bash
+# Start IRIS container (zero-config, uses Community edition)
+iris-devtester container up
+
+# Container persists - perfect for development or benchmarks
+# Access at http://localhost:52773/csp/sys/UtilHome.csp
+
+# Check status
+iris-devtester container status
+
+# View logs
+iris-devtester container logs --follow
+
+# Stop when done
+iris-devtester container stop
+
+# Remove completely
+iris-devtester container remove
+```
+
+### With Custom Configuration
+
+```yaml
+# iris-config.yml
+edition: community
+container_name: my_iris
+ports:
+  superserver: 1972
+  webserver: 52773
+namespace: USER
+password: SYS
+volumes:
+  - ./data:/external/data
+  - ./config:/opt/config:ro  # read-only
+```
+
+```bash
+# Use custom config
+iris-devtester container up --config iris-config.yml
+```
+
+### Python API
+
+```python
+from iris_devtester.config import ContainerConfig
+from iris_devtester.utils import IRISContainerManager
+
+# Programmatic container management
+config = ContainerConfig.from_yaml("iris-config.yml")
+container = IRISContainerManager.create_from_config(config)
+
+# Container persists for long-running operations
+# Perfect for benchmark infrastructure
+```
 
 ## Example: Enterprise Setup
 
