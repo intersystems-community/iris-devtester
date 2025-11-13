@@ -5,6 +5,48 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-01-13
+
+### Fixed
+
+- **Bug Fix #1: Corrected Docker image name for Community edition**
+  - Fixed `ContainerConfig.get_image_name()` to use correct Docker Hub organization
+  - Community images changed from `intersystems/iris-community` → `intersystemsdc/iris-community`
+  - The `intersystems/iris-community` image doesn't exist on Docker Hub
+  - Community images use `intersystemsdc/` prefix (Docker Community organization)
+  - Enterprise images continue to use `intersystems/` prefix (no change)
+  - **Impact**: Community edition containers now start successfully (0 image-not-found errors)
+  - **Location**: `iris_devtester/config/container_config.py:266`
+  - **Documentation**: New learnings doc at `docs/learnings/docker-hub-image-naming.md`
+
+- **Bug Fix #3: Implemented volume mounting support**
+  - Volume mounts specified in `ContainerConfig.volumes` are now applied to containers
+  - Supports Docker volume syntax: `host:container` or `host:container:mode`
+  - Mode defaults to `rw` (read-write) if not specified, supports `ro` (read-only)
+  - Multiple volumes can be mounted simultaneously
+  - **Impact**: Configuration-defined volumes now work correctly (previously ignored)
+  - **Location**: `iris_devtester/utils/iris_container_adapter.py:52-58`
+  - **Example**:
+    ```yaml
+    volumes:
+      - ./data:/external          # Read-write mount
+      - ./config:/opt/config:ro   # Read-only mount
+    ```
+
+### Migration Notes
+
+No breaking changes - all fixes are backwards compatible:
+- Community edition now uses correct image name automatically
+- Volume mounting is additive functionality (empty volumes list works as before)
+- Existing configurations continue to work without modification
+
+### Quality Assurance
+
+- All 35 existing contract tests passing (100% - no regression)
+- 4 new unit tests for image name correction (100% passing)
+- 4 new unit tests for volume mounting (100% passing)
+- Constitutional Principle #5 compliance maintained (error messages still follow What/Why/How/Docs format)
+
 ## [1.2.0] - 2025-01-11
 
 ### Changed

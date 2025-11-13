@@ -263,7 +263,8 @@ class ContainerConfig(BaseModel):
             'intersystems/iris:2024.1'
         """
         if self.edition == "community":
-            return f"intersystems/iris-community:{self.image_tag}"
+            # Bug Fix #1: Community images use 'intersystemsdc/' prefix on Docker Hub
+            return f"intersystemsdc/iris-community:{self.image_tag}"
         else:
             return f"intersystems/iris:{self.image_tag}"
 

@@ -138,6 +138,102 @@ class TestIRISContainerManagerCreateFromConfig:
         # Assert
         assert mock_iris_container_class.call_args[1]["image"] == "intersystems/iris-community:2024.1.0"
 
+    @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
+    def test_create_from_config_with_single_volume(self, mock_iris_container_class):
+        """Test creating container with single volume mount (Bug Fix #3)."""
+        # Arrange
+        mock_container = MagicMock()
+        mock_iris_container_class.return_value = mock_container
+
+        config = ContainerConfig(
+            edition="community",
+            container_name="iris-test",
+            superserver_port=1972,
+            webserver_port=52773,
+            namespace="USER",
+            password="SYS",
+            volumes=["./data:/external"]
+        )
+
+        # Act
+        IRISContainerManager.create_from_config(config)
+
+        # Assert - Volume mounting should be called once
+        mock_container.with_volume_mapping.assert_called_once_with("./data", "/external", "rw")
+
+    @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
+    def test_create_from_config_with_multiple_volumes(self, mock_iris_container_class):
+        """Test creating container with multiple volume mounts (Bug Fix #3)."""
+        # Arrange
+        mock_container = MagicMock()
+        mock_iris_container_class.return_value = mock_container
+
+        config = ContainerConfig(
+            edition="community",
+            container_name="iris-test",
+            superserver_port=1972,
+            webserver_port=52773,
+            namespace="USER",
+            password="SYS",
+            volumes=["./data:/external", "./config:/opt/config:ro", "./logs:/var/log:rw"]
+        )
+
+        # Act
+        IRISContainerManager.create_from_config(config)
+
+        # Assert - Volume mounting should be called three times
+        assert mock_container.with_volume_mapping.call_count == 3
+        calls = mock_container.with_volume_mapping.call_args_list
+        assert calls[0][0] == ("./data", "/external", "rw")
+        assert calls[1][0] == ("./config", "/opt/config", "ro")
+        assert calls[2][0] == ("./logs", "/var/log", "rw")
+
+    @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
+    def test_create_from_config_with_read_only_volume(self, mock_iris_container_class):
+        """Test creating container with read-only volume mount (Bug Fix #3)."""
+        # Arrange
+        mock_container = MagicMock()
+        mock_iris_container_class.return_value = mock_container
+
+        config = ContainerConfig(
+            edition="community",
+            container_name="iris-test",
+            superserver_port=1972,
+            webserver_port=52773,
+            namespace="USER",
+            password="SYS",
+            volumes=["./config:/opt/config:ro"]
+        )
+
+        # Act
+        IRISContainerManager.create_from_config(config)
+
+        # Assert - Mode should be 'ro'
+        mock_container.with_volume_mapping.assert_called_once_with("./config", "/opt/config", "ro")
+
+    @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
+    def test_create_from_config_with_empty_volumes(self, mock_iris_container_class):
+        """Test creating container with empty volumes list (Bug Fix #3)."""
+        # Arrange
+        mock_container = MagicMock()
+        mock_iris_container_class.return_value = mock_container
+
+        config = ContainerConfig(
+            edition="community",
+            container_name="iris-test",
+            superserver_port=1972,
+            webserver_port=52773,
+            namespace="USER",
+            password="SYS",
+            volumes=[]
+        )
+
+        # Act
+        IRISContainerManager.create_from_config(config)
+
+        # Assert - Volume mounting should not be called
+        mock_container.with_volume_mapping.assert_not_called()
+
 
 class TestIRISContainerManagerGetExisting:
     """Test IRISContainerManager.get_existing() method."""

@@ -1,0 +1,64 @@
+{
+  "contract_id": "image-name-correction",
+  "feature": "010-fix-critical-bugs",
+  "description": "ContainerConfig.get_image_name() returns correct Docker Hub image names",
+  "requirements": ["FR-001", "FR-002", "FR-003"],
+  "test_scenarios": [
+    {
+      "name": "community_edition_image_name",
+      "description": "Community edition uses intersystemsdc/iris-community prefix",
+      "given": {
+        "edition": "community",
+        "image_tag": "latest"
+      },
+      "when": "get_image_name() is called",
+      "then": {
+        "returns": "intersystemsdc/iris-community:latest",
+        "not_returns": "intersystems/iris-community:latest"
+      }
+    },
+    {
+      "name": "enterprise_edition_image_name",
+      "description": "Enterprise edition uses intersystems/iris prefix (no 'dc' suffix)",
+      "given": {
+        "edition": "enterprise",
+        "image_tag": "latest"
+      },
+      "when": "get_image_name() is called",
+      "then": {
+        "returns": "intersystems/iris:latest"
+      }
+    },
+    {
+      "name": "community_edition_with_specific_tag",
+      "description": "Image tag is correctly appended to community image name",
+      "given": {
+        "edition": "community",
+        "image_tag": "2024.1"
+      },
+      "when": "get_image_name() is called",
+      "then": {
+        "returns": "intersystemsdc/iris-community:2024.1"
+      }
+    },
+    {
+      "name": "enterprise_edition_with_specific_tag",
+      "description": "Image tag is correctly appended to enterprise image name",
+      "given": {
+        "edition": "enterprise",
+        "image_tag": "2024.1"
+      },
+      "when": "get_image_name() is called",
+      "then": {
+        "returns": "intersystems/iris:2024.1"
+      }
+    }
+  ],
+  "validation_method": "unit_test",
+  "test_file": "tests/unit/config/test_container_config.py",
+  "success_criteria": [
+    "All 4 test scenarios pass",
+    "No regression in existing tests",
+    "Image names match actual Docker Hub repositories"
+  ]
+}

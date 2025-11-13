@@ -49,6 +49,14 @@ class IRISContainerManager:
         container.with_bind_ports(config.superserver_port, config.superserver_port)
         container.with_bind_ports(config.webserver_port, config.webserver_port)
 
+        # Bug Fix #3: Configure volume mounts from config
+        for volume in config.volumes:
+            parts = volume.split(":")
+            host_path = parts[0]
+            container_path = parts[1]
+            mode = parts[2] if len(parts) > 2 else "rw"
+            container.with_volume_mapping(host_path, container_path, mode)
+
         return container
 
     @staticmethod

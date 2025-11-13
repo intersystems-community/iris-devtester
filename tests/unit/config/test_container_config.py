@@ -370,12 +370,14 @@ class TestContainerConfigImageName:
     def test_get_image_name_community_latest(self):
         """Test image name for community edition with latest tag."""
         config = ContainerConfig(edition="community", image_tag="latest")
-        assert config.get_image_name() == "intersystems/iris-community:latest"
+        # Bug Fix #1: Community images use 'intersystemsdc/' prefix (not 'intersystems/')
+        assert config.get_image_name() == "intersystemsdc/iris-community:latest"
 
     def test_get_image_name_community_specific_tag(self):
         """Test image name for community edition with specific tag."""
         config = ContainerConfig(edition="community", image_tag="2024.1")
-        assert config.get_image_name() == "intersystems/iris-community:2024.1"
+        # Bug Fix #1: Community images use 'intersystemsdc/' prefix
+        assert config.get_image_name() == "intersystemsdc/iris-community:2024.1"
 
     def test_get_image_name_enterprise_latest(self):
         """Test image name for enterprise edition with latest tag."""
