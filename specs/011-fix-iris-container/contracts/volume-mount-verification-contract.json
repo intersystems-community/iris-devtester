@@ -1,0 +1,163 @@
+{
+  "contract_id": "volume-mount-001",
+  "feature": "011-fix-iris-container",
+  "requirement": "FR-005, FR-006, FR-007",
+  "title": "Volume Mounts Must Be Applied and Accessible",
+  "description": "Volumes specified in container configuration must be mounted to container and files must be accessible from within the container",
+
+  "test_scenario": {
+    "given": "ContainerConfig with volumes=['/host/path:/container/path:rw']",
+    "when": "Container is created via IRISContainerManager.create_from_config()",
+    "then": "Host path is accessible at container path with correct permissions"
+  },
+
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "description": "Volume mount appears in Docker container inspection",
+      "test": "docker inspect <name> --format '{{json .Mounts}}'",
+      "expected": "Mounts array contains entry with Source=/host/path, Destination=/container/path",
+      "failure_mode": "Mounts array empty or missing expected mount"
+    },
+    {
+      "id": "AC-002",
+      "description": "Files from host are readable in container",
+      "test": "Create file on host, docker exec cat /container/path/file",
+      "expected": "File content matches host file",
+      "failure_mode": "File not found or content mismatch"
+    },
+    {
+      "id": "AC-003",
+      "description": "Read-only mounts enforce permissions",
+      "test": "Mount with :ro suffix, try to write: docker exec touch /container/path/newfile",
+      "expected": "Write operation fails with permission denied",
+      "failure_mode": "Write succeeds (mount not read-only)"
+    },
+    {
+      "id": "AC-004",
+      "description": "Multiple volumes can be mounted simultaneously",
+      "test": "Create config with 3 volumes, verify all 3 appear in Mounts",
+      "expected": "All 3 volume destinations accessible",
+      "failure_mode": "One or more volumes missing"
+    }
+  ],
+
+  "test_implementation": {
+    "file": "tests/integration/test_bug_fixes_011.py",
+    "class": "TestVolumeMountVerification",
+    "tests": [
+      {
+        "method": "test_single_volume_mount_applied_and_accessible",
+        "setup": [
+          "Create temp directory with test file",
+          "ContainerConfig with volumes=['<temp_dir>:/external']"
+        ],
+        "action": [
+          "Create container with IRISContainerManager",
+          "Inspect container.attrs['Mounts']"
+        ],
+        "assertion": [
+          "Mount with Destination='/external' exists",
+          "docker exec cat /external/test_file returns correct content"
+        ]
+      },
+      {
+        "method": "test_multiple_volumes_all_mounted",
+        "setup": [
+          "Create 3 temp directories with different test files",
+          "ContainerConfig with volumes=['<dir1>:/data1', '<dir2>:/data2', '<dir3>:/data3']"
+        ],
+        "action": [
+          "Create container",
+          "Verify each mount individually"
+        ],
+        "assertion": [
+          "All 3 mounts appear in container.attrs['Mounts']",
+          "All 3 test files accessible via docker exec"
+        ]
+      },
+      {
+        "method": "test_read_only_volume_enforced",
+        "setup": [
+          "Create temp directory",
+          "ContainerConfig with volumes=['<temp_dir>:/readonly:ro']"
+        ],
+        "action": [
+          "Create container",
+          "Try to write: docker exec touch /readonly/newfile"
+        ],
+        "assertion": [
+          "Mount has RW=false in attrs",
+          "Write command exits with non-zero status"
+        ]
+      },
+      {
+        "method": "test_volume_mount_verification_in_persistence_check",
+        "setup": [
+          "ContainerConfig with volumes",
+          "Create container"
+        ],
+        "action": [
+          "Call verify_container_persistence()",
+          "Check ContainerPersistenceCheck.volume_mounts_verified"
+        ],
+        "assertion": [
+          "volume_mounts_verified == True",
+          "check.success == True"
+        ]
+      }
+    ]
+  },
+
+  "failure_examples": {
+    "volumes_not_applied": {
+      "symptom": "container.attrs['Mounts'] is empty or missing expected mount",
+      "cause": "Volume configuration not passed to Docker SDK create()",
+      "evidence": "docker inspect shows no mounts"
+    },
+    "wrong_api_usage": {
+      "symptom": "Volumes configured but testcontainers API doesn't apply them",
+      "cause": "testcontainers-iris with_volume_mapping() not working due to ryuk cleanup",
+      "evidence": "Container removed before volumes applied"
+    },
+    "host_path_not_exists": {
+      "symptom": "Mount appears in inspection but files not accessible",
+      "cause": "Host path doesn't exist when container created",
+      "evidence": "docker exec ls /container/path shows empty directory"
+    }
+  },
+
+  "volume_syntax_validation": {
+    "valid_formats": [
+      "./data:/external",
+      "/absolute/path:/container/path",
+      "./workspace:/opt/workspace:ro",
+      "/tmp/data:/data:rw"
+    ],
+    "invalid_formats": [
+      "./data",
+      "./data:",
+      "./data:/external:invalid_mode",
+      ":/container/path"
+    ],
+    "parsing_rules": {
+      "split_on": ":",
+      "min_parts": 2,
+      "max_parts": 3,
+      "mode_default": "rw",
+      "mode_values": ["rw", "ro"]
+    }
+  },
+
+  "performance": {
+    "volume_mount_time": "<5 seconds per volume",
+    "verification_time": "<2 seconds per volume",
+    "max_volumes_tested": 10
+  },
+
+  "constitutional_alignment": {
+    "principle_1": "Automatic Remediation - Volume validation before creation",
+    "principle_5": "Fail Fast with Guidance - Clear errors for invalid volumes",
+    "principle_7": "Medical-Grade Reliability - Verify accessibility, not just configuration"
+  }
+}

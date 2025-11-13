@@ -1,0 +1,89 @@
+{
+  "contract_id": "ryuk-lifecycle-001",
+  "feature": "011-fix-iris-container",
+  "requirement": "FR-002",
+  "title": "CLI-Managed Containers Must Not Be Cleaned Up by Ryuk",
+  "description": "Containers created via CLI commands must persist beyond the CLI process lifecycle and not be removed by testcontainers ryuk cleanup service",
+
+  "test_scenario": {
+    "given": "iris-devtester CLI is installed with Docker running",
+    "when": "User runs 'iris-devtester container up' and CLI process exits",
+    "then": "Container remains running for at least 60 seconds after CLI exit"
+  },
+
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "description": "Container created via CLI persists after process exit",
+      "test": "Create container, exit CLI, wait 60 seconds, verify container exists",
+      "expected": "docker ps shows container in 'running' state",
+      "failure_mode": "Container not found or status='exited'"
+    },
+    {
+      "id": "AC-002",
+      "description": "Container has no testcontainers labels",
+      "test": "Inspect container labels: docker inspect <name> --format '{{.Config.Labels}}'",
+      "expected": "No 'org.testcontainers.session-id' label present",
+      "failure_mode": "Label exists (indicates testcontainers management)"
+    },
+    {
+      "id": "AC-003",
+      "description": "Container not managed by ryuk cleanup",
+      "test": "Check ryuk logs for cleanup events: docker logs testcontainers-ryuk-*",
+      "expected": "No mention of container name in ryuk logs",
+      "failure_mode": "Ryuk log shows container removal"
+    }
+  ],
+
+  "test_implementation": {
+    "file": "tests/integration/test_bug_fixes_011.py",
+    "class": "TestRyukLifecycle",
+    "method": "test_cli_container_persists_after_process_exit",
+    "setup": [
+      "Create ContainerConfig with unique name",
+      "Call IRISContainerManager.create_from_config(config, use_testcontainers=False)",
+      "Store container name"
+    ],
+    "action": [
+      "Container creation completes",
+      "Simulate CLI process exit (function returns)",
+      "Wait 60 seconds",
+      "Query Docker for container: docker_client.containers.get(name)"
+    ],
+    "assertion": [
+      "Container exists (no docker.errors.NotFound)",
+      "Container status in ['running', 'created']",
+      "Container has no 'org.testcontainers' labels"
+    ],
+    "cleanup": [
+      "Explicitly remove container",
+      "Verify removal successful"
+    ]
+  },
+
+  "failure_examples": {
+    "immediate_cleanup": {
+      "symptom": "Container not found 10 seconds after creation",
+      "cause": "testcontainers ryuk removed container",
+      "evidence": "testcontainers labels present on container"
+    },
+    "wrong_lifecycle_mode": {
+      "symptom": "Container removed when Python process exits",
+      "cause": "use_testcontainers=True (wrong mode for CLI)",
+      "evidence": "Ryuk cleanup logs show container name"
+    }
+  },
+
+  "performance": {
+    "creation_time": "<60 seconds",
+    "persistence_duration": "Until explicit removal (30+ minutes for benchmarks)",
+    "verification_time": "<5 seconds"
+  },
+
+  "constitutional_alignment": {
+    "principle_1": "Automatic Remediation - Container persists without manual intervention",
+    "principle_3": "Isolation by Default - Each CLI invocation independent",
+    "principle_5": "Fail Fast with Guidance - Clear error if persistence fails",
+    "principle_7": "Medical-Grade Reliability - Persistence verification required"
+  }
+}

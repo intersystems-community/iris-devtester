@@ -396,3 +396,68 @@ class TestContainerConfigImageName:
             image_tag="2024.1"
         )
         assert config.get_image_name() == "intersystems/iris:2024.1"
+
+
+class TestContainerConfigVolumeValidation:
+    """Test ContainerConfig.validate_volume_paths() method (Feature 011 - T001)."""
+
+    def test_validate_volume_paths_all_valid(self):
+        """Test that validation passes when all host paths exist."""
+        import tempfile
+
+        # Create temp directories that exist
+        with tempfile.TemporaryDirectory() as temp_dir1, \
+             tempfile.TemporaryDirectory() as temp_dir2:
+
+            config = ContainerConfig(
+                volumes=[
+                    f"{temp_dir1}:/data1",
+                    f"{temp_dir2}:/data2:ro"
+                ]
+            )
+
+            # Should return empty list (no errors)
+            errors = config.validate_volume_paths()
+            assert errors == []
+
+    def test_validate_volume_paths_nonexistent(self):
+        """Test that validation fails when one host path doesn't exist."""
+        config = ContainerConfig(
+            volumes=[
+                "/nonexistent/path:/data",
+                "/another/missing:/data2:ro"
+            ]
+        )
+
+        # Should return error messages for missing paths
+        errors = config.validate_volume_paths()
+        assert len(errors) == 2
+        assert "/nonexistent/path" in errors[0]
+        assert "/another/missing" in errors[1]
+        assert "does not exist" in errors[0].lower()
+
+    def test_validate_volume_paths_empty_list(self):
+        """Test that validation passes with no volumes configured."""
+        config = ContainerConfig(volumes=[])
+
+        # Empty volumes should be valid (no errors)
+        errors = config.validate_volume_paths()
+        assert errors == []
+
+    def test_validate_volume_paths_multiple_errors(self):
+        """Test error messages for multiple invalid paths."""
+        config = ContainerConfig(
+            volumes=[
+                "/fake/path1:/data1",
+                "/fake/path2:/data2:rw",
+                "/fake/path3:/data3:ro"
+            ]
+        )
+
+        errors = config.validate_volume_paths()
+        assert len(errors) == 3
+
+        # Verify each error mentions the corresponding path
+        assert any("/fake/path1" in err for err in errors)
+        assert any("/fake/path2" in err for err in errors)
+        assert any("/fake/path3" in err for err in errors)

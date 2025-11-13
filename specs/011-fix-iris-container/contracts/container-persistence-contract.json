@@ -1,0 +1,168 @@
+{
+  "contract_id": "container-persistence-001",
+  "feature": "011-fix-iris-container",
+  "requirement": "FR-009, FR-012, FR-017",
+  "title": "Containers Must Persist for Long-Running Benchmark Tests",
+  "description": "Containers created for benchmark infrastructure must remain available for the full duration of test execution (30+ minutes) until explicit cleanup",
+
+  "test_scenario": {
+    "given": "Benchmark infrastructure needs IRIS container for test suite",
+    "when": "Container created with workspace volume mount",
+    "then": "Container persists for 30+ minutes and supports multiple test operations"
+  },
+
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "description": "Container persists for 30 minutes minimum",
+      "test": "Create container, perform operation every 5 minutes for 30 minutes",
+      "expected": "All 6 operations succeed, container never 'not found'",
+      "failure_mode": "Container disappears during test execution"
+    },
+    {
+      "id": "AC-002",
+      "description": "Workspace-mounted classes accessible throughout test",
+      "test": "Load ObjectScript class from workspace mount 24 times (simulating benchmark)",
+      "expected": "All 24 class loads succeed",
+      "failure_mode": "Class not found or workspace mount disappeared"
+    },
+    {
+      "id": "AC-003",
+      "description": "Container survives multiple connections",
+      "test": "Connect, disconnect, reconnect 10 times over 30 minutes",
+      "expected": "All connections succeed",
+      "failure_mode": "Connection refused after N attempts"
+    },
+    {
+      "id": "AC-004",
+      "description": "Post-creation verification confirms persistence",
+      "test": "Call verify_container_persistence() immediately after creation",
+      "expected": "ContainerPersistenceCheck.success == True",
+      "failure_mode": "check.exists == False or check.status != 'running'"
+    }
+  },
+
+  "test_implementation": {
+    "file": "tests/integration/test_bug_fixes_011.py",
+    "class": "TestContainerPersistence",
+    "tests": [
+      {
+        "method": "test_container_persists_30_minutes",
+        "duration": "30 minutes",
+        "setup": [
+          "Create ContainerConfig with workspace volume",
+          "Create container with use_testcontainers=False"
+        ],
+        "action": [
+          "Perform operation at t=0, t=5min, t=10min, ..., t=30min",
+          "Each operation: verify container exists, exec simple command"
+        ],
+        "assertion": [
+          "All 7 operations succeed",
+          "Container status='running' at each checkpoint",
+          "No docker.errors.NotFound exceptions"
+        ],
+        "cleanup": [
+          "Explicit container removal",
+          "Verify removal successful"
+        ]
+      },
+      {
+        "method": "test_persistence_check_detects_immediate_cleanup",
+        "setup": [
+          "Mock scenario: container created then immediately removed"
+        ],
+        "action": [
+          "Create container",
+          "Simulate immediate removal (for testing)",
+          "Call verify_container_persistence()"
+        ],
+        "assertion": [
+          "check.exists == False",
+          "check.success == False",
+          "check.error_details mentions ryuk or cleanup"
+        ]
+      },
+      {
+        "method": "test_benchmark_infrastructure_pattern",
+        "description": "Simulate actual benchmark usage pattern",
+        "setup": [
+          "Create container with workspace mount",
+          "Load SimpleTestRunner class definition into workspace"
+        ],
+        "action": [
+          "Loop 24 times: Connect, instantiate SimpleTestRunner, run test, disconnect",
+          "Verify container still running after all 24 operations"
+        ],
+        "assertion": [
+          "All 24 operations succeed",
+          "Container exists at end",
+          "No connection errors"
+        ]
+      }
+    ]
+  },
+
+  "benchmark_infrastructure_requirements": {
+    "container_lifetime": "30+ minutes (for 24-test suite)",
+    "workspace_mount": "./workspace:/external/workspace",
+    "workspace_contents": [
+      "SimpleTestRunner.cls",
+      "Test data files",
+      "Configuration files"
+    ],
+    "operations_per_minute": "~1 (24 operations over 30 minutes)",
+    "expected_success_rate": ">90% (22/24 tests passing)"
+  },
+
+  "persistence_verification": {
+    "timing": "2 seconds after container.start()",
+    "checks": [
+      "Container exists in Docker (docker inspect)",
+      "Container status in ['running', 'created']",
+      "All configured volumes present in Mounts",
+      "Sample file accessible in each volume"
+    ],
+    "failure_handling": {
+      "container_not_found": "Constitutional error: ryuk cleanup detected",
+      "container_exited": "Constitutional error: startup failure",
+      "volumes_missing": "Constitutional error: mount configuration failed"
+    }
+  },
+
+  "failure_examples": {
+    "ryuk_cleanup": {
+      "symptom": "Container not found after 10-60 seconds",
+      "cause": "testcontainers ryuk removed container",
+      "expected_behavior": "Container persists until explicit removal",
+      "fix": "Use Docker SDK (use_testcontainers=False) for CLI commands"
+    },
+    "workspace_mount_lost": {
+      "symptom": "SimpleTestRunner class not found after some operations",
+      "cause": "Volume mount not applied or container restarted",
+      "expected_behavior": "Volume mount persists for container lifetime",
+      "fix": "Verify volumes in persistence check, use Docker SDK"
+    },
+    "connection_refused": {
+      "symptom": "Cannot connect to IRIS after N operations",
+      "cause": "Container crashed or exited",
+      "expected_behavior": "Container remains healthy for 30+ minutes",
+      "fix": "Check IRIS logs, verify health checks, ensure adequate resources"
+    }
+  },
+
+  "performance": {
+    "container_creation": "<60 seconds (including image pull if needed)",
+    "persistence_verification": "<5 seconds",
+    "minimum_lifetime": "30 minutes",
+    "recommended_lifetime": "Until explicit cleanup (hours if needed)",
+    "operations_per_container": "24+ (benchmark test count)"
+  },
+
+  "constitutional_alignment": {
+    "principle_1": "Automatic Remediation - Persistence verification automatic",
+    "principle_3": "Isolation by Default - Each benchmark run gets own container",
+    "principle_5": "Fail Fast with Guidance - Clear errors if persistence fails",
+    "principle_7": "Medical-Grade Reliability - Verify container persists before reporting success"
+  }
+}

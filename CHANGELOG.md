@@ -5,6 +5,115 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-01-13
+
+### Fixed
+
+- **Bug Fix #1: Prevented ryuk cleanup of CLI-managed containers (Feature 011)**
+  - CLI commands now use Docker SDK directly, bypassing testcontainers-iris for container creation
+  - Containers created via CLI persist until explicit removal (not cleaned up when CLI exits)
+  - Added dual-mode container creation: Docker SDK for CLI, testcontainers for pytest fixtures
+  - Resolved testcontainers ryuk sidecar removing containers immediately after CLI process exits
+  - **Impact**: Benchmark infrastructure can now run 30+ minute test suites (0% → 92% pass rate)
+  - **Location**: `iris_devtester/utils/iris_container_adapter.py` (dual-mode implementation)
+  - **Documentation**: New learnings doc at `docs/learnings/testcontainers-ryuk-lifecycle.md`
+  - **Technical Details**:
+    - CLI mode: `use_testcontainers=False` - No ryuk labels, manual lifecycle
+    - Test mode: `use_testcontainers=True` - Automatic cleanup after test scope
+    - Benchmark tests improved from 0/24 (0.0%) to 22/24 (91.7%) passing
+
+- **Bug Fix #2: Fixed volume mounting for CLI containers (Feature 011)**
+  - Volumes now applied correctly via Docker SDK when using CLI commands
+  - Volume mounts verified after container creation with `verify_container_persistence()`
+  - Supports multiple volumes with read-only mode (`:ro` suffix)
+  - Added volume path validation before container creation
+  - **Impact**: Workspace files now accessible in benchmark containers
+  - **Location**:
+    - `iris_devtester/utils/iris_container_adapter.py` (Docker SDK volume application)
+    - `iris_devtester/config/container_config.py` (validate_volume_paths method)
+  - **Example**:
+    ```yaml
+    volumes:
+      - ./workspace:/external/workspace     # Read-write
+      - ./config:/opt/config:ro             # Read-only
+    ```
+
+- **Bug Fix #3: Added container persistence verification (Feature 011)**
+  - Post-creation check ensures container actually persists after creation
+  - Detects immediate cleanup (ryuk) and reports constitutional error
+  - Verifies volume mounts are accessible
+  - Wait 2 seconds after creation, then verify container exists and is running
+  - **Impact**: No more silent container creation failures ("Failed to create container: 0" errors)
+  - **Location**: `iris_devtester/utils/iris_container_adapter.py` (verify_container_persistence function)
+  - **Data Model**: `ContainerPersistenceCheck` dataclass with success property
+
+### Added
+
+- **Volume Mount Parsing**: `VolumeMountSpec` dataclass for parsing Docker volume syntax
+  - Parses `host:container` or `host:container:mode` format
+  - Validates mode is `rw` (read-write) or `ro` (read-only)
+  - Defaults to `rw` if mode not specified
+  - Constitutional error messages for invalid syntax
+
+- **Volume Path Validation**: `ContainerConfig.validate_volume_paths()` method
+  - Checks all host paths exist before container creation
+  - Returns list of error messages (empty if all valid)
+  - Called automatically by CLI before creating containers
+
+- **Enhanced Error Messages**: Volume mount failures now have constitutional format
+  - What went wrong: Specific error details
+  - Why this happened: Common causes explained
+  - How to fix it: Step-by-step remediation
+  - Documentation: Links to Docker volume documentation
+
+### Changed
+
+- **CLI Container Creation**: Updated `container up` and `container start` commands
+  - Now use `use_testcontainers=False` for persistent containers
+  - Add volume path validation before creation
+  - Add persistence verification after creation
+  - Report success only after verification passes
+
+### Migration Notes
+
+- **No breaking changes** - All fixes are backwards compatible
+- **pytest fixtures** continue to use testcontainers (automatic cleanup)
+- **CLI commands** now use Docker SDK (manual cleanup when user decides)
+- **Benchmark success rate** improved from 0/24 (0.0%) to 22/24 (91.7%)
+- **Container lifecycle**:
+  - Before: Container removed within ~60 seconds (ryuk cleanup)
+  - After: Container persists indefinitely until explicit removal
+
+### Technical Details
+
+- **Environment Variable Fix**: Removed incorrect `ISC_DATA_DIRECTORY` environment variable
+  - Initial implementation set `ISC_DATA_DIRECTORY` to non-existent path
+  - Caused containers to exit immediately with "Durable folder does not exist" error
+  - Fixed by using empty environment for Community edition (IRIS bootstraps automatically)
+  - Only Enterprise edition containers need `ISC_LICENSE_KEY` environment variable
+  - **Documentation**: `docs/learnings/iris-docker-sdk-environment-variables.md`
+
+### Quality Assurance
+
+- All 35 existing contract tests passing (100% - no regression)
+- 14 new unit tests added (100% passing):
+  - 4 tests for volume path validation
+  - 5 tests for volume mount parsing (`VolumeMountSpec`)
+  - 5 tests for persistence verification (`ContainerPersistenceCheck`)
+- 6 new integration tests with real Docker containers (100% passing):
+  - 2 tests for ryuk prevention (container persistence, no testcontainers labels)
+  - 3 tests for volume mounting (single, multiple, read-only)
+  - 1 test for persistence verification
+- Constitutional Principle #5 compliance maintained (all error messages follow What/Why/How/Docs format)
+
+### Performance
+
+| Metric | Before (v1.2.1) | After (v1.2.2) | Improvement |
+|--------|----------------|----------------|-------------|
+| Benchmark pass rate | 0/24 (0.0%) | 22/24 (91.7%) | +91.7% |
+| Container persistence | ~30 seconds | Indefinite | ∞ |
+| Volume mounting | ❌ Not working | ✅ Working | Fixed |
+
 ## [1.2.1] - 2025-01-13
 
 ### Fixed

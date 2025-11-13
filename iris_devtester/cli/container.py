@@ -8,7 +8,11 @@ import click
 from iris_devtester.config.container_config import ContainerConfig
 from iris_devtester.config.container_state import ContainerState
 from iris_devtester.utils import health_checks, progress
-from iris_devtester.utils.iris_container_adapter import IRISContainerManager, translate_docker_error
+from iris_devtester.utils.iris_container_adapter import (
+    IRISContainerManager,
+    translate_docker_error,
+    verify_container_persistence,
+)
 
 
 @click.group(name="container")
@@ -48,13 +52,24 @@ def up(ctx, config, detach, timeout):
     Similar to docker-compose up. Creates a new container or starts existing one.
     Supports zero-config mode - works without any configuration file.
 
+    Container Lifecycle (Feature 011):
+      - Containers persist until explicitly removed with 'container remove'
+      - Volume mounts are verified during creation
+      - No automatic cleanup when CLI exits
+
     \b
     Examples:
         # Zero-config (uses Community edition defaults)
         iris-devtester container up
 
-        # With custom configuration
+        # With custom configuration including volumes
         iris-devtester container up --config iris-config.yml
+
+        # Example iris-config.yml with volumes:
+        # edition: community
+        # volumes:
+        #   - ./workspace:/external/workspace
+        #   - ./config:/opt/config:ro
 
         # Foreground mode (see logs)
         iris-devtester container up --no-detach
@@ -108,23 +123,43 @@ def up(ctx, config, detach, timeout):
             existing_container.start()
             click.echo(f"✓ Container '{container_config.container_name}' started")
         else:
-            # Create new container using testcontainers-iris
+            # Create new container using Docker SDK (Feature 011 - T015: CLI mode persistence)
             click.echo(f"  → Edition: {container_config.edition}")
             click.echo(f"  → Image: {container_config.get_image_name()}")
             click.echo(f"  → Ports: {container_config.superserver_port}, {container_config.webserver_port}")
+            if container_config.volumes:
+                click.echo(f"  → Volumes: {len(container_config.volumes)} mount(s)")
 
-            # Create and configure IRISContainer
-            click.echo("⏳ Configuring container...")
-            iris = IRISContainerManager.create_from_config(container_config)
+            # Validate volume paths before creation
+            volume_errors = container_config.validate_volume_paths()
+            if volume_errors:
+                error_msg = "Volume path validation failed:\n\n"
+                for error in volume_errors:
+                    error_msg += f"  {error}\n"
+                raise ValueError(error_msg)
 
-            # Start container (pulls image if needed, creates, and starts)
-            click.echo("⏳ Pulling image (if needed) and starting container...")
+            # Create container using Docker SDK (no testcontainers labels, prevents ryuk cleanup)
+            click.echo("⏳ Creating container with Docker SDK...")
             try:
-                iris.start()
+                existing_container = IRISContainerManager.create_from_config(
+                    container_config,
+                    use_testcontainers=False  # CLI mode: manual lifecycle, no ryuk cleanup
+                )
                 click.echo(f"✓ Container '{container_config.container_name}' created and started")
 
-                # Get wrapped Docker SDK container for health checks
-                existing_container = iris.get_wrapped_container()
+                # Verify container persistence (Feature 011 - T015)
+                click.echo("⏳ Verifying container persistence...")
+                check = verify_container_persistence(
+                    container_config.container_name,
+                    container_config,
+                    wait_seconds=2.0
+                )
+
+                if not check.success:
+                    raise ValueError(check.get_error_message(container_config))
+
+                click.echo(f"✓ Container persistence verified")
+
             except Exception as e:
                 # Translate Docker errors to constitutional format
                 translated_error = translate_docker_error(e, container_config)
@@ -211,6 +246,12 @@ def start(ctx, container_name, config, timeout):
     Start existing IRIS container or create new one.
 
     If container exists, starts it. If not found, creates from config.
+    Containers persist until explicitly removed with 'container remove'.
+
+    Volume Support (Feature 011):
+      - Volume mounts specified in config are applied during creation
+      - Host paths are validated before container creation
+      - Supports read-only (`:ro`) and read-write (`:rw`) modes
 
     \b
     Examples:
@@ -219,6 +260,9 @@ def start(ctx, container_name, config, timeout):
 
         # Start specific container
         iris-devtester container start my_iris
+
+        # Create with volumes (if not exists)
+        iris-devtester container start --config iris-config.yml
     """
     try:
         # Check if container exists
@@ -238,13 +282,34 @@ def start(ctx, container_name, config, timeout):
                 else:
                     container_config = ContainerConfig.default()
 
-            # Create and start container using testcontainers-iris
-            click.echo("⏳ Configuring and starting container...")
+            # Create and start container using Docker SDK (Feature 011 - T015)
+            click.echo("⏳ Configuring and starting container with Docker SDK...")
+
+            # Validate volume paths before creation
+            volume_errors = container_config.validate_volume_paths()
+            if volume_errors:
+                error_msg = "Volume path validation failed:\n\n"
+                for error in volume_errors:
+                    error_msg += f"  {error}\n"
+                raise ValueError(error_msg)
+
             try:
-                iris = IRISContainerManager.create_from_config(container_config)
-                iris.start()
-                container = iris.get_wrapped_container()
+                container = IRISContainerManager.create_from_config(
+                    container_config,
+                    use_testcontainers=False  # CLI mode: manual lifecycle, no ryuk cleanup
+                )
                 click.echo(f"✓ Container '{container_name}' created and started")
+
+                # Verify container persistence (Feature 011 - T015)
+                check = verify_container_persistence(
+                    container_name,
+                    container_config,
+                    wait_seconds=2.0
+                )
+
+                if not check.success:
+                    raise ValueError(check.get_error_message(container_config))
+
             except Exception as e:
                 translated_error = translate_docker_error(e, container_config)
                 raise translated_error from e

@@ -268,6 +268,41 @@ class ContainerConfig(BaseModel):
         else:
             return f"intersystems/iris:{self.image_tag}"
 
+    def validate_volume_paths(self) -> List[str]:
+        """
+        Validate that all volume host paths exist (Feature 011 - T011).
+
+        Returns:
+            List of error messages (empty if all paths valid)
+
+        Example:
+            >>> config = ContainerConfig(volumes=["./data:/external", "/tmp:/temp"])
+            >>> errors = config.validate_volume_paths()
+            >>> if errors:
+            ...     for error in errors:
+            ...         print(error)
+        """
+        errors = []
+        for volume in self.volumes:
+            parts = volume.split(":")
+            if len(parts) < 2:
+                errors.append(
+                    f"Volume has invalid format: {volume}\n"
+                    f"  Expected format: host:container or host:container:mode\n"
+                    f"  Fix the volume specification in configuration"
+                )
+                continue
+
+            host_path = parts[0]
+            if not os.path.exists(host_path):
+                errors.append(
+                    f"Volume host path does not exist: {host_path}\n"
+                    f"  Required by volume mount: {volume}\n"
+                    f"  Create the directory or fix the path in configuration"
+                )
+
+        return errors
+
     class Config:
         """Pydantic model configuration."""
         json_schema_extra = {
