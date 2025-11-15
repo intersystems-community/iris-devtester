@@ -645,7 +645,7 @@ def remove(ctx, container_name, force, volumes):
     help="New password (default: SYS)"
 )
 @click.pass_context
-def reset_password(ctx, container_name, user, password):
+def reset_password_cmd(ctx, container_name, user, password):
     """
     Reset password for IRIS user in container.
 
@@ -660,26 +660,26 @@ def reset_password(ctx, container_name, user, password):
         iris-devtester container reset-password my_iris --user admin --password newpass
     """
     try:
-        from iris_devtester.utils.password_reset import reset_password_in_container
+        from iris_devtester.utils.password_reset import reset_password
 
         click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}'...")
 
         # Call password reset utility
-        result = reset_password_in_container(
+        success, message = reset_password(
             container_name=container_name,
             username=user,
             new_password=password
         )
 
-        if result:
+        if success:
             click.echo(f"✓ Password reset successful for user '{user}'")
             ctx.exit(0)
         else:
-            progress.print_error(f"Failed to reset password for user '{user}'")
+            progress.print_error(f"Failed to reset password: {message}")
             ctx.exit(1)
 
-    except ImportError:
-        progress.print_error("password_reset utility not available")
+    except ImportError as e:
+        progress.print_error(f"password_reset utility not available: {e}")
         ctx.exit(1)
     except Exception as e:
         progress.print_error(f"Failed to reset password: {e}")
@@ -688,8 +688,14 @@ def reset_password(ctx, container_name, user, password):
 
 @container_group.command(name="enable-callin")
 @click.argument("container_name")
+@click.option(
+    "--timeout",
+    type=int,
+    default=30,
+    help="Timeout in seconds for docker commands (default: 30)"
+)
 @click.pass_context
-def enable_callin(ctx, container_name):
+def enable_callin(ctx, container_name, timeout):
     """
     Enable CallIn service in IRIS container.
 
@@ -699,24 +705,31 @@ def enable_callin(ctx, container_name):
     Examples:
         # Enable CallIn service
         iris-devtester container enable-callin my_iris
+
+        # With longer timeout
+        iris-devtester container enable-callin my_iris --timeout 60
     """
     try:
-        from iris_devtester.utils.enable_callin import enable_callin_in_container
+        from iris_devtester.utils.enable_callin import enable_callin_service
 
         click.echo(f"⚡ Enabling CallIn service in container '{container_name}'...")
 
         # Call enable callin utility
-        result = enable_callin_in_container(container_name=container_name)
+        success, message = enable_callin_service(
+            container_name=container_name,
+            timeout=timeout
+        )
 
-        if result:
+        if success:
             click.echo(f"✓ CallIn service enabled in container '{container_name}'")
+            click.echo(f"  {message}")
             ctx.exit(0)
         else:
-            progress.print_error("Failed to enable CallIn service")
+            progress.print_error(f"Failed to enable CallIn service:\n{message}")
             ctx.exit(1)
 
-    except ImportError:
-        progress.print_error("enable_callin utility not available")
+    except ImportError as e:
+        progress.print_error(f"enable_callin utility not available: {e}")
         ctx.exit(1)
     except Exception as e:
         progress.print_error(f"Failed to enable CallIn: {e}")
