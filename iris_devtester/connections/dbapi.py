@@ -1,7 +1,8 @@
 """
 DBAPI connection module for InterSystems IRIS.
 
-Provides DBAPI (intersystems-irispython) connections - the fastest option (3x faster than JDBC).
+Provides DBAPI connections with automatic package detection - the fastest option (3x faster than JDBC).
+Supports both modern (intersystems-irispython) and legacy (intersystems-iris) packages.
 This is the preferred connection method per Constitutional Principle #2.
 """
 
@@ -9,19 +10,24 @@ import logging
 from typing import Any, Optional
 
 from iris_devtester.config.models import IRISConfig
+from iris_devtester.utils.dbapi_compat import get_connection, get_package_info, DBAPIPackageNotFoundError
 
 logger = logging.getLogger(__name__)
 
 
 def is_dbapi_available() -> bool:
     """
-    Check if DBAPI (intersystems-irispython) is available.
+    Check if any DBAPI package (modern or legacy) is available.
+
+    Automatically detects:
+    - Modern: intersystems-irispython (v5.3.0+)
+    - Legacy: intersystems-iris (v3.0.0+)
 
     Args:
         (no arguments)
 
     Returns:
-        True if DBAPI module can be imported and has connect attribute
+        True if a compatible DBAPI package is available
 
     Example:
         >>> if is_dbapi_available():
@@ -30,16 +36,20 @@ def is_dbapi_available() -> bool:
         ...     print("Install with: pip install intersystems-irispython")
     """
     try:
-        import iris.dbapi
-
-        return hasattr(iris.dbapi, "connect")
-    except ImportError:
+        # Use our compatibility layer to detect package
+        info = get_package_info()
+        return info is not None
+    except (DBAPIPackageNotFoundError, ImportError):
         return False
 
 
 def create_dbapi_connection(config: IRISConfig) -> Any:
     """
-    Create DBAPI connection using intersystems-irispython package.
+    Create DBAPI connection using automatic package detection.
+
+    Automatically uses the best available package:
+    - Modern: intersystems-irispython (v5.3.0+) - preferred
+    - Legacy: intersystems-iris (v3.0.0+) - fallback
 
     This is the fastest connection method (3x faster than JDBC) and should
     be preferred when available (Constitutional Principle #2).
@@ -51,7 +61,7 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
         DBAPI connection object
 
     Raises:
-        ImportError: If intersystems-irispython not installed
+        DBAPIPackageNotFoundError: If no compatible package installed
         ConnectionError: If connection fails (with remediation guidance)
 
     Example:
@@ -60,48 +70,8 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
         >>> conn = create_dbapi_connection(config)
     """
     try:
-        import iris.dbapi
-    except ImportError as e:
-        raise ImportError(
-            "DBAPI connection failed: intersystems-irispython not installed\n"
-            "\n"
-            "What went wrong:\n"
-            "  The intersystems-irispython package is not available in your environment.\n"
-            "  This package provides the fastest IRIS connection method (3x faster than JDBC).\n"
-            "\n"
-            "How to fix it:\n"
-            "  1. Install the package:\n"
-            "     pip install intersystems-irispython\n"
-            "\n"
-            "  2. Or install iris-devtools with DBAPI support:\n"
-            "     pip install 'iris-devtools[dbapi]'\n"
-            "\n"
-            f"Original error: {e}\n"
-        ) from e
-
-    # Verify iris.dbapi has connect
-    if not hasattr(iris.dbapi, "connect"):
-        dbapi_file = getattr(iris.dbapi, "__file__", "unknown")
-        raise ImportError(
-            f"DBAPI connection failed: iris.dbapi module has no 'connect' attribute\n"
-            "\n"
-            "What went wrong:\n"
-            f"  The iris.dbapi module was imported from: {dbapi_file}\n"
-            "  But it doesn't have the expected 'connect' method.\n"
-            "  This usually means an incompatible version is installed.\n"
-            "\n"
-            "How to fix it:\n"
-            "  1. Reinstall the package:\n"
-            "     pip uninstall intersystems-irispython\n"
-            "     pip install intersystems-irispython\n"
-            "\n"
-            "  2. Verify the installation:\n"
-            "     python -c 'import iris.dbapi; print(iris.dbapi.__version__)'\n"
-        )
-
-    try:
-        # Create connection using iris.dbapi
-        connection = iris.dbapi.connect(
+        # Use compatibility layer for automatic package detection
+        connection = get_connection(
             hostname=config.host,
             port=config.port,
             namespace=config.namespace,
@@ -109,10 +79,17 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
             password=config.password,
         )
 
+        # Log which package was used
+        info = get_package_info()
         logger.debug(
-            f"DBAPI connection established to {config.host}:{config.port}/{config.namespace}"
+            f"DBAPI connection established using {info.package_name} v{info.version} "
+            f"to {config.host}:{config.port}/{config.namespace}"
         )
         return connection
+
+    except DBAPIPackageNotFoundError as e:
+        # Re-raise with original constitutional error message
+        raise e
 
     except Exception as e:
         error_msg = str(e).lower()

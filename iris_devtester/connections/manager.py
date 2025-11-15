@@ -14,6 +14,7 @@ from typing import Any, Literal, Tuple
 from iris_devtester.config.models import IRISConfig
 from iris_devtester.connections.models import ConnectionInfo
 from iris_devtester.connections import dbapi, jdbc
+from iris_devtester.utils.dbapi_compat import get_package_info
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,18 @@ def _get_auto_connection(config: IRISConfig) -> Any:
         try:
             logger.info("Attempting DBAPI connection (3x faster than JDBC)...")
             conn = dbapi.create_dbapi_connection(config)
-            logger.info("✓ Connected using DBAPI (intersystems-irispython)")
+
+            # Log which DBAPI package was used (FR-010)
+            try:
+                info = get_package_info()
+                logger.info(
+                    f"✓ Connected using DBAPI - {info.package_name} v{info.version} "
+                    f"(detected in {info.detection_time_ms:.2f}ms)"
+                )
+            except Exception:
+                # Fallback if package info unavailable
+                logger.info("✓ Connected using DBAPI")
+
             return conn
         except Exception as e:
             dbapi_error = e
@@ -161,18 +173,25 @@ def _get_auto_connection(config: IRISConfig) -> Any:
         "No IRIS database drivers available\n"
         "\n"
         "What went wrong:\n"
-        "  Neither DBAPI (intersystems-irispython) nor JDBC (jaydebeapi) is installed.\n"
+        "  No compatible DBAPI package (intersystems-irispython or intersystems-iris)\n"
+        "  and no JDBC driver (jaydebeapi) is installed.\n"
         "  At least one driver is required to connect to IRIS.\n"
         "\n"
         "How to fix it:\n"
-        "  1. Install DBAPI driver (recommended - 3x faster):\n"
-        "     pip install 'iris-devtools[dbapi]'\n"
+        "  1. Install modern DBAPI driver (recommended - 3x faster):\n"
+        "     pip install intersystems-irispython>=5.3.0\n"
         "\n"
-        "  2. Or install JDBC driver (fallback):\n"
-        "     pip install 'iris-devtools[jdbc]'\n"
+        "  2. Or install legacy DBAPI driver:\n"
+        "     pip install intersystems-iris>=3.0.0\n"
         "\n"
-        "  3. Or install both:\n"
-        "     pip install 'iris-devtools[all]'\n"
+        "  3. Or install JDBC driver (fallback):\n"
+        "     pip install jaydebeapi\n"
+        "\n"
+        "  4. Or install iris-devtester with all drivers:\n"
+        "     pip install 'iris-devtester[all]'\n"
+        "\n"
+        "Documentation:\n"
+        "  https://iris-devtester.readthedocs.io/dbapi-packages/\n"
     )
 
 
@@ -187,18 +206,36 @@ def _get_dbapi_only(config: IRISConfig) -> Any:
             "DBAPI driver not available (driver='dbapi' specified)\n"
             "\n"
             "What went wrong:\n"
-            "  You specified driver='dbapi' but intersystems-irispython is not installed.\n"
+            "  You specified driver='dbapi' but no compatible DBAPI package is installed.\n"
             "\n"
             "How to fix it:\n"
-            "  1. Install DBAPI driver:\n"
-            "     pip install intersystems-irispython\n"
+            "  1. Install modern DBAPI driver (recommended):\n"
+            "     pip install intersystems-irispython>=5.3.0\n"
             "\n"
-            "  2. Or use auto driver selection:\n"
+            "  2. Or install legacy DBAPI driver:\n"
+            "     pip install intersystems-iris>=3.0.0\n"
+            "\n"
+            "  3. Or use auto driver selection:\n"
             "     config = IRISConfig(driver='auto')  # Will try DBAPI then JDBC\n"
+            "\n"
+            "Documentation:\n"
+            "  https://iris-devtester.readthedocs.io/dbapi-packages/\n"
         )
 
     logger.info("Using DBAPI connection (explicit driver='dbapi')")
-    return dbapi.create_dbapi_connection(config)
+    conn = dbapi.create_dbapi_connection(config)
+
+    # Log which DBAPI package was used (FR-010)
+    try:
+        info = get_package_info()
+        logger.info(
+            f"Connected via {info.package_name} v{info.version} "
+            f"(detected in {info.detection_time_ms:.2f}ms)"
+        )
+    except Exception:
+        pass  # Already logged in create_dbapi_connection
+
+    return conn
 
 
 def _get_jdbc_only(config: IRISConfig) -> Any:

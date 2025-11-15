@@ -70,21 +70,27 @@ def get_connection(
     # Verify DBAPI is available
     if not is_dbapi_available():
         raise ConnectionError(
-            "DBAPI driver not available (intersystems-irispython not installed)\n"
+            "DBAPI driver not available\n"
             "\n"
             "What went wrong:\n"
-            "  This is a modern DBAPI-only toolkit. The intersystems-irispython\n"
+            "  This is a modern DBAPI-only toolkit. A compatible IRIS Python\n"
             "  package is required to connect to IRIS.\n"
             "\n"
             "How to fix it:\n"
-            "  1. Install the DBAPI driver:\n"
-            "     pip install intersystems-irispython\n"
+            "  1. Install the modern DBAPI driver (recommended):\n"
+            "     pip install intersystems-irispython>=5.3.0\n"
             "\n"
-            "  2. Or install iris-devtools with DBAPI support:\n"
-            "     pip install 'iris-devtools[dbapi]'\n"
+            "  2. Or install the legacy DBAPI driver:\n"
+            "     pip install intersystems-iris>=3.0.0\n"
             "\n"
-            "  3. Or install with all optional dependencies:\n"
-            "     pip install 'iris-devtools[all]'\n"
+            "  3. Or install iris-devtester with DBAPI support:\n"
+            "     pip install 'iris-devtester[dbapi]'\n"
+            "\n"
+            "  4. Or install with all optional dependencies:\n"
+            "     pip install 'iris-devtester[all]'\n"
+            "\n"
+            "Documentation:\n"
+            "  https://iris-devtester.readthedocs.io/dbapi-packages/\n"
         )
 
     # Create connection function
