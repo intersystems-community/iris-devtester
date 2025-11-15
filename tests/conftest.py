@@ -33,6 +33,13 @@ def iris_db():
     """
     # Start IRIS container
     with IRISContainer() as iris:
+        # Enable CallIn service (required for DBAPI connections)
+        from iris_devtester.utils.enable_callin import enable_callin_service
+        container_name = iris.get_wrapped_container().name
+        success, msg = enable_callin_service(container_name, timeout=30)
+        if not success:
+            raise RuntimeError(f"Failed to enable CallIn service: {msg}")
+
         # Get connection URL and create DBAPI connection using compatibility layer
         from iris_devtester.utils.dbapi_compat import get_connection
 
@@ -167,6 +174,13 @@ def iris_container():
             assert "IRIS started" in logs
     """
     with IRISContainer() as iris:
+        # Enable CallIn service (required for DBAPI connections)
+        from iris_devtester.utils.enable_callin import enable_callin_service
+        container_name = iris.get_wrapped_container().name
+        success, msg = enable_callin_service(container_name, timeout=30)
+        if not success:
+            raise RuntimeError(f"Failed to enable CallIn service: {msg}")
+
         yield iris
 
 
