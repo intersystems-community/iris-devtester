@@ -630,3 +630,94 @@ def remove(ctx, container_name, force, volumes):
     except Exception as e:
         progress.print_error(f"Failed to remove container: {e}")
         ctx.exit(1)
+
+
+@container_group.command(name="reset-password")
+@click.argument("container_name")
+@click.option(
+    "--user",
+    default="_SYSTEM",
+    help="Username to reset password for (default: _SYSTEM)"
+)
+@click.option(
+    "--password",
+    default="SYS",
+    help="New password (default: SYS)"
+)
+@click.pass_context
+def reset_password(ctx, container_name, user, password):
+    """
+    Reset password for IRIS user in container.
+
+    Uses iris session to reset the password via ObjectScript.
+
+    \b
+    Examples:
+        # Reset _SYSTEM password to SYS
+        iris-devtester container reset-password my_iris
+
+        # Reset specific user password
+        iris-devtester container reset-password my_iris --user admin --password newpass
+    """
+    try:
+        from iris_devtester.utils.password_reset import reset_password_in_container
+
+        click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}'...")
+
+        # Call password reset utility
+        result = reset_password_in_container(
+            container_name=container_name,
+            username=user,
+            new_password=password
+        )
+
+        if result:
+            click.echo(f"✓ Password reset successful for user '{user}'")
+            ctx.exit(0)
+        else:
+            progress.print_error(f"Failed to reset password for user '{user}'")
+            ctx.exit(1)
+
+    except ImportError:
+        progress.print_error("password_reset utility not available")
+        ctx.exit(1)
+    except Exception as e:
+        progress.print_error(f"Failed to reset password: {e}")
+        ctx.exit(1)
+
+
+@container_group.command(name="enable-callin")
+@click.argument("container_name")
+@click.pass_context
+def enable_callin(ctx, container_name):
+    """
+    Enable CallIn service in IRIS container.
+
+    Required for DBAPI connections to work properly.
+
+    \b
+    Examples:
+        # Enable CallIn service
+        iris-devtester container enable-callin my_iris
+    """
+    try:
+        from iris_devtester.utils.enable_callin import enable_callin_in_container
+
+        click.echo(f"⚡ Enabling CallIn service in container '{container_name}'...")
+
+        # Call enable callin utility
+        result = enable_callin_in_container(container_name=container_name)
+
+        if result:
+            click.echo(f"✓ CallIn service enabled in container '{container_name}'")
+            ctx.exit(0)
+        else:
+            progress.print_error("Failed to enable CallIn service")
+            ctx.exit(1)
+
+    except ImportError:
+        progress.print_error("enable_callin utility not available")
+        ctx.exit(1)
+    except Exception as e:
+        progress.print_error(f"Failed to enable CallIn: {e}")
+        ctx.exit(1)
