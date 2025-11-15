@@ -477,6 +477,9 @@ def status(ctx, container_name, format):
 
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        # Let Click handle these - don't catch them
+        raise
     except Exception as e:
         if format == "json":
             print(json.dumps({"error": str(e)}))
@@ -681,7 +684,7 @@ def reset_password_cmd(ctx, container_name, user, password):
     except (ImportError, ModuleNotFoundError) as e:
         progress.print_error(f"password_reset utility not available: {e}")
         ctx.exit(1)
-    except (SystemExit, KeyboardInterrupt):
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
         # Let Click handle these - don't catch them
         raise
     except Exception as e:
@@ -734,7 +737,7 @@ def enable_callin(ctx, container_name, timeout):
     except (ImportError, ModuleNotFoundError) as e:
         progress.print_error(f"enable_callin utility not available: {e}")
         ctx.exit(1)
-    except (SystemExit, KeyboardInterrupt):
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
         # Let Click handle these - don't catch them
         raise
     except Exception as e:
