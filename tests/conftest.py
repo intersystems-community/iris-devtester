@@ -33,8 +33,8 @@ def iris_db():
     """
     # Start IRIS container
     with IRISContainer() as iris:
-        # Get connection URL and create DBAPI connection
-        import irisnative
+        # Get connection URL and create DBAPI connection using compatibility layer
+        from iris_devtester.utils.dbapi_compat import get_connection
 
         # Parse connection details from container
         host = iris.get_container_host_ip()
@@ -42,7 +42,7 @@ def iris_db():
 
         # Use the test user created by testcontainers-iris
         # (username="test", password="test", no expiration!)
-        conn = irisnative.createConnection(
+        conn = get_connection(
             hostname=host,
             port=port,
             namespace="USER",

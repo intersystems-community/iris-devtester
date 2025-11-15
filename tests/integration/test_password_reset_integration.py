@@ -49,13 +49,13 @@ class TestResetPasswordIntegration:
 
         # CRITICAL: Verify password ACTUALLY changed by attempting connection
         # This is what the current bug fails - password NOT actually set
-        import irisnative
+        from iris_devtester.utils.dbapi_compat import get_connection
 
         host = iris_db._container.get_container_host_ip()
         port = int(iris_db._container.get_exposed_port(1972))
 
         # Try to connect with NEW password
-        conn = irisnative.createConnection(
+        conn = get_connection(
             hostname=host,
             port=port,
             namespace="USER",
@@ -96,13 +96,13 @@ class TestResetPasswordIntegration:
         assert success, f"reset_password() failed: {msg}"
 
         # CRITICAL: Verify connection with new password succeeds
-        import irisnative
+        from iris_devtester.utils.dbapi_compat import get_connection
 
         host = iris_db._container.get_container_host_ip()
         port = int(iris_db._container.get_exposed_port(1972))
 
         # This should succeed if password was actually set
-        conn = irisnative.createConnection(
+        conn = get_connection(
             hostname=host,
             port=port,
             namespace="USER",
@@ -191,12 +191,12 @@ class TestResetPasswordIntegration:
             assert success, f"Call {i+1} failed: {msg}"
 
         # CRITICAL: Verify password still works after 3 calls
-        import irisnative
+        from iris_devtester.utils.dbapi_compat import get_connection
 
         host = iris_db._container.get_container_host_ip()
         port = int(iris_db._container.get_exposed_port(1972))
 
-        conn = irisnative.createConnection(
+        conn = get_connection(
             hostname=host,
             port=port,
             namespace="USER",
