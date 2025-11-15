@@ -22,8 +22,11 @@ Logging Levels:
 - ERROR: No package available
 """
 import logging
+import time
+import importlib.metadata
 from dataclasses import dataclass
 from typing import Callable, Any
+from packaging import version
 
 # Configure module logger
 logger = logging.getLogger(__name__)
@@ -48,44 +51,228 @@ class DBAPIPackageInfo:
     detection_time_ms: float
 
 
-def detect_dbapi_package():
+def validate_package_version(package_name: str, installed_version: str, min_version: str) -> None:
+    """Validate that installed package meets minimum version requirement.
+
+    Args:
+        package_name: Name of the package (e.g., "intersystems-irispython")
+        installed_version: Version string of installed package
+        min_version: Minimum required version string
+
+    Raises:
+        ImportError: If installed version is too old (constitutional format)
+    """
+    if version.parse(installed_version) < version.parse(min_version):
+        raise ImportError(
+            f"Package {package_name} version {installed_version} is incompatible\n"
+            "\n"
+            "What went wrong:\n"
+            f"  Detected package version does not meet minimum requirements.\n"
+            f"  Minimum required: {min_version}\n"
+            "\n"
+            "Why this happened:\n"
+            f"  iris-devtester requires specific DBAPI features introduced in v{min_version}.\n"
+            "  Older versions may have incompatible APIs or missing functionality.\n"
+            "\n"
+            "How to fix it:\n"
+            f"  Upgrade the package:\n"
+            f"  → pip install --upgrade {package_name}>={min_version}\n"
+            "\n"
+            "Documentation:\n"
+            "  https://iris-devtester.readthedocs.io/dbapi-packages/\n"
+        )
+
+
+class DBAPIPackageNotFoundError(ImportError):
+    """Raised when no compatible IRIS Python package is found."""
+
+    def __init__(self):
+        super().__init__(
+            "No IRIS Python package detected\n"
+            "\n"
+            "What went wrong:\n"
+            "  Neither intersystems-irispython nor intersystems-iris is installed.\n"
+            "  iris-devtester requires one of these packages for DBAPI connections.\n"
+            "\n"
+            "Why this happened:\n"
+            "  iris-devtester uses DBAPI for fast SQL operations (3x faster than JDBC).\n"
+            "  The modern package (intersystems-irispython) or legacy package\n"
+            "  (intersystems-iris) must be installed.\n"
+            "\n"
+            "How to fix it:\n"
+            "  Install the modern IRIS Python package:\n"
+            "  → pip install intersystems-irispython>=5.3.0\n"
+            "\n"
+            "  Or install the legacy package (backward compatibility):\n"
+            "  → pip install intersystems-iris>=3.0.0\n"
+            "\n"
+            "Documentation:\n"
+            "  https://iris-devtester.readthedocs.io/dbapi-packages/\n"
+        )
+
+
+def detect_dbapi_package() -> DBAPIPackageInfo:
     """Detect available IRIS DBAPI package.
 
-    Placeholder for package detection logic.
-    Will be implemented in T013.
+    Tries modern package (intersystems-irispython) first, falls back to
+    legacy package (intersystems-iris) if modern unavailable.
+
+    Returns:
+        DBAPIPackageInfo with detected package details
+
+    Raises:
+        DBAPIPackageNotFoundError: When neither package is available
+        ImportError: When package version is too old
+
+    Performance: <10ms detection time (NFR-001)
     """
-    pass
+    start_time = time.perf_counter()
+
+    # Try modern package first (priority per Principle #2)
+    try:
+        from intersystems_iris.dbapi._DBAPI import connect
+
+        # Validate version
+        pkg_version = importlib.metadata.version("intersystems-irispython")
+        validate_package_version("intersystems-irispython", pkg_version, "5.3.0")
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        logger.info(f"Detected IRIS DBAPI package: intersystems-irispython v{pkg_version}")
+
+        return DBAPIPackageInfo(
+            package_name="intersystems-irispython",
+            import_path="intersystems_iris.dbapi._DBAPI",
+            version=pkg_version,
+            connect_function=connect,
+            detection_time_ms=elapsed_ms
+        )
+    except ImportError as e:
+        logger.debug(f"Modern package not available, trying legacy: {e}")
+
+    # Fall back to legacy package
+    try:
+        import iris.irissdk
+
+        # Validate version
+        pkg_version = importlib.metadata.version("intersystems-iris")
+        validate_package_version("intersystems-iris", pkg_version, "3.0.0")
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        logger.info(f"Detected IRIS DBAPI package: intersystems-iris v{pkg_version} (legacy)")
+
+        return DBAPIPackageInfo(
+            package_name="intersystems-iris",
+            import_path="iris.irissdk",
+            version=pkg_version,
+            connect_function=iris.irissdk.connect,
+            detection_time_ms=elapsed_ms
+        )
+    except ImportError:
+        logger.error("No IRIS DBAPI package detected")
+
+    # Neither package available
+    raise DBAPIPackageNotFoundError()
 
 
 class DBAPIConnectionAdapter:
     """Adapter for IRIS DBAPI connections.
 
     Provides package-agnostic interface for creating DBAPI connections.
-    Placeholder - will be implemented in T015.
+    Implements singleton pattern for zero overhead.
     """
-    pass
+
+    def __init__(self):
+        """Initialize adapter with detected package info."""
+        self._package_info = detect_dbapi_package()
+
+    def connect(self, hostname: str, port: int, namespace: str,
+                username: str, password: str, **kwargs) -> Any:
+        """Create DBAPI connection using detected package.
+
+        Args:
+            hostname: IRIS hostname
+            port: IRIS port
+            namespace: IRIS namespace
+            username: IRIS username
+            password: IRIS password
+            **kwargs: Additional connection parameters
+
+        Returns:
+            DBAPI connection object
+
+        Performance: Zero overhead - direct function call
+        """
+        return self._package_info.connect_function(
+            hostname=hostname,
+            port=port,
+            namespace=namespace,
+            username=username,
+            password=password,
+            **kwargs
+        )
+
+    def get_package_info(self) -> DBAPIPackageInfo:
+        """Return detected package information.
+
+        Returns:
+            DBAPIPackageInfo with package metadata
+        """
+        return self._package_info
 
 
-def get_connection(*args, **kwargs):
+# Global singleton adapter (cached for performance)
+_adapter: DBAPIConnectionAdapter | None = None
+
+
+def _get_adapter() -> DBAPIConnectionAdapter:
+    """Get or create singleton adapter instance.
+
+    Returns:
+        DBAPIConnectionAdapter singleton
+    """
+    global _adapter
+    if _adapter is None:
+        _adapter = DBAPIConnectionAdapter()
+    return _adapter
+
+
+def get_connection(*args, **kwargs) -> Any:
     """Get DBAPI connection using detected package.
 
-    Placeholder for convenience function.
-    Will be implemented in T016.
+    Convenience function that delegates to the singleton adapter.
+
+    Args:
+        *args: Connection arguments (hostname, port, namespace, username, password)
+        **kwargs: Additional connection parameters
+
+    Returns:
+        DBAPI connection object
+
+    Example:
+        >>> conn = get_connection(hostname="localhost", port=1972,
+        ...                       namespace="USER", username="_SYSTEM", password="SYS")
     """
-    pass
+    return _get_adapter().connect(*args, **kwargs)
 
 
-def get_package_info():
+def get_package_info() -> DBAPIPackageInfo:
     """Return detected package information.
 
-    Placeholder for package info retrieval.
-    Will be implemented in T016.
+    Returns:
+        DBAPIPackageInfo with package metadata
+
+    Example:
+        >>> info = get_package_info()
+        >>> print(f"Using {info.package_name} v{info.version}")
     """
-    pass
+    return _get_adapter().get_package_info()
 
 
 __all__ = [
     "detect_dbapi_package",
+    "validate_package_version",
+    "DBAPIPackageInfo",
+    "DBAPIPackageNotFoundError",
     "DBAPIConnectionAdapter",
     "get_connection",
     "get_package_info",
