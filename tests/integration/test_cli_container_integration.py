@@ -122,11 +122,13 @@ class TestCLIContainerCommands:
 
         assert result.returncode == 0, f"Command should succeed: {result.stderr}"
 
-        # Verify multi-line status report
-        assert f"Container Status: {container_name}" in result.stdout
-        assert "Running:" in result.stdout
-        assert "Connection:" in result.stdout
-        assert "Overall:" in result.stdout
+        # Verify multi-line status report (current format)
+        assert f"Container: {container_name}" in result.stdout
+        assert "Status:" in result.stdout
+        assert "Health:" in result.stdout
+        assert "Uptime:" in result.stdout
+        assert "Ports:" in result.stdout
+        assert "Image:" in result.stdout
 
     def test_cli_commands_fail_for_nonexistent_container(self):
         """
@@ -152,4 +154,5 @@ class TestCLIContainerCommands:
         )
 
         assert result.returncode == 1, "Should exit with code 1 (Abort)"
-        assert "not running" in result.stdout.lower()
+        # Error messages go to stderr, not stdout
+        assert "not running" in result.stderr.lower()

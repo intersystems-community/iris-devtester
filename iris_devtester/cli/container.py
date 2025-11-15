@@ -692,6 +692,102 @@ def reset_password_cmd(ctx, container_name, user, password):
         ctx.exit(1)
 
 
+@container_group.command(name="test-connection")
+@click.argument("container_name")
+@click.option(
+    "--namespace",
+    default="USER",
+    help="IRIS namespace to test connection to (default: USER)"
+)
+@click.option(
+    "--username",
+    default="_SYSTEM",
+    help="Username for connection (default: _SYSTEM)"
+)
+@click.option(
+    "--password",
+    default="SYS",
+    help="Password for connection (default: SYS)"
+)
+@click.pass_context
+def test_connection_cmd(ctx, container_name, namespace, username, password):
+    """
+    Test database connection to IRIS container.
+
+    Verifies that DBAPI connection works to the specified container and namespace.
+
+    \b
+    Examples:
+        # Test connection to default namespace (USER)
+        iris-devtester container test-connection my_iris
+
+        # Test connection to specific namespace
+        iris-devtester container test-connection my_iris --namespace MYAPP
+
+        # Test with custom credentials
+        iris-devtester container test-connection my_iris --user admin --password secret
+    """
+    try:
+        from iris_devtester.config import IRISConfig
+        from iris_devtester.connections import get_connection
+
+        click.echo(f"⚡ Testing connection to container '{container_name}' namespace '{namespace}'...")
+
+        # Get container to extract connection details
+        container = IRISContainerManager.get_existing(container_name)
+
+        if not container:
+            progress.print_error(f"Container '{container_name}' not found")
+            ctx.exit(2)
+
+        # Get port mappings
+        container.reload()
+        port_bindings = container.attrs.get("NetworkSettings", {}).get("Ports", {})
+
+        # Extract superserver port
+        superserver_port = 1972  # Default
+        if "1972/tcp" in port_bindings and port_bindings["1972/tcp"]:
+            superserver_port = int(port_bindings["1972/tcp"][0]["HostPort"])
+
+        # Create configuration
+        config = IRISConfig(
+            host="localhost",
+            port=superserver_port,
+            namespace=namespace,
+            username=username,
+            password=password,
+            driver="auto"
+        )
+
+        # Try to connect
+        try:
+            conn = get_connection(config)
+
+            # Test the connection with a simple query
+            cursor = conn.cursor()
+            cursor.execute("SELECT $NAMESPACE as namespace FROM %SYSTEM.Version")
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            click.echo(f"✓ Connection successful to namespace '{namespace}'")
+            click.echo(f"  Host: {config.host}:{config.port}")
+            click.echo(f"  Namespace: {namespace}")
+            click.echo(f"  User: {username}")
+            ctx.exit(0)
+
+        except Exception as e:
+            progress.print_error(f"Connection failed: {e}")
+            ctx.exit(1)
+
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        # Let Click handle these - don't catch them
+        raise
+    except Exception as e:
+        progress.print_error(f"Failed to test connection: {e}")
+        ctx.exit(1)
+
+
 @container_group.command(name="enable-callin")
 @click.argument("container_name")
 @click.option(
