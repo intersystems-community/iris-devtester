@@ -765,7 +765,7 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
 
             # Test the connection with a simple query
             cursor = conn.cursor()
-            cursor.execute("SELECT $NAMESPACE as namespace FROM %SYSTEM.Version")
+            cursor.execute("SELECT $NAMESPACE as namespace")
             result = cursor.fetchone()
             cursor.close()
             conn.close()
