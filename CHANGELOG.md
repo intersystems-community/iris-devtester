@@ -5,6 +5,126 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-01-15
+
+### Added
+
+- **Feature 012: DBAPI Package Compatibility**
+  - Support for both modern (`intersystems-irispython` v5.3.0+) and legacy (`intersystems-iris` v3.0.0+) IRIS Python packages
+  - Automatic package detection with zero configuration (Constitutional Principle #4)
+  - Modern package prioritized, legacy package as fallback
+  - Version validation ensures minimum compatible versions
+  - Constitutional error messages (What/Why/How/Docs format) per Principle #5
+  - Package detection logging at INFO level (FR-010) - shows which package and version detected
+  - Detection performance <10ms overhead (NFR-001)
+  - **Location**: `iris_devtester/utils/dbapi_compat.py` (new compatibility layer)
+  - **Impact**: Fixes AttributeError with modern package, maintains backward compatibility with legacy package
+
+- **New Module**: `iris_devtester/utils/dbapi_compat.py`
+  - `DBAPIPackageInfo` dataclass for package metadata
+  - `detect_dbapi_package()` - Try/except import chain (modern first, legacy fallback)
+  - `validate_package_version()` - Semantic version validation
+  - `DBAPIConnectionAdapter` - Singleton adapter for zero-overhead connections
+  - `get_connection()` - Public API for connections
+  - `get_package_info()` - Public API for package metadata
+  - `DBAPIPackageNotFoundError` - Constitutional error when no package installed
+
+### Changed
+
+- **connections/dbapi.py**: Updated to use compatibility layer
+  - `is_dbapi_available()` now detects both modern and legacy packages
+  - `create_dbapi_connection()` uses `get_connection()` from dbapi_compat
+  - Logs package name and version when connecting (FR-010)
+
+- **connections/connection.py**: Updated error messages
+  - Mentions both modern and legacy packages
+  - Provides installation options for both
+  - Includes documentation link
+
+- **connections/manager.py**: Enhanced package logging
+  - Auto mode logs detected package with version and detection time
+  - Example: "✓ Connected using DBAPI - intersystems-irispython v5.3.0 (detected in 2.45ms)"
+  - Error messages updated to mention both packages
+  - All error messages include documentation links
+
+### Fixed
+
+- **AttributeError with modern package**: Fixed compatibility issue when using `intersystems-irispython`
+  - Previous code only supported legacy `intersystems-iris` package
+  - Modern package uses different import path (`intersystems_iris.dbapi._DBAPI` vs `iris.irissdk`)
+  - Now automatically detects and uses whichever package is installed
+
+### Technical Details
+
+- **Package Detection Strategy**: Try/except import chain
+  1. Try modern package: `intersystems_iris.dbapi._DBAPI`
+  2. Fall back to legacy: `iris.irissdk`
+  3. Raise constitutional error if neither available
+
+- **Version Requirements**:
+  - Modern: `intersystems-irispython >= 5.3.0`
+  - Legacy: `intersystems-iris >= 3.0.0`
+
+- **Performance**:
+  - Detection overhead: <10ms (measured via `time.perf_counter()`)
+  - Zero connection overhead: Direct function call via singleton adapter
+  - Package info cached at module level
+
+- **Logging**:
+  - INFO: Package detected successfully
+  - DEBUG: Fallback from modern to legacy
+  - ERROR: No package available
+
+### Constitutional Compliance
+
+- **Principle #2**: DBAPI First - Maintains performance, now with both packages
+- **Principle #4**: Zero Configuration Viable - Automatic package detection
+- **Principle #5**: Fail Fast with Guidance - Constitutional error format throughout
+- **Principle #7**: Medical-Grade Reliability - 95%+ test coverage maintained
+
+### Functional Requirements Satisfied
+
+- FR-001: Detect modern package (intersystems-irispython)
+- FR-002: Detect legacy package (intersystems-iris) as fallback
+- FR-003: Prioritize modern package when both installed
+- FR-004: Version validation (modern >= 5.3.0, legacy >= 3.0.0)
+- FR-005: Constitutional error when no package installed
+- FR-006: Backward compatibility (no breaking changes)
+- FR-007: Update connections module
+- FR-008: Update fixtures module (via connection delegation)
+- FR-009: Update testing utilities (via connection delegation)
+- FR-010: Logging - shows package name and version
+
+### Non-Functional Requirements Satisfied
+
+- NFR-001: Performance - <10ms detection, zero connection overhead
+- NFR-002: Error Messages - Constitutional format (What/Why/How/Docs)
+- NFR-003: Test Coverage - 95%+ maintained
+- NFR-004: Documentation - Migration guide and API docs
+
+### Testing
+
+- **Contract Tests**: 27 tests covering all 4 contracts (modern, legacy, no-package, priority)
+- **Coverage**: 95%+ maintained across all modules
+- **No Regression**: All existing tests pass (100%)
+
+### Migration Notes
+
+- **Zero Breaking Changes**: Existing code continues to work with either package
+- **Automatic Migration**: Install modern package, code automatically switches
+- **Package Priority**: Modern package automatically used when both installed
+- **Error Messages**: Clear guidance when no compatible package installed
+
+### Documentation
+
+- **Specification**: `specs/012-address-enhancement-iris/spec.md`
+- **Implementation Plan**: `specs/012-address-enhancement-iris/plan.md`
+- **Research**: `specs/012-address-enhancement-iris/research.md`
+- **Data Model**: `specs/012-address-enhancement-iris/data-model.md`
+- **Contracts**: `specs/012-address-enhancement-iris/contracts/` (4 JSON contracts)
+- **Quickstart**: `specs/012-address-enhancement-iris/quickstart.md` (10 usage scenarios)
+- **Tasks**: `specs/012-address-enhancement-iris/tasks.md` (30 implementation tasks)
+
 ## [1.2.2] - 2025-01-13
 
 ### Fixed
