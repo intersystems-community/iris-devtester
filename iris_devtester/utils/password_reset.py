@@ -132,10 +132,6 @@ def reset_password(
         )
 
         if result.returncode == 0 and "1" in result.stdout:
-            # Update environment variables so subsequent connections use new password
-            os.environ["IRIS_USERNAME"] = username
-            os.environ["IRIS_PASSWORD"] = new_password
-
             # Wait for password change to propagate
             time.sleep(2)
 
@@ -176,8 +172,6 @@ def reset_password(
             ]
             subprocess.run(set_never_expires_cmd, capture_output=True, text=True, timeout=timeout)
 
-            os.environ["IRIS_USERNAME"] = username
-            os.environ["IRIS_PASSWORD"] = new_password
             time.sleep(2)
 
             logger.info(f"✓ Password reset successful (via ChangePassword) for user '{username}'")

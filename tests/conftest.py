@@ -4,12 +4,13 @@ pytest configuration and fixtures for iris-devtools tests.
 Provides IRIS database connections and containers for integration testing.
 """
 
+import os
 import pytest
 from testcontainers.iris import IRISContainer
 
 
 @pytest.fixture(scope="function")
-def iris_db():
+def iris_db(request):
     """
     Function-scoped IRIS database connection.
 
@@ -31,20 +32,32 @@ def iris_db():
             success, msg = configure_monitoring(iris_db)
             assert success is True
     """
-    # Start IRIS container
-    with IRISContainer() as iris:
+    import time
+    import uuid
+    import sys
+
+    # Force unique container name per test to prevent reuse
+    test_name = request.node.name.replace("[", "_").replace("]", "_")
+    container_id = str(uuid.uuid4())[:8]
+
+    # Start IRIS container with unique name
+    iris_container = IRISContainer()
+    iris_container._name = f"iris_test_{test_name}_{container_id}"
+
+    with iris_container as iris:
         # Enable CallIn service (required for DBAPI connections)
         from iris_devtester.utils.enable_callin import enable_callin_service
         import time
+        import sys
 
         container_name = iris.get_wrapped_container().name
+
         success, msg = enable_callin_service(container_name, timeout=30)
         if not success:
             raise RuntimeError(f"Failed to enable CallIn service: {msg}")
 
         # Wait for test user creation to complete and CallIn to be fully ready
-        # Longer wait helps prevent race conditions between tests
-        time.sleep(5)
+        time.sleep(2)
 
         # Get connection URL and create DBAPI connection using compatibility layer
         from iris_devtester.utils.dbapi_compat import get_connection
@@ -86,6 +99,21 @@ def iris_db():
                 except Exception:
                     pass
     # Container cleanup handled by IRISContainer context manager
+
+    # CRITICAL: Wait for container to be fully removed before next test
+    # This prevents test isolation issues where test 2 connects to test 1's container
+    import docker
+    try:
+        client = docker.from_env()
+        # Wait up to 10 seconds for container to be fully removed
+        for _ in range(10):
+            try:
+                client.containers.get(iris.get_wrapped_container().id)
+                time.sleep(1)  # Container still exists, wait
+            except docker.errors.NotFound:
+                break  # Container removed, we're done
+    except Exception:
+        pass  # Ignore docker errors during cleanup verification
 
 
 @pytest.fixture(scope="module")
