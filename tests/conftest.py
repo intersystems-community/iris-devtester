@@ -35,10 +35,16 @@ def iris_db():
     with IRISContainer() as iris:
         # Enable CallIn service (required for DBAPI connections)
         from iris_devtester.utils.enable_callin import enable_callin_service
+        import time
+
         container_name = iris.get_wrapped_container().name
         success, msg = enable_callin_service(container_name, timeout=30)
         if not success:
             raise RuntimeError(f"Failed to enable CallIn service: {msg}")
+
+        # Wait for test user creation to complete and CallIn to be fully ready
+        # Longer wait helps prevent race conditions between tests
+        time.sleep(5)
 
         # Get connection URL and create DBAPI connection using compatibility layer
         from iris_devtester.utils.dbapi_compat import get_connection
@@ -73,12 +79,13 @@ def iris_db():
         try:
             yield conn
         finally:
-            # Cleanup
+            # Cleanup connection first
             if conn:
                 try:
                     conn.close()
                 except Exception:
                     pass
+    # Container cleanup handled by IRISContainer context manager
 
 
 @pytest.fixture(scope="module")
