@@ -1,0 +1,159 @@
+{
+  "contract_id": "package-priority-modern-first",
+  "contract_name": "Modern Package Prioritized When Both Installed",
+  "version": "1.0.0",
+  "description": "When both packages are installed, modern package must be selected (not legacy)",
+  "preconditions": {
+    "environment": "Python 3.9+",
+    "packages_installed": [
+      "intersystems-irispython>=5.3.0",
+      "intersystems-iris>=3.0.0"
+    ]
+  },
+  "trigger": {
+    "action": "Import iris_devtester and attempt DBAPI connection",
+    "code_example": "from iris_devtester.utils.dbapi_compat import get_connection\nconn = get_connection(hostname='localhost', port=1972, namespace='USER', username='_SYSTEM', password='SYS')"
+  },
+  "expected_behavior": {
+    "package_selected": "intersystems-irispython",
+    "package_ignored": "intersystems-iris",
+    "legacy_package_import_not_attempted": true,
+    "connection_successful": true,
+    "import_path_used": "intersystems_iris.dbapi._DBAPI",
+    "detection_time_ms": {
+      "constraint": "less_than",
+      "value": 10,
+      "rationale": "NFR-001: Package detection must have negligible overhead"
+    },
+    "reasoning_logged": true
+  },
+  "validation_criteria": [
+    {
+      "criterion": "Modern package selected",
+      "test_method": "get_package_info().package_name",
+      "expected_result": "intersystems-irispython"
+    },
+    {
+      "criterion": "Modern package import path used",
+      "test_method": "get_package_info().import_path",
+      "expected_result": "intersystems_iris.dbapi._DBAPI"
+    },
+    {
+      "criterion": "Legacy package not attempted",
+      "test_method": "Check DEBUG logs for absence of fallback message",
+      "expected_result": "No 'trying legacy' message in logs"
+    },
+    {
+      "criterion": "Connection uses modern package",
+      "test_method": "Inspect connection object type and module",
+      "expected_result": "Connection from intersystems_iris.dbapi._DBAPI"
+    },
+    {
+      "criterion": "Detection time acceptable",
+      "test_method": "get_package_info().detection_time_ms",
+      "expected_result": "< 10ms"
+    },
+    {
+      "criterion": "Logging indicates modern package selected",
+      "test_method": "Check INFO log messages",
+      "expected_result": "Contains 'Detected IRIS DBAPI package: intersystems-irispython' (not legacy)"
+    }
+  ],
+  "rationale": {
+    "why_prioritize_modern": [
+      "Modern package is actively maintained by InterSystems",
+      "Better performance characteristics",
+      "Current standard for new IRIS development",
+      "Receives bug fixes and security updates",
+      "Aligns with Constitutional Principle #2 (Choose Right Tool)"
+    ],
+    "user_impact": [
+      "Users with both packages get best performance",
+      "Encourages migration to modern package",
+      "Clear logging shows which package is used"
+    ]
+  },
+  "edge_cases": [
+    {
+      "scenario": "Modern package v5.3.0, legacy package v3.2.0",
+      "expected_behavior": "Modern package selected (both valid, modern preferred)"
+    },
+    {
+      "scenario": "Modern package v5.2.0 (too old), legacy package v3.2.0 (valid)",
+      "expected_behavior": "Error raised (modern fails validation, legacy not attempted)"
+    },
+    {
+      "scenario": "Modern package v5.3.0, legacy package v2.9.0 (too old)",
+      "expected_behavior": "Modern package selected (legacy version irrelevant)"
+    }
+  ],
+  "constitutional_compliance": [
+    {
+      "principle": "Principle #2: Choose the Right Tool for the Job",
+      "how_satisfied": "Modern package prioritized as it's the better tool (active development, better performance)"
+    },
+    {
+      "principle": "Principle #4: Zero Configuration Viable",
+      "how_satisfied": "Automatic priority selection requires no user configuration"
+    },
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Logging provides transparency about which package selected"
+    }
+  ],
+  "test_implementation": {
+    "test_file": "tests/contract/test_package_detection.py",
+    "test_class": "TestPackagePriority",
+    "test_methods": [
+      "test_modern_package_selected",
+      "test_legacy_package_not_attempted",
+      "test_connection_uses_modern_package",
+      "test_detection_time_under_threshold",
+      "test_package_info_shows_modern",
+      "test_logging_modern_package_selected",
+      "test_no_fallback_in_logs",
+      "test_modern_invalid_legacy_valid_raises_error",
+      "test_modern_valid_legacy_invalid_uses_modern"
+    ],
+    "fixtures_required": [
+      "mock_both_packages"
+    ],
+    "implementation_notes": [
+      "Use unittest.mock to simulate both packages available",
+      "Verify legacy import never attempted via mock call counts",
+      "Test logging to ensure transparency"
+    ]
+  },
+  "acceptance_criteria": {
+    "functional": [
+      "Modern package selected when both installed",
+      "Legacy package not imported or attempted",
+      "Connection succeeds using modern package",
+      "Priority decision occurs at detection time"
+    ],
+    "non_functional": [
+      "Detection completes in <10ms",
+      "Logging clearly indicates modern package selected",
+      "No DEBUG messages about fallback (since not needed)",
+      "Rationale for priority documented"
+    ]
+  },
+  "related_requirements": [
+    "FR-003: System MUST detect which package is installed automatically",
+    "FR-004: System MUST prioritize modern package when both installed",
+    "FR-010: System MUST log which DBAPI package is being used",
+    "NFR-001: Package detection <10ms overhead"
+  ],
+  "documentation_requirements": {
+    "user_guide": [
+      "Explain that modern package takes priority when both installed",
+      "Document why modern package is preferred",
+      "Show how to check which package is being used"
+    ],
+    "migration_guide": [
+      "Recommend uninstalling legacy package after testing",
+      "Explain performance benefits of modern package",
+      "Provide steps to verify modern package in use"
+    ]
+  }
+}

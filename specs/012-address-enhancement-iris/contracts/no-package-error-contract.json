@@ -1,0 +1,179 @@
+{
+  "contract_id": "no-package-error",
+  "contract_name": "Clear Error When No IRIS Package Installed",
+  "version": "1.0.0",
+  "description": "When neither IRIS Python package is installed, system must provide constitutional error message with remediation steps",
+  "preconditions": {
+    "environment": "Python 3.9+",
+    "packages_installed": [],
+    "packages_not_installed": [
+      "intersystems-irispython",
+      "intersystems-iris"
+    ]
+  },
+  "trigger": {
+    "action": "Import iris_devtester and attempt DBAPI connection",
+    "code_example": "from iris_devtester.utils.dbapi_compat import get_connection\nconn = get_connection(hostname='localhost', port=1972, namespace='USER', username='_SYSTEM', password='SYS')"
+  },
+  "expected_behavior": {
+    "error_raised": "ImportError",
+    "error_subclass": "DBAPIPackageNotFoundError",
+    "error_format": "Constitutional (What/Why/How/Docs)",
+    "modern_package_attempted": true,
+    "legacy_package_attempted": true,
+    "both_attempts_failed": true
+  },
+  "error_message_requirements": {
+    "structure": {
+      "header": "No IRIS Python package detected",
+      "sections": [
+        "What went wrong",
+        "Why this happened",
+        "How to fix it",
+        "Documentation"
+      ]
+    },
+    "content_requirements": {
+      "what_section": {
+        "must_contain": [
+          "Neither intersystems-irispython nor intersystems-iris",
+          "iris-devtester requires one of these packages"
+        ]
+      },
+      "why_section": {
+        "must_contain": [
+          "DBAPI for fast SQL operations",
+          "3x faster than JDBC"
+        ]
+      },
+      "how_section": {
+        "must_contain": [
+          "Install the modern IRIS Python package",
+          "pip install intersystems-irispython>=5.3.0"
+        ],
+        "should_contain": [
+          "Or install the legacy package",
+          "pip install intersystems-iris>=3.0.0"
+        ]
+      },
+      "docs_section": {
+        "must_contain": [
+          "https://iris-devtester.readthedocs.io/dbapi-packages/"
+        ]
+      }
+    }
+  },
+  "validation_criteria": [
+    {
+      "criterion": "ImportError raised",
+      "test_method": "pytest.raises(ImportError)",
+      "expected_result": "ImportError (or subclass) raised"
+    },
+    {
+      "criterion": "Error message has header",
+      "test_method": "str(error).startswith('No IRIS Python package detected')",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Error message has What section",
+      "test_method": "'What went wrong:' in str(error)",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Error message has Why section",
+      "test_method": "'Why this happened:' in str(error)",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Error message has How section",
+      "test_method": "'How to fix it:' in str(error)",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Error message has Documentation link",
+      "test_method": "'Documentation:' in str(error) and 'https://' in str(error)",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Error message suggests modern package",
+      "test_method": "'intersystems-irispython>=5.3.0' in str(error)",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Error message provides install command",
+      "test_method": "'pip install' in str(error)",
+      "expected_result": "True"
+    },
+    {
+      "criterion": "Logging indicates both attempts failed",
+      "test_method": "Check ERROR log messages",
+      "expected_result": "Contains 'No IRIS DBAPI package detected'"
+    }
+  ],
+  "constitutional_compliance": [
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Error detected immediately at import time, not at first connection attempt"
+    },
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Error message follows What/Why/How/Docs format"
+    },
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Clear remediation steps provided (install commands)"
+    },
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Documentation link for further help"
+    }
+  ],
+  "test_implementation": {
+    "test_file": "tests/contract/test_package_detection.py",
+    "test_class": "TestNoPackageError",
+    "test_methods": [
+      "test_import_error_raised",
+      "test_error_message_has_header",
+      "test_error_message_has_what_section",
+      "test_error_message_has_why_section",
+      "test_error_message_has_how_section",
+      "test_error_message_has_documentation_link",
+      "test_error_message_suggests_modern_package",
+      "test_error_message_provides_install_command",
+      "test_error_message_mentions_both_packages",
+      "test_logging_error_level",
+      "test_both_imports_attempted"
+    ],
+    "fixtures_required": [
+      "mock_no_packages"
+    ],
+    "implementation_notes": [
+      "Use unittest.mock to patch sys.modules and simulate missing packages",
+      "Verify both import attempts occurred before error raised",
+      "Test exact error message format matches Constitutional requirements"
+    ]
+  },
+  "acceptance_criteria": {
+    "functional": [
+      "ImportError raised when neither package installed",
+      "Modern package import attempted first",
+      "Legacy package import attempted second",
+      "Error raised only after both attempts fail"
+    ],
+    "non_functional": [
+      "Error message follows Constitutional format (What/Why/How/Docs)",
+      "Error message provides actionable remediation",
+      "Error message suggests modern package as primary option",
+      "Error message mentions legacy package for backward compatibility",
+      "Documentation link included for further assistance",
+      "Error logged at ERROR level"
+    ]
+  },
+  "related_requirements": [
+    "FR-005: System MUST provide clear error messages when neither package installed",
+    "NFR-002: Error messages MUST follow Constitutional Principle #5 format"
+  ],
+  "error_message_example": {
+    "text": "No IRIS Python package detected\n\nWhat went wrong:\n  Neither intersystems-irispython nor intersystems-iris is installed.\n  iris-devtester requires one of these packages for DBAPI connections.\n\nWhy this happened:\n  iris-devtester uses DBAPI for fast SQL operations (3x faster than JDBC).\n  The modern package (intersystems-irispython) or legacy package\n  (intersystems-iris) must be installed.\n\nHow to fix it:\n  Install the modern IRIS Python package:\n  → pip install intersystems-irispython>=5.3.0\n\n  Or install the legacy package (backward compatibility):\n  → pip install intersystems-iris>=3.0.0\n\nDocumentation:\n  https://iris-devtester.readthedocs.io/dbapi-packages/\n"
+  }
+}
