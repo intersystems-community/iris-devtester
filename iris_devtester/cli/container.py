@@ -776,6 +776,9 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
             click.echo(f"  User: {username}")
             ctx.exit(0)
 
+        except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+            # Let Click handle these - don't catch them
+            raise
         except Exception as e:
             progress.print_error(f"Connection failed: {e}")
             ctx.exit(1)
