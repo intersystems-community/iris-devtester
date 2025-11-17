@@ -280,10 +280,18 @@ class PortRegistry:
         """
         Find first available port in range.
 
+        Checks both registry assignments AND actual Docker port bindings
+        to avoid conflicts with external containers.
+
         Raises:
             PortExhaustedError: All ports in range are in use
         """
+        # Ports assigned in registry
         used_ports = {a.port for a in assignments if a.status == "active"}
+
+        # Also check Docker for actually bound ports (defense in depth)
+        docker_bound_ports = self._get_docker_bound_ports()
+        used_ports.update(docker_bound_ports)
 
         for port in range(self.min_port, self.max_port + 1):
             if port not in used_ports:
@@ -293,6 +301,48 @@ class PortRegistry:
         raise PortExhaustedError(
             port_range=self.port_range, current_assignments=assignments
         )
+
+    def _get_docker_bound_ports(self) -> set:
+        """
+        Get ports currently bound by Docker containers.
+
+        Returns:
+            Set of port numbers currently bound by Docker
+
+        Note:
+            Returns empty set if Docker unavailable (graceful degradation)
+        """
+        try:
+            import docker
+        except ImportError:
+            return set()
+
+        try:
+            client = docker.from_env()
+            bound_ports = set()
+
+            # Check all containers (running or stopped)
+            for container in client.containers.list(all=True):
+                # Get port bindings from container config
+                if container.attrs and "NetworkSettings" in container.attrs:
+                    ports = container.attrs["NetworkSettings"].get("Ports", {})
+                    for container_port, bindings in ports.items():
+                        if bindings:
+                            for binding in bindings:
+                                if binding and "HostPort" in binding:
+                                    try:
+                                        host_port = int(binding["HostPort"])
+                                        # Only track ports in our range
+                                        if self.min_port <= host_port <= self.max_port:
+                                            bound_ports.add(host_port)
+                                    except (ValueError, TypeError):
+                                        continue
+
+            return bound_ports
+
+        except Exception:
+            # Docker daemon not accessible - return empty set
+            return set()
 
     def _validate_port_available(
         self, assignments: List[PortAssignment], port: int, requesting_project: str

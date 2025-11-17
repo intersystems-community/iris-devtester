@@ -151,9 +151,12 @@ class IRISContainer(BaseIRISContainer):
             if self._config:
                 self._config.port = assigned_port
 
-            # Pass port to base container (must be done before start)
-            # The base class IRISContainer accepts 'port' in __init__
-            # We need to update the port attribute before calling start
+            # CRITICAL FIX: Configure fixed port binding
+            # Without this, testcontainers uses RANDOM port mapping (defeating the purpose!)
+            # This binds container:1972 → host:assigned_port (e.g., 1973, 1974, etc.)
+            self.with_bind_ports(1972, assigned_port)
+
+            # Update port attribute for compatibility
             self.port = assigned_port
 
             # Update container name to include project path hash for staleness detection
@@ -176,10 +179,14 @@ class IRISContainer(BaseIRISContainer):
         result = super().start()
 
         # Update config with actual host/port after start
-        if self._config and not self._port_registry:
-            # Without port registry, get mapped port from container
+        if self._config:
             self._config.host = self.get_container_host_ip()
-            self._config.port = int(self.get_exposed_port(self.port))
+            if self._port_registry:
+                # With port registry, use the assigned port directly (fixed binding)
+                self._config.port = self._port_assignment.port
+            else:
+                # Without port registry, get mapped port from container (random mapping)
+                self._config.port = int(self.get_exposed_port(self.port))
 
         return result
 
