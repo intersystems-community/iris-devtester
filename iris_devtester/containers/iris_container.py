@@ -62,13 +62,35 @@ class IRISContainer(BaseIRISContainer):
         ...     conn = iris.get_connection()
     """
 
-    def __init__(self, image: str = "intersystemsdc/iris-community:latest", **kwargs):
+    def __init__(
+        self,
+        image: str = "intersystemsdc/iris-community:latest",
+        port_registry: Optional["PortRegistry"] = None,
+        project_path: Optional[str] = None,
+        preferred_port: Optional[int] = None,
+        **kwargs,
+    ):
         """
         Initialize IRIS container.
 
         Args:
             image: Docker image to use
+            port_registry: Optional PortRegistry for multi-project port management
+            project_path: Absolute path to project directory (auto-detects from cwd if None)
+            preferred_port: Optional manual port override (requires port_registry)
             **kwargs: Additional arguments passed to base container
+
+        Example:
+            >>> # Without port registry (backwards compatible)
+            >>> container = IRISContainer()
+
+            >>> # With port registry (automatic port assignment)
+            >>> from iris_devtester.ports import PortRegistry
+            >>> registry = PortRegistry()
+            >>> container = IRISContainer(port_registry=registry)
+
+            >>> # With manual port preference
+            >>> container = IRISContainer(port_registry=registry, preferred_port=1975)
         """
         if not HAS_TESTCONTAINERS_IRIS:
             raise ImportError(
@@ -87,6 +109,107 @@ class IRISContainer(BaseIRISContainer):
         self._config = None
         self._callin_enabled = False
         self._is_attached = False  # True if attached to external container
+
+        # Port registry integration (Feature 013)
+        self._port_registry = port_registry
+        self._port_assignment = None
+        self._preferred_port = preferred_port
+
+        # Auto-detect project path from current working directory if not provided
+        if port_registry is not None and project_path is None:
+            import os
+
+            project_path = os.getcwd()
+
+        self._project_path = project_path
+
+    def start(self):
+        """
+        Start IRIS container with port registry integration.
+
+        If port_registry is configured, assigns a port before starting.
+        Otherwise uses default port 1972 (backwards compatible).
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            PortExhaustedError: All ports in range are in use
+            PortConflictError: Preferred port already assigned
+        """
+        # Port registry integration (T022)
+        if self._port_registry:
+            # Assign port from registry
+            self._port_assignment = self._port_registry.assign_port(
+                project_path=self._project_path, preferred_port=self._preferred_port
+            )
+
+            # Use assigned port for container
+            assigned_port = self._port_assignment.port
+
+            # Update configuration if exists
+            if self._config:
+                self._config.port = assigned_port
+
+            # Pass port to base container (must be done before start)
+            # The base class IRISContainer accepts 'port' in __init__
+            # We need to update the port attribute before calling start
+            self.port = assigned_port
+
+            # Update container name to include project path hash for staleness detection
+            import hashlib
+
+            project_hash = hashlib.md5(self._project_path.encode()).hexdigest()[:8]
+            container_name = f"iris_{project_hash}_{assigned_port}"
+
+            # Update assignment with container name
+            self._port_assignment.container_name = container_name
+
+            # Set container name
+            self.with_name(container_name)
+
+            logger.info(
+                f"Port registry: assigned port {assigned_port} to {self._project_path}"
+            )
+
+        # Call parent start()
+        result = super().start()
+
+        # Update config with actual host/port after start
+        if self._config and not self._port_registry:
+            # Without port registry, get mapped port from container
+            self._config.host = self.get_container_host_ip()
+            self._config.port = int(self.get_exposed_port(self.port))
+
+        return result
+
+    def stop(self, force=True, delete_volume=True):
+        """
+        Stop IRIS container and release port assignment.
+
+        If port_registry is configured, releases the port assignment.
+
+        Args:
+            force: Force stop container
+            delete_volume: Delete associated volumes
+
+        Returns:
+            None
+        """
+        try:
+            # Call parent stop()
+            super().stop(force=force, delete_volume=delete_volume)
+        finally:
+            # Port registry integration (T023)
+            if self._port_registry and self._port_assignment:
+                try:
+                    self._port_registry.release_port(self._project_path)
+                    logger.info(
+                        f"Port registry: released port {self._port_assignment.port} "
+                        f"for {self._project_path}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to release port assignment: {e}")
 
     @classmethod
     def community(
@@ -1110,3 +1233,43 @@ Halt"""
                 "  2. Check user has namespace creation privileges\n"
                 "  3. Check namespace doesn't already exist\n"
             )
+
+    def get_assigned_port(self) -> int:
+        """
+        Get the port assigned to this container.
+
+        Returns port from port registry assignment if available, otherwise
+        returns the default port (1972) or manually configured port.
+
+        Returns:
+            Port number (e.g., 1972, 1973, etc.)
+
+        Example:
+            >>> registry = PortRegistry()
+            >>> with IRISContainer(port_registry=registry) as iris:
+            ...     port = iris.get_assigned_port()
+            ...     print(f"Container running on port {port}")
+        """
+        if self._port_assignment:
+            return self._port_assignment.port
+        elif self._config:
+            return self._config.port
+        else:
+            return 1972  # Default port
+
+    def get_project_path(self) -> Optional[str]:
+        """
+        Get the project path associated with this container.
+
+        Returns None if port_registry was not used.
+
+        Returns:
+            Absolute path to project directory, or None
+
+        Example:
+            >>> registry = PortRegistry()
+            >>> with IRISContainer(port_registry=registry) as iris:
+            ...     path = iris.get_project_path()
+            ...     print(f"Project: {path}")
+        """
+        return self._project_path

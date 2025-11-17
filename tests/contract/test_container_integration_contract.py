@@ -6,10 +6,7 @@ for automatic port management.
 
 Following TDD workflow: tests written BEFORE implementation.
 
-Expected Status: FAIL (IRISContainer integration not implemented yet)
-
-Note: These tests will initially be skipped (require Docker). Once PortRegistry
-is implemented, they will be enabled in integration test phase.
+Now ENABLED - IRISContainer integration implemented (T021-T024).
 """
 
 import os
@@ -18,17 +15,11 @@ from pathlib import Path
 
 import pytest
 
+from iris_devtester.containers.iris_container import IRISContainer
 from iris_devtester.ports import (
     PortConflictError,
     PortExhaustedError,
     PortRegistry,
-)
-
-# IRISContainer will be imported once integration is implemented
-# For now, tests are marked as skip
-
-pytestmark = pytest.mark.skip(
-    reason="IRISContainer integration not implemented yet - will enable in Phase 3.3 (T021-T024)"
 )
 
 
@@ -54,16 +45,14 @@ def test_backwards_compatibility_no_port_registry():
 
     Contract: Backwards compatibility - existing code continues to work.
     """
-    # from testcontainers.iris import IRISContainer
-    #
-    # container = IRISContainer()
-    # container.start()
-    #
-    # assert container.get_assigned_port() == 1972
-    # assert container.get_project_path() is None
-    #
-    # container.stop()
-    pass
+    container = IRISContainer()
+    container.start()
+
+    try:
+        assert container.get_assigned_port() == 1972
+        assert container.get_project_path() is None
+    finally:
+        container.stop()
 
 
 def test_auto_assignment_with_port_registry(temp_registry):
@@ -72,24 +61,22 @@ def test_auto_assignment_with_port_registry(temp_registry):
 
     Contract: Port registry integration enables automatic port assignment.
     """
-    # from testcontainers.iris import IRISContainer
-    #
-    # container = IRISContainer(
-    #     port_registry=temp_registry,
-    #     project_path="/tmp/project-a"
-    # )
-    # container.start()
-    #
-    # port = container.get_assigned_port()
-    # assert 1972 <= port <= 1981
-    #
-    # # Verify registry has assignment
-    # assignment = temp_registry.get_assignment("/tmp/project-a")
-    # assert assignment is not None
-    # assert assignment.port == port
-    #
-    # container.stop()
-    pass
+    container = IRISContainer(
+        port_registry=temp_registry,
+        project_path="/tmp/project-a"
+    )
+    container.start()
+
+    try:
+        port = container.get_assigned_port()
+        assert 1972 <= port <= 1981
+
+        # Verify registry has assignment
+        assignment = temp_registry.get_assignment("/tmp/project-a")
+        assert assignment is not None
+        assert assignment.port == port
+    finally:
+        container.stop()
 
 
 def test_auto_detect_project_path_from_cwd(temp_registry):
