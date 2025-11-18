@@ -99,29 +99,45 @@ Implemented automatic port assignment for IRIS containers with full IRISContaine
 2 passed, 7 skipped in 7.60s
 ```
 
+## Critical Fix: Port Binding (2025-01-17)
+
+**CRITICAL DISCOVERY**: The initial IRISContainer integration was incomplete - it updated `self.port` but did NOT create fixed port bindings! This caused Docker to use RANDOM port mapping, defeating the entire purpose.
+
+**Fix Applied** (commit cdb3633):
+- Added `with_bind_ports(1972, assigned_port)` to create fixed Docker port mapping
+- Enhanced PortRegistry with Docker conflict detection (_get_docker_bound_ports())
+- Prevents conflicts with external containers (e.g., iris_db on port 1972)
+
+**User Question That Revealed Issue**:
+> "I am seeing a pattern that the ports get chosen "dynamically"?? by IRIS on startup, and then a project has to update the ports in the .env file"
+
+This prompted investigation → discovered missing port binding → fixed immediately.
+
+**Impact**: Feature now works as designed - predictable ports, no .env file updates needed!
+
+## Completed Integration Tests ✅
+
+### T028: Multi-Project Isolation (PASSED)
+- `test_multi_project_isolation`: Two projects get unique ports, run concurrently
+- `test_multi_project_idempotency`: Same project gets same port across restarts
+
+### T029: Port Persistence (PASSED)
+- `test_port_persists_across_restarts`: Port survives 3 stop/start cycles
+- `test_port_released_after_stop`: Port freed immediately, reusable by other projects
+
+**Results**: 4 passed in 32.72s ✅
+
 ## Remaining Tasks
 
-### Phase 3.3: IRISContainer Integration (Completed Above)
-- ~~**T021**: Integrate PortRegistry into IRISContainer.__init__()~~
-  - Add parameters: `port_registry`, `project_path`, `preferred_port`
-  - Backwards compatibility: if port_registry is None, use default port 1972
-  - Auto-detect project_path from `os.getcwd()` if None
-
-- **T022**: Implement IRISContainer.start() port assignment
-  - Call `port_registry.assign_port()` before container start
-  - Handle PortExhaustedError, PortConflictError with structured messages
-  - Update container name to include project hash
-
-- **T023**: Implement IRISContainer.stop() port release
-  - Call `port_registry.release_port()` after container stop
-  - Only if port_registry is not None
-
-- **T024**: Add IRISContainer.get_assigned_port() and get_project_path() methods
-  - Return assigned port and project path for inspection
-
 ### Phase 3.4: Integration Tests
+- ~~**T028**: Multi-project isolation~~ ✅ PASSED
+- ~~**T029**: Port persistence~~ ✅ PASSED
+- **T030**: Port exhaustion handling
+- **T031**: Stale assignment cleanup
+- **T032**: Manual port override
+
+### Phase 3.5: CLI & Documentation
 - **T025-T027**: CLI commands (ports list, clear, inspect)
-- **T028-T032**: End-to-end integration tests
 
 ### Phase 3.5: Polish & Documentation
 - **T033-T040**: Unit tests, performance tests, documentation updates
