@@ -1280,3 +1280,78 @@ Halt"""
             ...     print(f"Project: {path}")
         """
         return self._project_path
+
+    def validate(
+        self,
+        level: "HealthCheckLevel" = None
+    ) -> "ValidationResult":
+        """
+        Validate this container's health.
+
+        Performs defensive validation to detect container issues like:
+        - Container not running
+        - Stale container ID references
+        - Exec accessibility problems
+        - IRIS not responsive
+
+        Args:
+            level: Validation depth (MINIMAL, STANDARD, or FULL).
+                  Default: STANDARD
+
+        Returns:
+            ValidationResult for this container.
+
+        Example:
+            >>> with IRISContainer.community() as iris:
+            ...     result = iris.validate()
+            ...     if not result.success:
+            ...         print(result.format_message())
+
+        Constitutional Compliance:
+            - Principle #1: Automatic detection of issues
+            - Principle #5: Clear guidance on failures
+        """
+        from iris_devtester.containers.models import HealthCheckLevel
+        from iris_devtester.containers.validation import validate_container
+
+        if level is None:
+            level = HealthCheckLevel.STANDARD
+
+        # Get container name from underlying container
+        container_name = self.get_container_name()
+
+        return validate_container(
+            container_name=container_name,
+            level=level,
+            docker_client=None  # Auto-create
+        )
+
+    def assert_healthy(
+        self,
+        level: "HealthCheckLevel" = None
+    ):
+        """
+        Assert container is healthy, raise if not.
+
+        Convenience method for validation that raises an exception
+        if the container is not healthy.
+
+        Args:
+            level: Validation depth (default: STANDARD).
+
+        Raises:
+            RuntimeError: If validation fails. Error message includes
+                         full remediation guidance.
+
+        Example:
+            >>> with IRISContainer.community() as iris:
+            ...     iris.assert_healthy()  # Raises if not healthy
+            ...     conn = iris.get_connection()  # Safe to proceed
+
+        Constitutional Compliance:
+            - Principle #5: Structured error messages with remediation
+        """
+        result = self.validate(level=level)
+
+        if not result.success:
+            raise RuntimeError(result.format_message())
