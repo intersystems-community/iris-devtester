@@ -125,16 +125,32 @@ This prompted investigation → discovered missing port binding → fixed immedi
 - `test_port_persists_across_restarts`: Port survives 3 stop/start cycles
 - `test_port_released_after_stop`: Port freed immediately, reusable by other projects
 
-**Results**: 4 passed in 32.72s ✅
+### T030: Port Exhaustion (PASSED)
+- `test_port_exhaustion_error`: PortExhaustedError raised with remediation steps
+- `test_port_exhaustion_with_stale_assignments`: cleanup_stale() frees ports for reuse
+
+### T031: Stale Cleanup (PASSED)
+- `test_cleanup_stale_removes_dead_containers`: Removes stale, keeps active assignments
+- `test_cleanup_stale_preserves_active_containers`: No false positives
+- `test_cleanup_stale_handles_stopped_containers`: Detects stopped containers
+
+### T032: Manual Port Override (PASSED)
+- `test_manual_port_preference`: preferred_port parameter works correctly
+- `test_manual_port_conflict_detection`: PortConflictError for port conflicts
+- `test_manual_port_idempotency`: Same project + preference = same port
+- `test_manual_port_outside_range_allows_manual_override`: Manual override > range
+- `test_manual_port_persists_until_released`: Ports released on stop()
+
+**Results**: 14 passed in 84.78s ✅
 
 ## Remaining Tasks
 
 ### Phase 3.4: Integration Tests
 - ~~**T028**: Multi-project isolation~~ ✅ PASSED
 - ~~**T029**: Port persistence~~ ✅ PASSED
-- **T030**: Port exhaustion handling
-- **T031**: Stale assignment cleanup
-- **T032**: Manual port override
+- ~~**T030**: Port exhaustion handling~~ ✅ PASSED
+- ~~**T031**: Stale assignment cleanup~~ ✅ PASSED
+- ~~**T032**: Manual port override~~ ✅ PASSED
 
 ### Phase 3.5: CLI & Documentation
 - **T025-T027**: CLI commands (ports list, clear, inspect)
