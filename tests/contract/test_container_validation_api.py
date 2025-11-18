@@ -344,9 +344,8 @@ class TestValidateContainerFunctionContract:
 
     def test_validate_container_function_exists(self):
         """validate_container() function must be importable."""
-        # This will fail until implementation
-        with pytest.raises(ImportError):
-            from iris_devtester.containers.validation import validate_container
+        from iris_devtester.containers.validation import validate_container
+        assert callable(validate_container)
 
     def test_validate_container_signature(self):
         """validate_container() must have correct signature."""
@@ -407,9 +406,8 @@ class TestContainerValidatorClassContract:
 
     def test_container_validator_class_exists(self):
         """ContainerValidator class must be importable."""
-        # This will fail until implementation
-        with pytest.raises(ImportError):
-            from iris_devtester.containers.validation import ContainerValidator
+        from iris_devtester.containers.validation import ContainerValidator
+        assert ContainerValidator is not None
 
     def test_container_validator_caching(self):
         """ContainerValidator must cache validation results."""
