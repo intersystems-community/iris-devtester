@@ -10,6 +10,26 @@ This constitution codifies the hard-won lessons, blind alleys avoided, and battl
 
 ## CRITICAL: Read This First
 
+### MANDATORY: Use intersystems-irispython Package ONLY
+
+**ABSOLUTE REQUIREMENT**: This project uses `intersystems-irispython` as the ONLY Python package for IRIS connectivity.
+
+**FORBIDDEN PACKAGES**:
+- ❌ `intersystems-iris` (old package, deprecated)
+- ❌ Any other IRIS Python packages
+
+**Why This Matters**:
+- `intersystems-irispython` is the modern, maintained package (v5.3.0+)
+- `intersystems-iris` is the legacy package (v3.0.0+) with known issues
+- Mixing packages causes import conflicts and mysterious failures
+- This is a foundational architectural decision
+
+**The Rule**: ALWAYS use `import intersystems_irispython` in ALL code. NEVER import from `intersystems_iris`.
+
+---
+
+### SQL vs ObjectScript Execution
+
 **Before writing ANY code that interacts with IRIS, read `docs/SQL_VS_OBJECTSCRIPT.md`.**
 
 This single document answers the most critical question in IRIS development: "How do I execute this operation?"
