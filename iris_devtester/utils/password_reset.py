@@ -109,20 +109,34 @@ def reset_password(
         logger.info(f"Resetting IRIS password for user '{username}'...")
 
         # Use ObjectScript to change password AND set PasswordNeverExpires
-        # CRITICAL FIX (Feature 007): Use correct IRIS Security API pattern:
+        # CRITICAL FIX (Feature 007 + Bug #1): Use single-line ObjectScript with echo
+        # This is the ONLY method that actually works reliably.
+        # Pattern:
         # 1. Get() retrieves current properties
-        # 2. Set Password property (not ExternalPassword)
-        # 3. Set PasswordNeverExpires=1 (not ChangePassword=0)
-        # 4. Modify() saves changes
+        # 2. Set Password property directly
+        # 3. Set PasswordNeverExpires=1
+        # 4. Modify() saves changes and returns status (1 = success)
+
+        # Single-line ObjectScript (verified working in production)
+        objectscript = (
+            f'do ##class(Security.Users).Get(\\"{username}\\",.p) '
+            f'set p(\\"Password\\")=\\"{new_password}\\" '
+            f'set p(\\"PasswordNeverExpires\\")=1 '
+            f'write ##class(Security.Users).Modify(\\"{username}\\",.p) '
+            f'halt'
+        )
+
+        # Use echo pipe to iris session (verified working method)
         reset_cmd = [
             "docker",
             "exec",
-            "-i",
             container_name,
             "bash",
             "-c",
-            f'''echo "set sc = ##class(Security.Users).Get(\\"{username}\\",.props) set props(\\"Password\\")=\\"{new_password}\\" set props(\\"PasswordNeverExpires\\")=1 write ##class(Security.Users).Modify(\\"{username}\\",.props)" | iris session IRIS -U %SYS''',
+            f'echo "{objectscript}" | iris session IRIS -U %SYS',
         ]
+
+        logger.debug(f"Executing ObjectScript password reset for user '{username}'...")
 
         result = subprocess.run(
             reset_cmd,
@@ -131,12 +145,20 @@ def reset_password(
             timeout=timeout,
         )
 
+        logger.debug(f"Password reset stdout: {result.stdout}")
+        logger.debug(f"Password reset stderr: {result.stderr}")
+        logger.debug(f"Password reset returncode: {result.returncode}")
+
+        # Check for success: returncode 0 and "1" in output (Modify returns 1 on success)
         if result.returncode == 0 and "1" in result.stdout:
             # Wait for password change to propagate
             time.sleep(2)
 
             logger.info(f"✓ Password reset successful for user '{username}'")
             return True, f"Password reset successful for user '{username}'"
+        else:
+            logger.warning(f"Primary method failed: returncode={result.returncode}, stdout={result.stdout[:100]}")
+            # Fall through to try alternative method
 
         # Step 3: Try alternative method using ChangePassword (without Modify)
         logger.debug("Primary method failed, trying ChangePassword approach...")

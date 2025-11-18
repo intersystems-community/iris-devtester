@@ -687,7 +687,9 @@ class IRISContainer(BaseIRISContainer):
         )
 
         if success:
-            # Update stored config with new password
+            # Update stored config with new password (Bug #2 fix: ensure config exists)
+            if self._config is None:
+                self._config = self.get_config()
             self._config.password = new_password
             logger.info(f"✓ {message}")
         else:
