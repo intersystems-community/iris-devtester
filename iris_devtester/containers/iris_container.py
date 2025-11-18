@@ -578,24 +578,26 @@ class IRISContainer(BaseIRISContainer):
         else:
             logger.warning(f"⚠️  Could not unexpire passwords: {msg}")
 
-        # Update config with actual container host/port
+        # CRITICAL: PROACTIVELY reset password BEFORE first connection attempt
+        # (Feature 007 fix - Constitutional Principle #1: Automatic Remediation)
+        # This prevents "Access Denied" and "Password change required" errors
+        from iris_devtester.utils.password_reset import reset_password
         config = self.get_config()
 
-        try:
-            # Use connection manager (DBAPI-first, JDBC-fallback)
-            self._connection = get_connection(config)
-            return self._connection
+        logger.info("Proactively resetting password to ensure clean connection...")
+        reset_success, reset_msg = reset_password(
+            container_name=container_name,
+            username=config.username,
+            new_password=config.password,
+        )
+        if reset_success:
+            logger.info(f"✓ Password proactively reset: {reset_msg}")
+        else:
+            logger.warning(f"⚠️  Password reset failed (will attempt connection anyway): {reset_msg}")
 
-        except Exception as e:
-            # Try automatic password reset as last resort
-            logger.warning(f"Connection failed: {e}")
-
-            if reset_password_if_needed(e, container_name=container_name):
-                logger.info("Password reset successful, retrying connection...")
-                self._connection = get_connection(config)
-                return self._connection
-
-            raise
+        # Use connection manager (DBAPI-first, JDBC-fallback)
+        self._connection = get_connection(config)
+        return self._connection
 
     def get_config(self) -> IRISConfig:
         """
