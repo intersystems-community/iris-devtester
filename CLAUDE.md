@@ -414,6 +414,148 @@ def test_entity_count(loaded_fixture):
 
 ---
 
+## Feature 014: Defensive Container Validation
+
+**Status**: Complete
+**Branch**: `014-address-this-enhancement`
+**Docs**: `specs/014-address-this-enhancement/`
+
+### Quick Overview
+
+Provides defensive validation for Docker container health with automatic detection of common failure modes like stale container ID references, stopped containers, and network accessibility issues.
+
+**Performance**: Progressive validation with strict SLA targets
+- MINIMAL level: <500ms (just running status)
+- STANDARD level: <1000ms (running + exec accessibility)
+- FULL level: <2000ms (STANDARD + IRIS health check)
+- Caching with 5-second TTL for repeated checks
+
+### Module Structure
+
+```
+iris_devtester/containers/
+├── models.py           # ContainerHealthStatus, HealthCheckLevel, ValidationResult, ContainerHealth
+├── validation.py       # validate_container(), ContainerValidator class
+└── iris_container.py   # IRISContainer.validate(), assert_healthy() methods
+```
+
+### Python API
+
+```python
+from iris_devtester.containers import (
+    validate_container,
+    ContainerValidator,
+    HealthCheckLevel,
+    IRISContainer
+)
+
+# Standalone validation function
+result = validate_container(
+    container_name="iris_db",
+    level=HealthCheckLevel.STANDARD
+)
+
+if not result.success:
+    print(result.format_message())  # Structured error message
+
+# Stateful validator with caching
+validator = ContainerValidator("iris_db", cache_ttl=5)
+result = validator.validate(level=HealthCheckLevel.FULL)
+health = validator.get_health()  # Detailed metadata
+
+# IRISContainer integration
+with IRISContainer.community() as iris:
+    # Validate container health
+    result = iris.validate(level=HealthCheckLevel.STANDARD)
+
+    # Or assert healthy (raises on failure)
+    iris.assert_healthy()
+```
+
+### Validation Levels
+
+**MINIMAL** (<500ms target):
+- Container exists
+- Container running status
+
+**STANDARD** (<1000ms target):
+- MINIMAL checks
+- Exec accessibility test (can run commands)
+
+**FULL** (<2000ms target):
+- STANDARD checks
+- IRIS-specific health check (database responsive)
+
+### Health Statuses
+
+- `HEALTHY`: Container running and accessible
+- `RUNNING_NOT_ACCESSIBLE`: Running but exec commands fail
+- `NOT_RUNNING`: Container exists but stopped
+- `NOT_FOUND`: Container doesn't exist
+- `STALE_REFERENCE`: Container ID changed (recreated)
+- `DOCKER_ERROR`: Docker daemon communication failed
+
+### Error Messages
+
+All error messages follow Constitutional Principle #5 (Fail Fast with Guidance):
+
+```
+Container validation failed for 'iris_db'
+
+What went wrong:
+  Container 'iris_db' does not exist.
+
+How to fix it:
+  1. List all containers:
+     docker ps -a
+  2. Start container if it exists:
+     docker start iris_db
+  3. Or create new container:
+     docker run -d --name iris_db intersystemsdc/iris-community:latest
+
+Available containers:
+  - iris_test (running)
+  - iris_prod (exited)
+```
+
+### Use Cases
+
+1. **Pre-flight checks**: Validate container before operations
+2. **Debugging**: Identify why container operations fail
+3. **Monitoring**: Track container health over time
+4. **CI/CD**: Ensure test infrastructure is healthy
+
+### Key Design Decisions
+
+1. **Progressive validation**: Fail fast at each level for performance
+2. **Factory pattern**: Type-safe ValidationResult creation
+3. **Caching strategy**: 5-second TTL balances freshness and performance
+4. **Docker SDK**: Native Python library (no shell commands)
+5. **Structured error messages**: Following Constitutional Principle #5
+
+### Constitutional Compliance
+
+- ✅ Principle #1: Automatic detection of issues (no manual checks)
+- ✅ Principle #5: Fail Fast with Guidance (structured error messages)
+- ✅ Principle #7: Medical-Grade Reliability (comprehensive test coverage)
+
+### Test Coverage
+
+- **Contract tests**: 26 tests (data models + API contracts)
+- **Integration tests**: 31 tests (real Docker containers)
+- **Total**: 57 tests, all passing
+- **Performance**: All SLAs verified (<500ms, <1000ms, <2000ms)
+
+### Reference Documentation
+
+- Spec: `specs/014-address-this-enhancement/spec.md`
+- Plan: `specs/014-address-this-enhancement/plan.md`
+- Quickstart: `specs/014-address-this-enhancement/quickstart.md`
+- Contracts: `specs/014-address-this-enhancement/contracts/`
+- Data Model: `specs/014-address-this-enhancement/data-model.md`
+
+---
+
 ## Important Reminders
 
 1. **Don't rewrite what works** - Extract and enhance proven code
