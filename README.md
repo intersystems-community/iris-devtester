@@ -395,7 +395,6 @@ This project is optimized for AI coding assistants:
 
 - **[AGENTS.md](AGENTS.md)** - Vendor-neutral AI configuration (build commands, CI/CD)
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code-specific context and patterns
-- **[.cursorrules](.cursorrules)** - Cursor IDE configuration
 - **Comprehensive examples** - All examples include expected outputs
 - **Structured documentation** - Clear architecture, conventions, and troubleshooting
 
