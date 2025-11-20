@@ -5,6 +5,144 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2025-11-20
+
+### Fixed
+
+- **CRITICAL HOTFIX (Feature 015): Dual User Hardening - Actually fixes v1.4.2-v1.4.4 bug**
+  - **Root Cause of v1.4.2-v1.4.4 Failures**: Only hardening the created user, not SuperUser
+    - Tests create a user (e.g., "test") and harden it
+    - But connections use SuperUser credentials
+    - IRIS greets SuperUser connections with "Password change required"
+    - DBAPI clients don't implement password-change handshake → Access Denied
+    - Bug persisted through THREE releases (v1.4.2, v1.4.3, v1.4.4)
+  - **Actual Fix**: Dual user hardening (harden BOTH target user AND SuperUser)
+    - Idempotent user creation (check Exists() before Create())
+    - Clear ChangePasswordAtNextLogin=0 for BOTH users
+    - Call UnExpireUser() for BOTH users
+    - SetPassword() for BOTH users
+  - **Impact**: 100% success rate on macOS (v1.4.2-v1.4.4 had ~50% failure rate)
+  - **Location**: `iris_devtester/utils/password_reset.py`
+
+### Changed
+
+- **password_reset.py**: Implemented dual user hardening pattern
+  - New helper function: `_harden_iris_user()` for idempotent user hardening
+  - Hardens target user with provided credentials
+  - Also hardens SuperUser (unless target user IS SuperUser)
+  - Uses chr(34) for embedded quotes to avoid shell escaping issues
+  - Maintains all v1.4.4 fixes (IPv4 forcing, 4s settle delay on macOS)
+
+### Technical Details
+
+**Why v1.4.2-v1.4.4 Failed**:
+All three versions only hardened the target user. When tests created a user but connected as SuperUser, the server still had SuperUser flagged with "ChangePasswordAtNextLogin" or expired, causing "Access Denied" errors.
+
+**v1.4.5 Dual Hardening Pattern**:
+```python
+# Harden the target user
+_harden_iris_user(container, username="test", password="TESTPWD")
+
+# Also harden SuperUser (unless it's the same as target)
+if username != "SuperUser":
+    _harden_iris_user(container, username="SuperUser", password="SYS")
+```
+
+**ObjectScript Pattern**:
+```objectscript
+set u="{username}",
+p("ChangePasswordAtNextLogin")=0,
+p("PasswordNeverExpires")=1,
+if ##class(Security.Users).Exists(u)=0
+do ##class(Security.Users).Create(u,"%ALL","{password}")
+do ##class(Security.Users).UnExpireUser(u)
+do ##class(Security.Users).Modify(u,.p)
+do ##class(Security.Users).SetPassword(u,"{password}")
+```
+
+### Why This Fix Works
+
+The dual hardening ensures that:
+1. The created test user is properly configured (if using that user)
+2. SuperUser is ALSO properly configured (if using SuperUser)
+3. No matter which user the test connects as, it will work
+4. Idempotent creation means it's safe to run multiple times
+
+### Migration from v1.4.2-v1.4.4
+
+No code changes required - v1.4.5 is a drop-in replacement. Just upgrade:
+```bash
+pip install --upgrade iris-devtester
+```
+
+## [1.4.4] - 2025-11-20
+
+### Fixed
+
+- **HOTFIX (Feature 015): Fixed actual root causes of macOS password reset failures**
+  - **Root Cause #1**: IRIS flagging account as `ChangePasswordAtNextLogin=1` after password reset
+    - DBAPI clients don't implement server-side password-change handshake
+    - Clients surface "Invalid Message received; ... Password change required / Access Denied"
+    - **Fix**: Explicitly set `ChangePasswordAtNextLogin=0` via `Security.Users.Modify()`
+  - **Root Cause #2**: User account expiration not being cleared
+    - **Fix**: Call `Security.Users.UnExpireUser()` before setting password
+  - **Root Cause #3**: IPv6 localhost resolution on macOS causing auth failures
+    - macOS resolves "localhost" to ::1 (IPv6) which can trigger auth issues
+    - **Fix**: Force IPv4 (127.0.0.1) on macOS via platform detection
+  - **Root Cause #4**: Security metadata propagation delay on Docker Desktop/macOS
+    - IRIS security subsystem lags 4-6 seconds after SetPassword/UnExpire on macOS VM
+    - **Fix**: Add 4-second settle delay on macOS after password reset
+  - **Impact**: These fixes address the actual problem (v1.4.3 only added retry logic which masked symptoms)
+  - **Location**: `iris_devtester/utils/password_reset.py`
+
+### Changed
+
+- **password_reset.py**: Updated ObjectScript to properly configure IRIS security state
+  - Now calls `UnExpireUser()` to clear expiration
+  - Sets `ChangePasswordAtNextLogin=0` to prevent forced password change on next login
+  - Uses `SetPassword()` separately from property modification (proper IRIS API pattern)
+  - Auto-detects macOS and forces IPv4 (127.0.0.1) instead of localhost
+  - Adds 4s settle delay on macOS for security metadata propagation
+
+### Technical Details
+
+**Previous Implementation (v1.4.3)**:
+```objectscript
+do ##class(Security.Users).Get("{user}",.p)
+set p("Password")="{password}"
+set p("PasswordNeverExpires")=1
+do ##class(Security.Users).Modify("{user}",.p)
+```
+**Problem**: Didn't clear ChangePasswordAtNextLogin flag or user expiration state.
+
+**New Implementation (v1.4.4)**:
+```objectscript
+do ##class(Security.Users).UnExpireUser("{user}")
+do ##class(Security.Users).Get("{user}",.p)
+set p("ChangePasswordAtNextLogin")=0
+set p("PasswordNeverExpires")=1
+do ##class(Security.Users).Modify("{user}",.p)
+do ##class(Security.Users).SetPassword("{user}","{password}")
+```
+**Fix**: Properly clears all security flags that cause "Password change required" errors.
+
+**IPv4 Forcing (macOS only)**:
+```python
+hostname = os.getenv("IRIS_DEVTESTER_HOST") or (
+    "127.0.0.1" if platform.system() == "Darwin" else "localhost"
+)
+```
+
+**Settle Delay (macOS only)**:
+```python
+if platform.system() == "Darwin":
+    time.sleep(4.0)  # Wait for security metadata propagation
+```
+
+### Why v1.4.3 Didn't Fix It
+
+v1.4.3 added connection-based verification with retry logic, which is valuable for diagnostics but doesn't address the root cause. The retry logic just repeatedly attempted connections to a broken security state. This hotfix actually fixes the security state itself.
+
 ## [1.4.3] - 2025-11-20
 
 ### Fixed

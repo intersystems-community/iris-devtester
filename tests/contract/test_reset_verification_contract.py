@@ -233,10 +233,12 @@ class TestResetVerificationContract:
 
         elapsed = time.time() - start_time
 
-        # Contract assertion: Must timeout within 10s
-        assert elapsed <= 10.5, (  # 10s + 0.5s grace period
+        # Contract assertion: Must timeout within 10s (14s on macOS due to 4s settle delay)
+        import platform
+        max_time = 14.5 if platform.system() == "Darwin" else 10.5  # Include macOS settle delay (4s) + verification (10s) + grace (0.5s)
+        assert elapsed <= max_time, (
             f"Contract violation: Verification took {elapsed:.2f}s, "
-            f"exceeds 10s timeout (NFR-004)"
+            f"exceeds {max_time}s timeout (NFR-004, platform: {platform.system()})"
         )
 
         # Should return failure after timeout
