@@ -9,7 +9,13 @@ import logging
 import os
 import subprocess
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
+
+from iris_devtester.utils.password_verification import (
+    PasswordResetResult,
+    VerificationConfig,
+    verify_password_via_connection,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,29 +54,49 @@ def reset_password(
     username: str = "_SYSTEM",
     new_password: str = "SYS",
     timeout: int = 30,
-) -> Tuple[bool, str]:
+    hostname: str = "localhost",
+    port: int = 1972,
+    namespace: str = "USER",
+    verification_config: Optional[VerificationConfig] = None,
+) -> Union[Tuple[bool, str], PasswordResetResult]:
     """
-    Reset IRIS password using Docker exec.
+    Reset IRIS password using Docker exec with connection verification.
 
     Implements Constitutional Principle #1: Automatic remediation instead of
     telling the user to manually reset the password.
+
+    **Feature 015 Enhancement**: Now verifies password via connection attempt
+    with retry logic to handle macOS Docker Desktop timing delays (4-6s).
 
     Args:
         container_name: Name of IRIS Docker container (default: "iris_db")
         username: Username to reset (default: "_SYSTEM")
         new_password: New password (default: "SYS")
         timeout: Timeout in seconds for docker commands (default: 30)
+        hostname: IRIS hostname for verification (default: "localhost")
+        port: IRIS port for verification (default: 1972)
+        namespace: IRIS namespace for verification (default: "USER")
+        verification_config: Optional verification config (auto-creates if None)
 
     Returns:
-        Tuple of (success: bool, message: str)
+        PasswordResetResult that can be unpacked as (bool, str) for backward compatibility.
+        - result.success: True if password reset AND verified
+        - result.message: Human-readable message with timing details
+        - result.verification_attempts: Number of connection attempts made
+        - result.elapsed_seconds: Total time from reset to verification
 
     Example:
+        >>> # Backward compatible (unpacks to tuple)
         >>> success, msg = reset_password("my_iris_container")
         >>> if success:
         ...     print("Password reset successful")
+        >>>
+        >>> # New usage (with metadata)
+        >>> result = reset_password("my_iris_container")
+        >>> print(f"Success: {result.success}, Attempts: {result.verification_attempts}")
 
     Raises:
-        None - always returns (bool, str) tuple for graceful handling
+        None - always returns PasswordResetResult for graceful handling
     """
     try:
         # Step 1: Check if container is running
@@ -90,19 +116,22 @@ def reset_password(
         )
 
         if container_name not in result.stdout:
-            return (
-                False,
-                f"Container '{container_name}' not running\n"
-                "\n"
-                "How to fix it:\n"
-                "  1. Start the container:\n"
-                "     docker-compose up -d\n"
-                "\n"
-                "  2. Or start manually:\n"
-                f"     docker start {container_name}\n"
-                "\n"
-                "  3. Verify it's running:\n"
-                "     docker ps | grep iris\n",
+            return PasswordResetResult(
+                success=False,
+                message=f"Container '{container_name}' not running\n"
+                        "\n"
+                        "How to fix it:\n"
+                        "  1. Start the container:\n"
+                        "     docker-compose up -d\n"
+                        "\n"
+                        "  2. Or start manually:\n"
+                        f"     docker start {container_name}\n"
+                        "\n"
+                        "  3. Verify it's running:\n"
+                        "     docker ps | grep iris\n",
+                error_type="connection_refused",
+                container_name=container_name,
+                username=username
             )
 
         # Step 2: Reset password using IRIS session
@@ -151,11 +180,109 @@ def reset_password(
 
         # Check for success: returncode 0 and "1" in output (Modify returns 1 on success)
         if result.returncode == 0 and "1" in result.stdout:
-            # Wait for password change to propagate
-            time.sleep(2)
+            logger.info(f"ObjectScript password reset succeeded for user '{username}'")
+            logger.debug("Starting password verification with connection attempt...")
 
-            logger.info(f"✓ Password reset successful for user '{username}'")
-            return True, f"Password reset successful for user '{username}'"
+            # Feature 015: Verify password via connection with retry + exponential backoff
+            # This handles macOS Docker Desktop's 4-6s networking delay
+            if verification_config is None:
+                verification_config = VerificationConfig()
+
+            start_time = time.time()
+            last_error_type = "unknown"
+            last_error_message = ""
+
+            # Retry loop with exponential backoff
+            for attempt in range(1, verification_config.max_retries + 1):
+                # Check timeout
+                elapsed = time.time() - start_time
+                if elapsed >= (verification_config.timeout_ms / 1000.0):
+                    logger.warning(f"Verification timeout after {elapsed:.2f}s")
+                    return PasswordResetResult(
+                        success=False,
+                        message=f"Password verification timed out after {elapsed:.2f}s (NFR-004)",
+                        verification_attempts=attempt - 1,
+                        elapsed_seconds=elapsed,
+                        error_type="timeout",
+                        container_name=container_name,
+                        username=username
+                    )
+
+                # Attempt verification
+                verification_result = verify_password_via_connection(
+                    hostname=hostname,
+                    port=port,
+                    namespace=namespace,
+                    username=username,
+                    password=new_password,
+                    attempt_number=attempt,
+                    config=verification_config
+                )
+
+                if verification_result.success:
+                    # Success! Return immediately (early exit)
+                    elapsed = time.time() - start_time
+                    logger.info(
+                        f"✓ Password verified in {elapsed:.2f}s "
+                        f"(attempt {attempt}/{verification_config.max_retries})"
+                    )
+                    return PasswordResetResult(
+                        success=True,
+                        message=f"Password reset successful for user '{username}' "
+                                f"(verified in {elapsed:.2f}s, attempt {attempt})",
+                        verification_attempts=attempt,
+                        elapsed_seconds=elapsed,
+                        container_name=container_name,
+                        username=username
+                    )
+
+                # Verification failed
+                last_error_type = verification_result.error_type
+                last_error_message = verification_result.error_message
+
+                # Check if error is retryable
+                if not verification_result.is_retryable:
+                    # Non-retryable error: fail fast
+                    elapsed = time.time() - start_time
+                    logger.error(
+                        f"Non-retryable error on attempt {attempt}: {last_error_type}"
+                    )
+                    return PasswordResetResult(
+                        success=False,
+                        message=f"Password verification failed (non-retryable): {last_error_message}",
+                        verification_attempts=attempt,
+                        elapsed_seconds=elapsed,
+                        error_type=last_error_type,
+                        container_name=container_name,
+                        username=username
+                    )
+
+                # Retryable error: wait and retry (if not last attempt)
+                if attempt < verification_config.max_retries:
+                    backoff_ms = verification_config.calculate_backoff_ms(attempt - 1)
+                    backoff_s = backoff_ms / 1000.0
+                    logger.debug(
+                        f"Attempt {attempt} failed with {last_error_type}, "
+                        f"retrying in {backoff_s}s..."
+                    )
+                    time.sleep(backoff_s)
+
+            # All retries exhausted
+            elapsed = time.time() - start_time
+            logger.error(
+                f"Password verification failed after {verification_config.max_retries} attempts "
+                f"({elapsed:.2f}s)"
+            )
+            return PasswordResetResult(
+                success=False,
+                message=f"Password verification failed after {verification_config.max_retries} attempts "
+                        f"({elapsed:.2f}s): {last_error_message}",
+                verification_attempts=verification_config.max_retries,
+                elapsed_seconds=elapsed,
+                error_type=last_error_type,
+                container_name=container_name,
+                username=username
+            )
         else:
             logger.warning(f"Primary method failed: returncode={result.returncode}, stdout={result.stdout[:100]}")
             # Fall through to try alternative method
@@ -194,65 +321,122 @@ def reset_password(
             ]
             subprocess.run(set_never_expires_cmd, capture_output=True, text=True, timeout=timeout)
 
-            time.sleep(2)
+            logger.info(f"ObjectScript password reset succeeded (via ChangePassword) for user '{username}'")
+            logger.debug("Starting password verification with connection attempt...")
 
-            logger.info(f"✓ Password reset successful (via ChangePassword) for user '{username}'")
-            return True, f"Password reset successful (via ChangePassword) for user '{username}'"
+            # Feature 015: Verify password via connection instead of time.sleep(2)
+            if verification_config is None:
+                verification_config = VerificationConfig()
+
+            start_time = time.time()
+            verification_result = verify_password_via_connection(
+                hostname=hostname,
+                port=port,
+                namespace=namespace,
+                username=username,
+                password=new_password,
+                attempt_number=1,
+                config=verification_config
+            )
+
+            elapsed = time.time() - start_time
+
+            if verification_result.success:
+                logger.info(
+                    f"✓ Password verified in {elapsed:.2f}s "
+                    f"(attempt {verification_result.attempt_number}, via ChangePassword)"
+                )
+                return PasswordResetResult(
+                    success=True,
+                    message=f"Password reset successful (via ChangePassword) for user '{username}' "
+                            f"(verified in {elapsed:.2f}s, attempt {verification_result.attempt_number})",
+                    verification_attempts=verification_result.attempt_number,
+                    elapsed_seconds=elapsed,
+                    container_name=container_name,
+                    username=username
+                )
+            else:
+                logger.warning(
+                    f"Password reset succeeded but verification failed: "
+                    f"{verification_result.error_type}"
+                )
+                return PasswordResetResult(
+                    success=False,
+                    message=f"Password reset succeeded but verification failed after {elapsed:.2f}s: "
+                            f"{verification_result.error_message}",
+                    verification_attempts=verification_result.attempt_number,
+                    elapsed_seconds=elapsed,
+                    error_type=verification_result.error_type,
+                    container_name=container_name,
+                    username=username
+                )
 
         # Both methods failed
-        return (
-            False,
-            f"Password reset failed\n"
-            "\n"
-            "How to fix it manually:\n"
-            f"  1. docker exec -it {container_name} bash\n"
-            f"  2. iris session IRIS -U %SYS\n"
-            f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n"
-            "\n"
-            f"Primary error: {result.stderr}\n",
+        return PasswordResetResult(
+            success=False,
+            message=f"Password reset failed\n"
+                    "\n"
+                    "How to fix it manually:\n"
+                    f"  1. docker exec -it {container_name} bash\n"
+                    f"  2. iris session IRIS -U %SYS\n"
+                    f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n"
+                    "\n"
+                    f"Primary error: {result.stderr}\n",
+            error_type="verification_failed",
+            container_name=container_name,
+            username=username
         )
 
     except subprocess.TimeoutExpired:
-        return (
-            False,
-            f"Password reset timed out after {timeout} seconds\n"
-            "\n"
-            "What went wrong:\n"
-            "  Docker command did not complete in time.\n"
-            "\n"
-            "How to fix it:\n"
-            "  1. Check container health:\n"
-            f"     docker logs {container_name}\n"
-            "\n"
-            "  2. Try with longer timeout:\n"
-            f"     reset_password(container_name='{container_name}', timeout=60)\n",
+        return PasswordResetResult(
+            success=False,
+            message=f"Password reset timed out after {timeout} seconds\n"
+                    "\n"
+                    "What went wrong:\n"
+                    "  Docker command did not complete in time.\n"
+                    "\n"
+                    "How to fix it:\n"
+                    "  1. Check container health:\n"
+                    f"     docker logs {container_name}\n"
+                    "\n"
+                    "  2. Try with longer timeout:\n"
+                    f"     reset_password(container_name='{container_name}', timeout=60)\n",
+            error_type="timeout",
+            container_name=container_name,
+            username=username
         )
 
     except FileNotFoundError:
-        return (
-            False,
-            "Docker command not found\n"
-            "\n"
-            "What went wrong:\n"
-            "  Docker is not installed or not in PATH.\n"
-            "\n"
-            "How to fix it:\n"
-            "  1. Install Docker:\n"
-            "     https://docs.docker.com/get-docker/\n"
-            "\n"
-            "  2. Verify installation:\n"
-            "     docker --version\n",
+        return PasswordResetResult(
+            success=False,
+            message="Docker command not found\n"
+                    "\n"
+                    "What went wrong:\n"
+                    "  Docker is not installed or not in PATH.\n"
+                    "\n"
+                    "How to fix it:\n"
+                    "  1. Install Docker:\n"
+                    "     https://docs.docker.com/get-docker/\n"
+                    "\n"
+                    "  2. Verify installation:\n"
+                    "     docker --version\n",
+            error_type="unknown",
+            container_name=container_name,
+            username=username
         )
 
     except Exception as e:
-        return (
-            False,
-            f"Password reset failed: {str(e)}\n"
-            "\n"
-            "How to fix it manually:\n"
-            f"  1. docker exec -it {container_name} bash\n"
-            f"  2. iris session IRIS -U %SYS\n"
-            f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n",
+        return PasswordResetResult(
+            success=False,
+            message=f"Password reset failed: {str(e)}\n"
+                    "\n"
+                    "How to fix it manually:\n"
+                    f"  1. docker exec -it {container_name} bash\n"
+                    f"  2. iris session IRIS -U %SYS\n"
+                    f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n",
+            error_type="unknown",
+            container_name=container_name,
+            username=username
         )
 
 

@@ -6,7 +6,7 @@ Provides IRIS database connections and containers for integration testing.
 
 import os
 import pytest
-from testcontainers.iris import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 @pytest.fixture(scope="function")
