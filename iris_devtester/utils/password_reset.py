@@ -76,28 +76,30 @@ def _harden_iris_user(
     Returns:
         (success, message) tuple
     """
-    # ObjectScript pattern from user's root cause analysis
-    # Use chr(34) for embedded quotes to avoid shell escaping issues
+    # ObjectScript pattern combining v1.0.2 working code with user's root cause analysis
+    # CRITICAL: Must use newlines between ObjectScript commands
+    # v1.0.2 used Security.Users.Get() + Modify() - this is the IRIS API pattern that works
+    # User's key insight: Also clear ChangePasswordAtNextLogin=0 (v1.0.2 only set PasswordNeverExpires=1)
     objectscript = (
-        f'set u="{username}", '
-        f'p("{chr(34)}ChangePasswordAtNextLogin{chr(34)}")=0, '
-        f'p("{chr(34)}PasswordNeverExpires{chr(34)}")=1, '
-        f'if ##class(Security.Users).Exists(u)=0 '
-        f'do ##class(Security.Users).Create(u,"%ALL","{password}") '
-        f'do ##class(Security.Users).UnExpireUser(u) '
-        f'do ##class(Security.Users).Modify(u,.p) '
-        f'do ##class(Security.Users).SetPassword(u,"{password}") '
-        f'write 1 '
+        f'set u="{username}"\\n'
+        f'if ##class(Security.Users).Exists(u)=0 do ##class(Security.Users).Create(u,"%ALL","{password}")\\n'
+        f'do ##class(Security.Users).Get(u,.p)\\n'
+        f'set p("Password")="{password}"\\n'
+        f'set p("PasswordNeverExpires")=1\\n'
+        f'set p("ChangePasswordAtNextLogin")=0\\n'
+        f'do ##class(Security.Users).Modify(u,.p)\\n'
+        f'write 1\\n'
         f'halt'
     )
 
+    # Use bash $'...' syntax to interpret \n as newlines
     cmd = [
         "docker",
         "exec",
         container_name,
         "bash",
         "-c",
-        f'echo "{objectscript}" | iris session IRIS -U %SYS',
+        f"echo $'{objectscript}' | iris session IRIS -U %SYS",
     ]
 
     logger.debug(f"Hardening user '{username}' with idempotent creation...")
