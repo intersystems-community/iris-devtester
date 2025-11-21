@@ -245,7 +245,15 @@ class IRISContainer(BaseIRISContainer):
             ...     conn = iris.get_connection()
             ...     # Test code here...
         """
-        container = cls(image="intersystemsdc/iris-community:latest", **kwargs)
+        # CRITICAL FIX (v1.4.5): Pass username/password/namespace to parent testcontainers-iris class
+        # Without this, testcontainers-iris uses defaults ("test"/"test") which don't match our config!
+        container = cls(
+            image="intersystemsdc/iris-community:latest",
+            username=username,
+            password=password,
+            namespace=namespace,
+            **kwargs
+        )
 
         # Store connection config
         container._config = IRISConfig(
@@ -357,7 +365,15 @@ class IRISContainer(BaseIRISContainer):
                 "     IRISContainer.community()\n"
             )
 
-        container = cls(image="intersystemsdc/iris:latest", **kwargs)
+        # CRITICAL FIX (v1.4.5): Pass username/password/namespace to parent testcontainers-iris class
+        # Without this, testcontainers-iris uses defaults ("test"/"test") which don't match our config!
+        container = cls(
+            image="intersystemsdc/iris:latest",
+            username=username,
+            password=password,
+            namespace=namespace,
+            **kwargs
+        )
 
         # Store connection config
         container._config = IRISConfig(
@@ -634,9 +650,11 @@ class IRISContainer(BaseIRISContainer):
 
     def wait_for_ready(self, timeout: int = 60) -> bool:
         """
-        Wait for IRIS to be fully ready.
+        Wait for IRIS to be fully ready and apply dual user hardening.
 
-        Uses IRISReadyWaitStrategy for thorough readiness checks.
+        Uses IRISReadyWaitStrategy for thorough readiness checks, then applies
+        the v1.4.5 dual user hardening fix to ensure both the target user AND
+        SuperUser are properly configured for DBAPI connections.
 
         Args:
             timeout: Maximum time to wait in seconds
@@ -655,7 +673,42 @@ class IRISContainer(BaseIRISContainer):
         strategy = IRISReadyWaitStrategy(port=config.port, timeout=timeout)
 
         try:
-            return strategy.wait_until_ready(config.host, config.port, timeout)
+            # Step 1: Wait for IRIS to be ready
+            ready = strategy.wait_until_ready(config.host, config.port, timeout)
+
+            if not ready:
+                return False
+
+            # Step 2: Apply dual user hardening (v1.4.5 fix)
+            # This ensures both the target user AND SuperUser are properly configured
+            logger.info("Applying dual user hardening to ensure reliable DBAPI connections...")
+
+            from iris_devtester.utils.password_reset import reset_password
+
+            # CRITICAL: Don't pass hostname - let reset_password() auto-detect
+            # This enables IPv4 forcing on macOS (127.0.0.1 vs localhost)
+            # Passing "localhost" explicitly bypasses the IPv4 forcing logic
+            result = reset_password(
+                container_name=self.get_container_name(),
+                username=config.username,
+                new_password=config.password,
+                hostname=None,  # Auto-detect (forces IPv4 on macOS)
+                port=config.port,
+                namespace=config.namespace,
+            )
+
+            # reset_password returns PasswordResetResult that can unpack to (bool, str)
+            success, message = result
+
+            if not success:
+                logger.warning(f"Password reset failed (will attempt connection anyway): {message}")
+                # Don't fail completely - user might already be configured correctly
+                # Connection attempts will reveal if there's a real problem
+            else:
+                logger.info(f"✓ {message}")
+
+            return True
+
         except TimeoutError:
             logger.error("IRIS container did not become ready in time")
             return False
