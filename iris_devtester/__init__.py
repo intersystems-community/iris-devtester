@@ -17,7 +17,7 @@ Quick Start:
     ...     print(cursor.fetchone())
 """
 
-__version__ = "1.4.6"
+__version__ = "1.4.7"
 __author__ = "InterSystems Community"
 __license__ = "MIT"
 
