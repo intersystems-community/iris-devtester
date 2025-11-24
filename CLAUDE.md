@@ -216,6 +216,37 @@ def iris_db():
     # Automatic cleanup
 ```
 
+### ObjectScript Patterns (CRITICAL)
+
+**CRITICAL**: ObjectScript is **position-based**, NOT keyword-based like Python!
+
+```objectscript
+// WRONG - This method does NOT exist!
+##class(Security.Users).ChangePassword("username", "password")
+
+// RIGHT - Use Get/Modify pattern with property arrays
+Set username = "_SYSTEM"
+Do ##class(Security.Users).Get(username, .properties)  // .properties = pass by reference
+Set properties("Password") = "newpassword"
+Set properties("ChangePassword") = 0
+Set properties("PasswordNeverExpires") = 1
+Write ##class(Security.Users).Modify(username, .properties)
+Halt
+```
+
+**Key Learnings**:
+- The `.properties` syntax means "pass by reference" (required for Get/Modify)
+- Property names are case-sensitive: `"Password"`, `"ChangePassword"`
+- `Write` statement outputs the return value (1 = success)
+- Always end with `Halt` to exit cleanly
+- Use `echo -e 'script\ncommands\n' | iris session IRIS -U %SYS` for multi-line execution
+
+**Common Mistakes**:
+- Assuming methods exist without checking (ChangePassword doesn't exist!)
+- Using keyword arguments (ObjectScript is positional)
+- Forgetting the `.` prefix for pass-by-reference
+- Not checking return values (`Write` the result to verify success)
+
 ## Git Workflow
 
 ```bash
