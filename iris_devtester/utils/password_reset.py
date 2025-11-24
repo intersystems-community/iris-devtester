@@ -96,6 +96,7 @@ def _harden_iris_user(
             f"echo -e '{reset_script}' | iris session IRIS -U %SYS"
         ]
 
+        # Execute password reset via docker exec
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -103,8 +104,8 @@ def _harden_iris_user(
             timeout=timeout
         )
 
-        logger.debug(f"Reset password stdout: {result.stdout}")
-        logger.debug(f"Reset password stderr: {result.stderr}")
+        logger.debug(f"Reset password stdout: {repr(result.stdout)}")
+        logger.debug(f"Reset password stderr: {repr(result.stderr)}")
         logger.debug(f"Reset password returncode: {result.returncode}")
 
         if result.returncode != 0:

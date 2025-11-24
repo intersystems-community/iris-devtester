@@ -365,15 +365,32 @@ class IRISContainer(BaseIRISContainer):
                 "     IRISContainer.community()\n"
             )
 
-        # CRITICAL FIX (v1.4.5): Pass username/password/namespace to parent testcontainers-iris class
-        # Without this, testcontainers-iris uses defaults ("test"/"test") which don't match our config!
+        # CRITICAL: For Enterprise edition, DON'T create test user
+        # Enterprise containers have _SYSTEM by default, we don't need to create users
+        # (Community edition needs this because testcontainers-iris creates "test" user)
+
+        # Use ARM64 Enterprise image on ARM architecture
+        import platform as platform_module
+        if platform_module.machine() == "arm64":
+            # Use the ARM64 image we have locally (2025.1)
+            image = "containers.intersystems.com/intersystems/iris-arm64:2025.1"
+        else:
+            image = "intersystemsdc/iris:latest"
+
+        # CRITICAL FIX: Pass username="_SYSTEM" to prevent testcontainers-iris from creating "test" user
+        # testcontainers-iris._connect() tries to create self.username (defaults to "test")
+        # Enterprise containers have _SYSTEM by default, so we tell testcontainers to use that
         container = cls(
-            image="intersystemsdc/iris:latest",
-            username=username,
-            password=password,
+            image=image,
+            username=username,  # Pass username so testcontainers uses _SYSTEM, not "test"
+            password=password,  # Pass password for consistency
             namespace=namespace,
             **kwargs
         )
+
+        # Set license key as environment variable for Enterprise container
+        # Use with_env() method instead of kwargs to avoid duplicate environment parameter
+        container.with_env("ISC_LICENSE_KEY", license_key)
 
         # Store connection config
         container._config = IRISConfig(
@@ -383,9 +400,6 @@ class IRISContainer(BaseIRISContainer):
             username=username,
             password=password,
         )
-
-        # TODO: Configure license key injection
-        # This would typically involve mounting license file or env var
 
         return container
 
