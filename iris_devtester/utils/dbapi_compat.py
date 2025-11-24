@@ -138,6 +138,42 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
     # See CONSTITUTION.md Principle 8 for empirical evidence that _DBAPI does not exist.
     try:
         import iris
+        import os
+        import sys
+
+        # Check if connect method is available
+        if not hasattr(iris, "connect"):
+            # Workaround for pytest module caching issue (from iris-vector-rag v0.5.13)
+            # During pytest collection, iris may be imported when PYTEST_CURRENT_TEST is set,
+            # causing partial initialization. Manually load _elsdk_.py or _init_elsdk.py
+            # to inject DBAPI attributes into iris module.
+            logger.debug("iris.connect() not found, attempting to load ELSDK manually")
+
+            # Get iris module directory
+            if hasattr(iris, '__file__') and iris.__file__:
+                iris_dir = os.path.dirname(iris.__file__)
+
+                # Try both _elsdk_.py (v5.3.0+) and _init_elsdk.py (v5.1.2)
+                for elsdk_file in ['_elsdk_.py', '_init_elsdk.py']:
+                    elsdk_path = os.path.join(iris_dir, elsdk_file)
+                    if os.path.exists(elsdk_path):
+                        logger.info(f"Found {elsdk_file}, loading to inject DBAPI interface")
+                        try:
+                            with open(elsdk_path, 'r') as f:
+                                elsdk_code = compile(f.read(), elsdk_path, 'exec')
+                            exec(elsdk_code, iris.__dict__)
+
+                            if hasattr(iris, "connect"):
+                                logger.info(f"Successfully injected DBAPI via {elsdk_file}")
+                                break
+                        except Exception as exec_error:
+                            logger.warning(f"Failed to exec {elsdk_file}: {exec_error}")
+
+                if not hasattr(iris, "connect"):
+                    raise ImportError(
+                        f"iris module found but connect() not available even after trying to load ELSDK. "
+                        f"iris dir: {iris_dir}, available: {[x for x in dir(iris) if not x.startswith('_')]}"
+                    )
 
         # Validate version
         pkg_version = importlib.metadata.version("intersystems-irispython")

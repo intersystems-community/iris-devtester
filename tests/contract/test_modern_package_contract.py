@@ -134,19 +134,25 @@ class TestModernPackageContract:
 
     def test_version_validation(self):
         """Contract: Version validation enforces minimum version."""
+        # Clear module cache first
+        if 'iris_devtester.utils.dbapi_compat' in sys.modules:
+            del sys.modules['iris_devtester.utils.dbapi_compat']
+
         mock_connect = MagicMock()
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
         # Test with old version (should fail - minimum is 5.1.2)
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }), patch('importlib.metadata.version', return_value="5.1.0"):
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+        # Mock both the iris module AND importlib.metadata.version
+        with patch.dict('sys.modules', {'iris': mock_iris}), \
+             patch('iris_devtester.utils.dbapi_compat.importlib.metadata.version', return_value="5.1.0"):
 
             with pytest.raises(ImportError) as exc_info:
                 from iris_devtester.utils.dbapi_compat import detect_dbapi_package
                 detect_dbapi_package()
 
-            assert "5.2.0 is too old" in str(exc_info.value) or "5.2.0 is incompatible" in str(exc_info.value)
+            # Check for version incompatibility message
+            error_message = str(exc_info.value)
+            assert "5.1.0" in error_message  # Version should be mentioned
+            assert ("incompatible" in error_message.lower() or
+                    "minimum required" in error_message.lower())
