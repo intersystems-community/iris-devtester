@@ -1,8 +1,8 @@
 # IRIS DevTools Constitution
 
-**Version**: 1.0.0
+**Version**: 1.1.0
 **Status**: Foundational
-**Last Updated**: 2025-10-05
+**Last Updated**: 2025-11-23
 
 ## Preamble
 
@@ -335,7 +335,63 @@ raise ConnectionError(
 - [ ] What's the user impact?
 ```
 
-### 8. DOCUMENT THE BLIND ALLEYS
+### 8. USE OFFICIAL IRIS PYTHON API (NO PRIVATE ATTRIBUTES)
+
+**The Principle**: MUST use the official `iris.connect()` interface from InterSystems documentation. NEVER use undocumented private attributes like `_DBAPI`.
+
+**Why It Matters**:
+- `_DBAPI` does NOT exist in intersystems-irispython (tested in v5.1.2 and v5.3.0)
+- Using non-existent attributes causes mysterious import failures
+- Official API is `iris.connect()` per InterSystems documentation
+- Private attributes are subject to change without warning
+
+**Implementation Requirements**:
+- ✅ Use `iris.connect()` for DBAPI connections (official DB-API 2.0 interface)
+- ✅ Follow official InterSystems documentation: https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT_pyapi
+- ✅ Never import from private modules (anything starting with `_`)
+- ✅ Test compatibility with both v5.1.2 and v5.3.0
+
+**Forbidden**:
+- ❌ `from intersystems_iris.dbapi._DBAPI import connect` - **_DBAPI does not exist!**
+- ❌ `iris._DBAPI.connect()` - **No such attribute!**
+- ❌ Any code relying on undocumented internal APIs
+- ❌ Assuming package structure without verification
+
+**Correct API Usage**:
+```python
+# ✅ CORRECT - Official DB-API 2.0 interface
+import iris
+
+conn = iris.connect(
+    hostname="localhost",
+    port=1972,
+    namespace="USER",
+    username="SuperUser",
+    password="SYS"
+)
+cursor = conn.cursor()
+cursor.execute("SELECT 1")
+
+# ❌ WRONG - _DBAPI does not exist!
+from intersystems_iris.dbapi._DBAPI import connect  # ImportError!
+iris._DBAPI.connect(...)  # AttributeError!
+```
+
+**Empirical Evidence**:
+```python
+# Tested on intersystems-irispython v5.1.2 and v5.3.0
+import iris
+hasattr(iris, '_DBAPI')  # False in BOTH versions!
+hasattr(iris, 'connect')  # True in BOTH versions!
+```
+
+**Official Documentation**:
+- InterSystems Python API: https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT_pyapi
+- DB-API 2.0 Specification: https://peps.python.org/pep-0249/
+
+**Reference**: See hipporag2-pipeline CONSTITUTION.md Principle 9 for detailed empirical testing results.
+
+### 9. DOCUMENT THE BLIND ALLEYS
 
 **The Principle**: Failed approaches must be documented to prevent repetition.
 
@@ -414,6 +470,13 @@ Principles may be amended when:
 - [ ] Blind alleys documented if applicable
 
 ## Version History
+
+### v1.1.0 (2025-11-23)
+- Added Principle 8: Use Official IRIS Python API (No Private Attributes)
+- Documents empirically tested fact that `_DBAPI` does NOT exist in intersystems-irispython v5.1.2 or v5.3.0
+- Mandates use of official `iris.connect()` API per InterSystems documentation
+- Renumbered Principle 8 "Document the Blind Alleys" → Principle 9
+- Based on critical findings from hipporag2-pipeline project testing
 
 ### v1.0.0 (2025-10-05)
 - Initial constitution

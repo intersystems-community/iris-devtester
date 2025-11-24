@@ -1,18 +1,23 @@
 """DBAPI Package Compatibility Layer.
 
 This module provides automatic detection and compatibility between:
-- Modern package: intersystems-irispython (v5.3.0+)
+- Modern package: intersystems-irispython (v5.1.2+)
 - Legacy package: intersystems-iris (v3.0.0+)
 
 The module automatically detects which package is installed and provides
 a unified interface for DBAPI connections, ensuring zero-config compatibility
 and backward compatibility for existing users.
 
+CRITICAL: This module uses the OFFICIAL iris.connect() API (Constitutional Principle #8).
+It does NOT use private _DBAPI attributes which do not exist in either package version.
+See CONSTITUTION.md Principle 8 for empirical evidence.
+
 Constitutional Compliance:
 - Principle #2: DBAPI First (maintains performance)
 - Principle #4: Zero Configuration Viable (automatic detection)
 - Principle #5: Fail Fast with Guidance (constitutional errors)
 - Principle #7: Medical-Grade Reliability (version validation)
+- Principle #8: Official IRIS Python API (NO private _DBAPI attribute!)
 
 Performance: Package detection overhead <10ms (NFR-001)
 
@@ -101,7 +106,7 @@ class DBAPIPackageNotFoundError(ImportError):
             "\n"
             "How to fix it:\n"
             "  Install the modern IRIS Python package:\n"
-            "  → pip install intersystems-irispython>=5.3.0\n"
+            "  → pip install intersystems-irispython>=5.1.2\n"
             "\n"
             "  Or install the legacy package (backward compatibility):\n"
             "  → pip install intersystems-iris>=3.0.0\n"
@@ -129,21 +134,23 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
     start_time = time.perf_counter()
 
     # Try modern package first (priority per Principle #2)
+    # CRITICAL: Use official iris.connect() API, NOT private _DBAPI attribute!
+    # See CONSTITUTION.md Principle 8 for empirical evidence that _DBAPI does not exist.
     try:
-        from intersystems_iris.dbapi._DBAPI import connect
+        import iris
 
         # Validate version
         pkg_version = importlib.metadata.version("intersystems-irispython")
-        validate_package_version("intersystems-irispython", pkg_version, "5.3.0")
+        validate_package_version("intersystems-irispython", pkg_version, "5.1.2")
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000
         logger.info(f"Detected IRIS DBAPI package: intersystems-irispython v{pkg_version}")
 
         return DBAPIPackageInfo(
             package_name="intersystems-irispython",
-            import_path="intersystems_iris.dbapi._DBAPI",
+            import_path="iris",
             version=pkg_version,
-            connect_function=connect,
+            connect_function=iris.connect,
             detection_time_ms=elapsed_ms
         )
     except ImportError as e:

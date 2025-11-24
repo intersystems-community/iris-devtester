@@ -2,6 +2,9 @@
 
 Contract: contracts/modern-package-contract.json
 Tests the detection and usage of intersystems-irispython (modern package).
+
+CRITICAL: These tests use the OFFICIAL iris.connect() API (Constitutional Principle #8).
+The _DBAPI private module does NOT exist in intersystems-irispython v5.1.2 or v5.3.0.
 """
 import pytest
 from unittest.mock import patch, MagicMock
@@ -13,15 +16,13 @@ class TestModernPackageContract:
 
     def test_modern_package_detected(self):
         """Contract: Modern package detected when installed."""
-        # Mock modern package available
+        # Mock modern package available (official iris module, NOT _DBAPI!)
         mock_connect = MagicMock()
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
+            'iris': mock_iris
         }):
             # Clear module cache to force re-detection
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
@@ -36,13 +37,11 @@ class TestModernPackageContract:
     def test_modern_package_import_path(self):
         """Contract: Modern package uses correct import path."""
         mock_connect = MagicMock()
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
+            'iris': mock_iris
         }):
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
                 del sys.modules['iris_devtester.utils.dbapi_compat']
@@ -50,20 +49,18 @@ class TestModernPackageContract:
             from iris_devtester.utils.dbapi_compat import detect_dbapi_package
 
             info = detect_dbapi_package()
-            assert info.import_path == "intersystems_iris.dbapi._DBAPI"
+            assert info.import_path == "iris"  # NOT "intersystems_iris.dbapi._DBAPI"!
 
     def test_connection_successful(self):
         """Contract: Connection succeeds using modern package."""
         mock_connect = MagicMock()
         mock_connection = MagicMock()
         mock_connect.return_value = mock_connection
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
+            'iris': mock_iris
         }):
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
                 del sys.modules['iris_devtester.utils.dbapi_compat']
@@ -82,13 +79,11 @@ class TestModernPackageContract:
     def test_detection_time_under_threshold(self):
         """Contract: Detection completes in <10ms (NFR-001)."""
         mock_connect = MagicMock()
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
+            'iris': mock_iris
         }):
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
                 del sys.modules['iris_devtester.utils.dbapi_compat']
@@ -101,13 +96,11 @@ class TestModernPackageContract:
     def test_package_info_correct(self):
         """Contract: Package info contains correct metadata."""
         mock_connect = MagicMock()
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
+            'iris': mock_iris
         }), patch('importlib.metadata.version', return_value="5.3.0"):
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
                 del sys.modules['iris_devtester.utils.dbapi_compat']
@@ -117,18 +110,16 @@ class TestModernPackageContract:
             info = get_package_info()
             assert info.package_name == "intersystems-irispython"
             assert info.version == "5.3.0"
-            assert info.import_path == "intersystems_iris.dbapi._DBAPI"
+            assert info.import_path == "iris"  # Official API!
 
     def test_logging_modern_package(self, caplog):
         """Contract: Logging indicates modern package selected."""
         mock_connect = MagicMock()
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
+            'iris': mock_iris
         }), patch('importlib.metadata.version', return_value="5.3.0"):
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
                 del sys.modules['iris_devtester.utils.dbapi_compat']
@@ -144,15 +135,13 @@ class TestModernPackageContract:
     def test_version_validation(self):
         """Contract: Version validation enforces minimum version."""
         mock_connect = MagicMock()
-        mock_modern = MagicMock()
-        mock_modern.connect = mock_connect
+        mock_iris = MagicMock()
+        mock_iris.connect = mock_connect
 
-        # Test with old version (should fail)
+        # Test with old version (should fail - minimum is 5.1.2)
         with patch.dict('sys.modules', {
-            'intersystems_iris': MagicMock(),
-            'intersystems_iris.dbapi': MagicMock(),
-            'intersystems_iris.dbapi._DBAPI': mock_modern
-        }), patch('importlib.metadata.version', return_value="5.2.0"):
+            'iris': mock_iris
+        }), patch('importlib.metadata.version', return_value="5.1.0"):
             if 'iris_devtester.utils.dbapi_compat' in sys.modules:
                 del sys.modules['iris_devtester.utils.dbapi_compat']
 
