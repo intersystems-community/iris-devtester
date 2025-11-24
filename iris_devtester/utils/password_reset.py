@@ -76,32 +76,20 @@ def _harden_iris_user(
     Returns:
         (success, message) tuple
     """
-    # ObjectScript pattern combining v1.0.2 working code with user's root cause analysis
-    # CRITICAL: Must use newlines between ObjectScript commands
-    # v1.0.2 used Security.Users.Get() + Modify() - this is the IRIS API pattern that works
-    # CRITICAL FIX: Use UnExpireUser() + SetPassword() for reliability
-    # ALSO set ChangePassword=0 to prevent "Password change required" prompt
-    objectscript = (
-        f'set u="{username}"\\n'
-        f'if ##class(Security.Users).Exists(u)=0 do ##class(Security.Users).Create(u,"%ALL","{password}")\\n'
-        f'do ##class(Security.Users).UnExpireUser(u)\\n'
-        f'do ##class(Security.Users).Get(u,.p)\\n'
-        f'set p("PasswordNeverExpires")=1\\n'
-        f'set p("ChangePassword")=0\\n'
-        f'do ##class(Security.Users).Modify(u,.p)\\n'
-        f'do ##class(Security.Users).SetPassword(u,"{password}")\\n'
-        f'write 1\\n'
-        f'halt'
-    )
-
-    # Use bash $'...' syntax to interpret \n as newlines
+    # Use direct iris session command (rag-templates pattern)
+    # ChangePassword() works for both _SYSTEM and regular users
+    # Add Write 1 for success detection
     cmd = [
         "docker",
         "exec",
+        "-i",
         container_name,
-        "bash",
-        "-c",
-        f"echo $'{objectscript}' | iris session IRIS -U %SYS",
+        "iris",
+        "session",
+        "IRIS",
+        "-U",
+        "%SYS",
+        f"Write ##class(Security.Users).ChangePassword('{username}','{password}'),!"
     ]
 
     logger.debug(f"Hardening user '{username}' with idempotent creation...")
