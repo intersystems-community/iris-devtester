@@ -277,56 +277,31 @@ def verify_password_via_connection(
     start_time_ms = int(time.time() * 1000)
 
     try:
-        if config.verify_via_dbapi:
-            # Use DBAPI (Constitutional Principle #2: DBAPI First)
-            try:
-                import iris.dbapi as dbapi
+        # Use dbapi_compat for proper DBAPI connection (handles iris.connect() workaround)
+        # Constitutional Principle #2: DBAPI First
+        # Constitutional Principle #8: Use official iris.connect() API
+        from iris_devtester.utils.dbapi_compat import get_connection
 
-                conn = dbapi.connect(
-                    hostname=hostname,
-                    port=port,
-                    namespace=namespace,
-                    username=username,
-                    password=password
-                )
-
-                # Test connection with simple query
-                cursor = conn.cursor()
-                cursor.execute("SELECT 1")
-                result = cursor.fetchone()
-                conn.close()
-
-                elapsed_ms = int(time.time() * 1000) - start_time_ms
-
-                logger.debug(
-                    f"Verification attempt {attempt_number} succeeded in {elapsed_ms}ms"
-                )
-
-                return ConnectionVerificationResult(
-                    success=True,
-                    error_type="",
-                    attempt_number=attempt_number,
-                    elapsed_ms=elapsed_ms,
-                    is_retryable=False
-                )
-
-            except ImportError:
-                logger.warning("DBAPI not available, falling back to iris.connect()")
-                # Fall through to iris.connect() fallback
-
-        # Fallback to iris.connect() if DBAPI not available
-        import iris
-
-        conn = iris.connect(
+        conn = get_connection(
             hostname=hostname,
             port=port,
             namespace=namespace,
             username=username,
             password=password
         )
+
+        # Test connection with simple query
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        cursor.close()
         conn.close()
 
         elapsed_ms = int(time.time() * 1000) - start_time_ms
+
+        logger.debug(
+            f"Verification attempt {attempt_number} succeeded in {elapsed_ms}ms"
+        )
 
         return ConnectionVerificationResult(
             success=True,
