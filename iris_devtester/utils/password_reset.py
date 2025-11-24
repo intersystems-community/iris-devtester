@@ -76,45 +76,46 @@ def _harden_iris_user(
     Returns:
         (success, message) tuple
     """
-    # Use direct iris session command (rag-templates pattern)
-    # ChangePassword() works for both _SYSTEM and regular users
-    # Add Write 1 for success detection
-    cmd = [
-        "docker",
-        "exec",
-        "-i",
-        container_name,
-        "iris",
-        "session",
-        "IRIS",
-        "-U",
-        "%SYS",
-        f"Write ##class(Security.Users).ChangePassword('{username}','{password}'),!"
-    ]
-
-    logger.debug(f"Hardening user '{username}' with idempotent creation...")
+    logger.debug(f"Resetting password for user '{username}'...")
 
     try:
+        # Single-step password reset: Set password + clear security flags atomically
+        # This uses the correct IRIS API: Get() -> modify properties -> Modify()
+        # Use echo -e with explicit \n to send ObjectScript to iris session
+        reset_script = f'Set u="{username}"\\nDo ##class(Security.Users).Get(u,.p)\\nSet p("Password")="{password}"\\nSet p("ChangePassword")=0\\nSet p("PasswordNeverExpires")=1\\nWrite ##class(Security.Users).Modify(u,.p)\\nHalt'
+
+        cmd = [
+            "docker", "exec", "-i", container_name,
+            "bash", "-c",
+            f"echo -e '{reset_script}' | iris session IRIS -U %SYS"
+        ]
+
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=timeout,
+            timeout=timeout
         )
 
-        logger.debug(f"Harden user '{username}' stdout: {result.stdout}")
-        logger.debug(f"Harden user '{username}' stderr: {result.stderr}")
-        logger.debug(f"Harden user '{username}' returncode: {result.returncode}")
+        logger.debug(f"Reset password stdout: {result.stdout}")
+        logger.debug(f"Reset password stderr: {result.stderr}")
+        logger.debug(f"Reset password returncode: {result.returncode}")
 
-        if result.returncode == 0 and "1" in result.stdout:
-            logger.info(f"✓ Successfully hardened user '{username}'")
-            return True, f"User '{username}' hardened successfully"
-        else:
-            return False, f"Failed to harden user '{username}': {result.stderr}"
+        if result.returncode != 0:
+            logger.error(f"Failed to reset password: {result.stderr}")
+            return False, f"Failed to reset password for '{username}': {result.stderr}"
+
+        # Check if Modify() returned 1 (success)
+        if "1" not in result.stdout:
+            logger.error(f"Modify() did not return success: {result.stdout}")
+            return False, f"Password reset failed for '{username}': {result.stdout}"
+
+        logger.info(f"✓ Successfully reset password for user '{username}'")
+        return True, f"Password reset successful for user '{username}'"
 
     except Exception as e:
-        logger.error(f"Exception hardening user '{username}': {e}")
-        return False, f"Exception hardening user '{username}': {str(e)}"
+        logger.error(f"Exception resetting password for '{username}': {e}")
+        return False, f"Exception resetting password for '{username}': {str(e)}"
 
 
 def reset_password(

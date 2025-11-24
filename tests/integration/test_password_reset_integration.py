@@ -36,11 +36,17 @@ class TestResetPasswordIntegration:
         container_name = iris_db._container.get_wrapped_container().name
         new_password = "TESTPWD123"
 
-        # Act - reset password
+        # Get actual exposed port from testcontainers
+        host = iris_db._container.get_container_host_ip()
+        port = int(iris_db._container.get_exposed_port(1972))
+
+        # Act - reset password (must provide correct host/port for verification)
         success, msg = reset_password(
             container_name=container_name,
             username="_SYSTEM",
-            new_password=new_password
+            new_password=new_password,
+            hostname=host,
+            port=port
         )
 
         # Assert - function reports success
@@ -51,10 +57,7 @@ class TestResetPasswordIntegration:
         # This is what the current bug fails - password NOT actually set
         from iris_devtester.utils.dbapi_compat import get_connection
 
-        host = iris_db._container.get_container_host_ip()
-        port = int(iris_db._container.get_exposed_port(1972))
-
-        # Try to connect with NEW password
+        # Try to connect with NEW password (host/port already retrieved above)
         conn = get_connection(
             hostname=host,
             port=port,
@@ -85,11 +88,17 @@ class TestResetPasswordIntegration:
         container_name = iris_db._container.get_wrapped_container().name
         new_password = "NEWPASS"
 
-        # Act - reset password
+        # Get actual exposed port from testcontainers
+        host = iris_db._container.get_container_host_ip()
+        port = int(iris_db._container.get_exposed_port(1972))
+
+        # Act - reset password (must provide correct host/port for verification)
         success, msg = reset_password(
             container_name=container_name,
             username="_SYSTEM",
-            new_password=new_password
+            new_password=new_password,
+            hostname=host,
+            port=port
         )
 
         # Assert - function reports success
@@ -97,9 +106,6 @@ class TestResetPasswordIntegration:
 
         # CRITICAL: Verify connection with new password succeeds
         from iris_devtester.utils.dbapi_compat import get_connection
-
-        host = iris_db._container.get_container_host_ip()
-        port = int(iris_db._container.get_exposed_port(1972))
 
         # This should succeed if password was actually set
         conn = get_connection(
@@ -132,11 +138,17 @@ class TestResetPasswordIntegration:
         container_name = iris_db._container.get_wrapped_container().name
         new_password = "PWD123"
 
-        # Act - reset password
+        # Get actual exposed port from testcontainers
+        host = iris_db._container.get_container_host_ip()
+        port = int(iris_db._container.get_exposed_port(1972))
+
+        # Act - reset password (must provide correct host/port for verification)
         success, msg = reset_password(
             container_name=container_name,
             username="_SYSTEM",
-            new_password=new_password
+            new_password=new_password,
+            hostname=host,
+            port=port
         )
 
         # Assert - function reports success
@@ -179,12 +191,18 @@ class TestResetPasswordIntegration:
         container_name = iris_db._container.get_wrapped_container().name
         new_password = "SAMEPWD"
 
+        # Get actual exposed port from testcontainers
+        host = iris_db._container.get_container_host_ip()
+        port = int(iris_db._container.get_exposed_port(1972))
+
         # Act - call reset_password() 3 times with same password
         for i in range(3):
             success, msg = reset_password(
                 container_name=container_name,
                 username="_SYSTEM",
-                new_password=new_password
+                new_password=new_password,
+                hostname=host,
+                port=port
             )
 
             # Assert each call succeeds
