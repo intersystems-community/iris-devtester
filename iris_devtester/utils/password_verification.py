@@ -82,7 +82,7 @@ class VerificationConfig:
     """
     Configuration for password reset verification.
 
-    Optimized defaults for macOS Docker Desktop (4-6s networking delay).
+    Optimized defaults for macOS Docker Desktop (15-20s total delay needed).
 
     Fields:
         max_retries: Maximum number of connection verification attempts
@@ -98,13 +98,13 @@ class VerificationConfig:
         >>> # Custom config for slow systems
         >>> slow_config = VerificationConfig(
         ...     max_retries=5,
-        ...     timeout_ms=15000
+        ...     timeout_ms=30000
         ... )
     """
 
-    max_retries: int = 3
-    initial_backoff_ms: int = 100
-    timeout_ms: int = 10000  # 10s (NFR-004)
+    max_retries: int = 4
+    initial_backoff_ms: int = 2000  # 2s between retries (macOS needs longer)
+    timeout_ms: int = 30000  # 30s (increased for macOS Docker Desktop)
     exponential_backoff: bool = True
     verify_via_dbapi: bool = True
 
@@ -128,18 +128,18 @@ class VerificationConfig:
             Backoff time in milliseconds
 
         Example:
-            >>> config = VerificationConfig(initial_backoff_ms=100)
+            >>> config = VerificationConfig(initial_backoff_ms=2000)
             >>> config.calculate_backoff_ms(0)  # First retry
-            100
+            2000
             >>> config.calculate_backoff_ms(1)  # Second retry
-            200
+            4000
             >>> config.calculate_backoff_ms(2)  # Third retry
-            400
+            8000
         """
         if not self.exponential_backoff:
             return self.initial_backoff_ms
 
-        # Exponential backoff: 100ms → 200ms → 400ms
+        # Exponential backoff: 2s → 4s → 8s (optimized for macOS Docker Desktop)
         return self.initial_backoff_ms * (2 ** attempt)
 
 

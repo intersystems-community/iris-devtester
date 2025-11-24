@@ -80,13 +80,14 @@ def _harden_iris_user(
     # CRITICAL: Must use newlines between ObjectScript commands
     # v1.0.2 used Security.Users.Get() + Modify() - this is the IRIS API pattern that works
     # CRITICAL FIX: Use UnExpireUser() + SetPassword() for reliability
-    # ChangePasswordAtNextLogin doesn't exist in Community Edition, skip it
+    # ALSO set ChangePassword=0 to prevent "Password change required" prompt
     objectscript = (
         f'set u="{username}"\\n'
         f'if ##class(Security.Users).Exists(u)=0 do ##class(Security.Users).Create(u,"%ALL","{password}")\\n'
         f'do ##class(Security.Users).UnExpireUser(u)\\n'
         f'do ##class(Security.Users).Get(u,.p)\\n'
         f'set p("PasswordNeverExpires")=1\\n'
+        f'set p("ChangePassword")=0\\n'
         f'do ##class(Security.Users).Modify(u,.p)\\n'
         f'do ##class(Security.Users).SetPassword(u,"{password}")\\n'
         f'write 1\\n'
