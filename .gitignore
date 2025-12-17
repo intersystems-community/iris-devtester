@@ -68,3 +68,8 @@ iris.key
 
 # Logs
 *.log
+
+# Specification tooling
+specs/
+.specify/
+.claude/commands/speckit.*
