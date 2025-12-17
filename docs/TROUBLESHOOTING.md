@@ -231,9 +231,9 @@ chmod 644 ~/.iris/iris.key
 
 If your issue isn't covered here:
 
-1. **Check Examples**: The [examples/](https://github.com/intersystems-community/iris-devtools/blob/main/examples/) directory has working code samples
-2. **Search Issues**: [GitHub Issues](https://github.com/intersystems-community/iris-devtools/issues) may have solutions
-3. **Report Bug**: Use the [bug report template](https://github.com/intersystems-community/iris-devtools/issues/new?template=bug_report.yml)
+1. **Check Examples**: The [examples/](https://github.com/intersystems-community/iris-devtester/blob/main/examples/) directory has working code samples
+2. **Search Issues**: [GitHub Issues](https://github.com/intersystems-community/iris-devtester/issues) may have solutions
+3. **Report Bug**: Use the [bug report template](https://github.com/intersystems-community/iris-devtester/issues/new?template=bug_report.yml)
 4. **Ask Community**: [Stack Overflow](https://stackoverflow.com/questions/tagged/intersystems-iris) with tag `intersystems-iris`
 
 ## Debugging Tips
@@ -314,4 +314,4 @@ docker info | grep -E "CPUs|Total Memory"
 
 ---
 
-**Remember**: IRIS DevTools is designed to handle most issues automatically. If you encounter consistent errors, please [report them](https://github.com/intersystems-community/iris-devtools/issues/new?template=bug_report.yml) so we can improve auto-remediation.
+**Remember**: IRIS DevTools is designed to handle most issues automatically. If you encounter consistent errors, please [report them](https://github.com/intersystems-community/iris-devtester/issues/new?template=bug_report.yml) so we can improve auto-remediation.

@@ -5,6 +5,36 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-12-17
+
+### Fixed
+
+- **Documentation**: Fixed all repository URLs from iris-devtools to iris-devtester
+  - Updated pyproject.toml project.urls (Homepage, Documentation, Repository, Issues, Changelog)
+  - Updated README.md with corrected links and reorganized structure
+  - Updated CHANGELOG.md release links
+  - Updated CONTRIBUTING.md clone instructions
+  - Updated docs/TROUBLESHOOTING.md GitHub links
+  - **Impact**: PyPI page now shows correct repository links
+
+### Changed
+
+- **Documentation**: Reorganized README.md for better scannability
+  - Reduced README from 363 lines to ~126 lines
+  - Added Table of Contents with anchor links
+  - Moved detailed feature documentation to docs/features/
+  - Created docs/features/testcontainers.md
+  - Created docs/features/docker-compose.md
+  - Created docs/features/dat-fixtures.md
+  - Created docs/features/performance-monitoring.md
+  - Replaced inline examples with summary table linking to feature docs
+
+### Quality Assurance
+
+- All documentation links verified
+- README.md under 150 lines target achieved
+- No iris-devtools references remain in user-facing documentation
+
 ## [1.2.1] - 2025-01-13
 
 ### Fixed
@@ -321,5 +351,10 @@ N/A - Initial release
 
 **Remember**: Every feature here was paid for with real debugging time. 🚀
 
-[1.0.0]: https://github.com/intersystems-community/iris-devtools/releases/tag/v1.0.0
-[Unreleased]: https://github.com/intersystems-community/iris-devtools/compare/v1.0.0...HEAD
+[1.2.2]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.2.2
+[1.2.1]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.2.1
+[1.2.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.2.0
+[1.1.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.1.0
+[1.0.2]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.0.2
+[1.0.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.0.0
+[Unreleased]: https://github.com/intersystems-community/iris-devtester/compare/v1.2.2...HEAD
