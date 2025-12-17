@@ -805,5 +805,15 @@ N/A - Initial release
 
 **Remember**: Every feature here was paid for with real debugging time. 🚀
 
-[1.0.0]: https://github.com/intersystems-community/iris-devtools/releases/tag/v1.0.0
-[Unreleased]: https://github.com/intersystems-community/iris-devtools/compare/v1.0.0...HEAD
+[1.5.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.5.0
+[1.4.5]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.4.5
+[1.4.4]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.4.4
+[1.4.3]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.4.3
+[1.3.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.3.0
+[1.2.2]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.2.2
+[1.2.1]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.2.1
+[1.2.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.2.0
+[1.1.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.1.0
+[1.0.2]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.0.2
+[1.0.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.0.0
+[Unreleased]: https://github.com/intersystems-community/iris-devtester/compare/v1.5.0...HEAD
