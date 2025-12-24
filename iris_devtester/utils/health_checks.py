@@ -1,12 +1,68 @@
 """Multi-layer health check utilities for IRIS containers."""
 
+import re
 import socket
 import time
+from dataclasses import dataclass
+from enum import IntEnum
 from typing import Callable, Optional
 
 from docker.models.containers import Container
 
 from iris_devtester.config.container_state import ContainerState, HealthStatus
+
+
+class IrisHealthState(IntEnum):
+    """IRIS $SYSTEM.Monitor.State() return values.
+
+    Source: docs/learnings/iris-container-readiness.md
+
+    These values match the official IRIS API return values:
+    - 0: OK - System is healthy and ready for connections
+    - 1: Warning - Minor issues detected, may still work
+    - 2: Error - Significant problems, likely connection failures
+    - 3: Fatal - Critical failure, do not use container
+    """
+
+    OK = 0
+    WARNING = 1
+    ERROR = 2
+    FATAL = 3
+
+    @property
+    def is_healthy(self) -> bool:
+        """Check if this state is considered healthy.
+
+        OK and Warning are both considered healthy (can accept connections).
+        Error and Fatal indicate the container should not be used.
+        """
+        return self.value <= 1
+
+
+@dataclass
+class IrisMonitorResult:
+    """Result from checking IRIS $SYSTEM.Monitor.State().
+
+    Attributes:
+        state: The IrisHealthState enum value
+        is_healthy: True if state is OK or Warning
+        message: Human-readable description of the state
+        raw_output: Raw output from the IRIS command (for debugging)
+    """
+
+    state: IrisHealthState
+    is_healthy: bool
+    message: str
+    raw_output: str = ""
+
+
+# Map state values to human-readable messages
+_IRIS_STATE_MESSAGES = {
+    IrisHealthState.OK: "OK - Container healthy",
+    IrisHealthState.WARNING: "Warning - Container has minor issues",
+    IrisHealthState.ERROR: "Error - Container has problems",
+    IrisHealthState.FATAL: "Fatal - Container unusable",
+}
 
 
 def wait_for_healthy(
@@ -21,6 +77,11 @@ def wait_for_healthy(
     1. Layer 1: Container running (fast fail if crashes)
     2. Layer 2: Docker health check passing (if defined)
     3. Layer 3: IRIS SuperServer port accessible (service ready)
+    4. Layer 4: IRIS $SYSTEM.Monitor.State() = OK (IRIS-level health)
+
+    Layer 4 is the official IRIS health check that ensures the container is
+    truly ready for connections, not just that the port is open.
+    Source: docs/learnings/iris-container-readiness.md
 
     Args:
         container: Container to wait for
@@ -143,6 +204,27 @@ def wait_for_healthy(
             raise TimeoutError(
                 f"IRIS SuperServer port not accessible within {timeout} seconds"
             )
+
+    # Layer 4: Wait for IRIS Monitor.State() to be OK
+    # This is the official IRIS health check - more reliable than just port check
+    # Source: docs/learnings/iris-container-readiness.md
+    notify("⏳ Waiting for IRIS health check (Monitor.State)...")
+
+    while elapsed() < timeout:
+        result = check_iris_monitor_state(container)
+
+        if result.is_healthy:
+            notify(f"✓ IRIS health check passed: {result.message}")
+            break
+
+        # Not healthy yet, wait and retry
+        time.sleep(2)
+
+    if elapsed() >= timeout:
+        raise TimeoutError(
+            f"IRIS Monitor.State check did not pass within {timeout} seconds\n"
+            f"Last state: {result.message if 'result' in dir() else 'unknown'}"
+        )
 
     # All layers passed - get final state
     final_state = ContainerState.from_container(container)
@@ -345,3 +427,129 @@ def enable_callin_service(container: Container) -> None:
             "Documentation:\n"
             "  https://iris-devtester.readthedocs.io/troubleshooting/callin-service/\n"
         ) from e
+
+
+def check_iris_monitor_state(container: Container) -> IrisMonitorResult:
+    """Check IRIS container health using $SYSTEM.Monitor.State().
+
+    This is the official IRIS API for determining container readiness.
+    A container with SuperServer port open is NOT necessarily ready -
+    this function checks true IRIS-level health.
+
+    Source: docs/learnings/iris-container-readiness.md
+
+    Args:
+        container: Running IRIS container
+
+    Returns:
+        IrisMonitorResult with state, is_healthy flag, and message
+
+    Example:
+        >>> from iris_devtester.containers import IRISContainer
+        >>> with IRISContainer.community() as iris:
+        ...     result = check_iris_monitor_state(iris._container)
+        ...     if result.is_healthy:
+        ...         print("Container ready for connections")
+    """
+    # ObjectScript command to get Monitor state
+    # Use heredoc format for reliable execution
+    objectscript_cmd = '''iris session IRIS -U %SYS << 'EOF'
+Write ##class(%SYSTEM.System).GetInstanceState()
+Halt
+EOF'''
+
+    try:
+        exit_code, output = container.exec_run(
+            cmd=["sh", "-c", objectscript_cmd],
+            user="irisowner"
+        )
+
+        raw_output = output.decode("utf-8", errors="ignore")
+
+        if exit_code != 0:
+            return IrisMonitorResult(
+                state=IrisHealthState.FATAL,
+                is_healthy=False,
+                message=f"Failed to execute health check (exit code: {exit_code})",
+                raw_output=raw_output,
+            )
+
+        # Parse the state from output - should be 0, 1, 2, or 3
+        # The output may contain prompts/banners, so look for the number
+        match = re.search(r'\b([0-3])\b', raw_output)
+        if match:
+            state_value = int(match.group(1))
+            state = IrisHealthState(state_value)
+            return IrisMonitorResult(
+                state=state,
+                is_healthy=state.is_healthy,
+                message=_IRIS_STATE_MESSAGES.get(state, f"Unknown state: {state_value}"),
+                raw_output=raw_output,
+            )
+
+        # Could not parse state - assume not ready
+        return IrisMonitorResult(
+            state=IrisHealthState.FATAL,
+            is_healthy=False,
+            message=f"Could not parse Monitor.State from output",
+            raw_output=raw_output,
+        )
+
+    except Exception as e:
+        return IrisMonitorResult(
+            state=IrisHealthState.FATAL,
+            is_healthy=False,
+            message=f"Health check failed: {e}",
+            raw_output="",
+        )
+
+
+def wait_for_iris_healthy(
+    container: Container,
+    timeout: int = 60,
+    progress_callback: Optional[Callable[[str], None]] = None
+) -> bool:
+    """Wait for IRIS container to reach healthy state.
+
+    Uses $SYSTEM.Monitor.State() to check true IRIS-level health.
+    This is more reliable than just checking if the port is open.
+
+    Source: docs/learnings/iris-container-readiness.md
+
+    Args:
+        container: Running IRIS container
+        timeout: Maximum time to wait (seconds)
+        progress_callback: Optional callback for progress messages
+
+    Returns:
+        True if container became healthy, False if timeout
+
+    Example:
+        >>> from iris_devtester.containers import IRISContainer
+        >>> with IRISContainer.community() as iris:
+        ...     if wait_for_iris_healthy(iris._container, timeout=30):
+        ...         print("Container ready!")
+    """
+    start_time = time.time()
+
+    def elapsed() -> float:
+        return time.time() - start_time
+
+    def notify(message: str) -> None:
+        if progress_callback:
+            progress_callback(message)
+
+    notify("⏳ Waiting for IRIS Monitor.State() = OK...")
+
+    while elapsed() < timeout:
+        result = check_iris_monitor_state(container)
+
+        if result.is_healthy:
+            notify(f"✓ IRIS health check passed: {result.message}")
+            return True
+
+        # Not healthy yet, wait and retry
+        time.sleep(2)
+
+    notify(f"⚠ IRIS health check timed out after {timeout}s")
+    return False

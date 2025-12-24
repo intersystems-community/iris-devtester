@@ -179,7 +179,7 @@ license_key: ""
 volumes:
   - ./data:/external
   - ./backup:/backup
-image_tag: 2024.1
+image_tag: "2024.1"
 """
         with NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(yaml_content)

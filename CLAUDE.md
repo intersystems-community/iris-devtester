@@ -220,32 +220,58 @@ def iris_db():
 
 **CRITICAL**: ObjectScript is **position-based**, NOT keyword-based like Python!
 
-```objectscript
-// WRONG - This method does NOT exist!
-##class(Security.Users).ChangePassword("username", "password")
+**Full Documentation**: See `docs/learnings/` for comprehensive patterns:
+- [iris-security-users-api.md](docs/learnings/iris-security-users-api.md) - Password management
+- [iris-container-readiness.md](docs/learnings/iris-container-readiness.md) - Container health checks
+- [iris-backup-patterns.md](docs/learnings/iris-backup-patterns.md) - Export/Import for fixtures
 
-// RIGHT - Use Get/Modify pattern with property arrays
+#### Password Reset Pattern (Correct)
+
+```objectscript
+// CORRECT - Use PasswordExternal property (triggers PBKDF2 hashing)
 Set username = "_SYSTEM"
-Do ##class(Security.Users).Get(username, .properties)  // .properties = pass by reference
-Set properties("Password") = "newpassword"
-Set properties("ChangePassword") = 0
-Set properties("PasswordNeverExpires") = 1
-Write ##class(Security.Users).Modify(username, .properties)
+If ##class(Security.Users).Exists(username, .user, .status) {
+    Set user.PasswordExternal = "newpassword"  // NOT user.Password!
+    Set user.ChangePassword = 0                 // NOT ChangePasswordAtNextLogin!
+    Set user.PasswordNeverExpires = 1
+    Set user.AccountNeverExpires = 1
+    Set status = user.%Save()
+}
 Halt
 ```
 
+#### Property Name Reference
+
+| Correct | Incorrect | Notes |
+|---------|-----------|-------|
+| `ChangePassword` | `ChangePasswordAtNextLogin` | Controls password-change-required flag |
+| `PasswordExternal` | `Password` | Use External to set (triggers hashing) |
+| `AccountNeverExpires` | `AccountNeverExpire` | Note trailing 's' |
+
+#### Container Health Check Pattern
+
+```objectscript
+// Check if container is ready using official API
+Set state = $SYSTEM.Monitor.State()
+// 0=OK (ready), 1=Warning, 2=Error, 3=Fatal
+If state = 0 {
+    Write "Container ready", !
+}
+```
+
+#### Methods That DO NOT Exist
+
+| Method | Status | Alternative |
+|--------|--------|-------------|
+| `Security.Users.ChangePassword()` | **Removed in 2004!** | Use `Exists()` + `user.PasswordExternal` |
+| `Security.Users.SetPassword()` | Does not exist | Use `user.PasswordExternal` property |
+
 **Key Learnings**:
-- The `.properties` syntax means "pass by reference" (required for Get/Modify)
-- Property names are case-sensitive: `"Password"`, `"ChangePassword"`
+- The `.variable` syntax means "pass by reference" (required for Exists/Get)
+- Property names are case-sensitive: `"PasswordExternal"`, `"ChangePassword"`
 - `Write` statement outputs the return value (1 = success)
 - Always end with `Halt` to exit cleanly
-- Use `echo -e 'script\ncommands\n' | iris session IRIS -U %SYS` for multi-line execution
-
-**Common Mistakes**:
-- Assuming methods exist without checking (ChangePassword doesn't exist!)
-- Using keyword arguments (ObjectScript is positional)
-- Forgetting the `.` prefix for pass-by-reference
-- Not checking return values (`Write` the result to verify success)
+- `$SYSTEM.Monitor.State()` returns 0 when container is truly ready
 
 ## Git Workflow
 
