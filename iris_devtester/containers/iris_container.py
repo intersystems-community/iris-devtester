@@ -62,13 +62,35 @@ class IRISContainer(BaseIRISContainer):
         ...     conn = iris.get_connection()
     """
 
-    def __init__(self, image: str = "intersystemsdc/iris-community:latest", **kwargs):
+    def __init__(
+        self,
+        image: str = "intersystemsdc/iris-community:latest",
+        port_registry: Optional["PortRegistry"] = None,
+        project_path: Optional[str] = None,
+        preferred_port: Optional[int] = None,
+        **kwargs,
+    ):
         """
         Initialize IRIS container.
 
         Args:
             image: Docker image to use
+            port_registry: Optional PortRegistry for multi-project port management
+            project_path: Absolute path to project directory (auto-detects from cwd if None)
+            preferred_port: Optional manual port override (requires port_registry)
             **kwargs: Additional arguments passed to base container
+
+        Example:
+            >>> # Without port registry (backwards compatible)
+            >>> container = IRISContainer()
+
+            >>> # With port registry (automatic port assignment)
+            >>> from iris_devtester.ports import PortRegistry
+            >>> registry = PortRegistry()
+            >>> container = IRISContainer(port_registry=registry)
+
+            >>> # With manual port preference
+            >>> container = IRISContainer(port_registry=registry, preferred_port=1975)
         """
         if not HAS_TESTCONTAINERS_IRIS:
             raise ImportError(
@@ -87,6 +109,114 @@ class IRISContainer(BaseIRISContainer):
         self._config = None
         self._callin_enabled = False
         self._is_attached = False  # True if attached to external container
+
+        # Port registry integration (Feature 013)
+        self._port_registry = port_registry
+        self._port_assignment = None
+        self._preferred_port = preferred_port
+
+        # Auto-detect project path from current working directory if not provided
+        if port_registry is not None and project_path is None:
+            import os
+
+            project_path = os.getcwd()
+
+        self._project_path = project_path
+
+    def start(self):
+        """
+        Start IRIS container with port registry integration.
+
+        If port_registry is configured, assigns a port before starting.
+        Otherwise uses default port 1972 (backwards compatible).
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            PortExhaustedError: All ports in range are in use
+            PortConflictError: Preferred port already assigned
+        """
+        # Port registry integration (T022)
+        if self._port_registry:
+            # Assign port from registry
+            self._port_assignment = self._port_registry.assign_port(
+                project_path=self._project_path, preferred_port=self._preferred_port
+            )
+
+            # Use assigned port for container
+            assigned_port = self._port_assignment.port
+
+            # Update configuration if exists
+            if self._config:
+                self._config.port = assigned_port
+
+            # CRITICAL FIX: Configure fixed port binding
+            # Without this, testcontainers uses RANDOM port mapping (defeating the purpose!)
+            # This binds container:1972 → host:assigned_port (e.g., 1973, 1974, etc.)
+            self.with_bind_ports(1972, assigned_port)
+
+            # Update port attribute for compatibility
+            self.port = assigned_port
+
+            # Update container name to include project path hash for staleness detection
+            import hashlib
+
+            project_hash = hashlib.md5(self._project_path.encode()).hexdigest()[:8]
+            container_name = f"iris_{project_hash}_{assigned_port}"
+
+            # Update assignment with container name
+            self._port_assignment.container_name = container_name
+
+            # Set container name
+            self.with_name(container_name)
+
+            logger.info(
+                f"Port registry: assigned port {assigned_port} to {self._project_path}"
+            )
+
+        # Call parent start()
+        result = super().start()
+
+        # Update config with actual host/port after start
+        if self._config:
+            self._config.host = self.get_container_host_ip()
+            if self._port_registry:
+                # With port registry, use the assigned port directly (fixed binding)
+                self._config.port = self._port_assignment.port
+            else:
+                # Without port registry, get mapped port from container (random mapping)
+                self._config.port = int(self.get_exposed_port(self.port))
+
+        return result
+
+    def stop(self, force=True, delete_volume=True):
+        """
+        Stop IRIS container and release port assignment.
+
+        If port_registry is configured, releases the port assignment.
+
+        Args:
+            force: Force stop container
+            delete_volume: Delete associated volumes
+
+        Returns:
+            None
+        """
+        try:
+            # Call parent stop()
+            super().stop(force=force, delete_volume=delete_volume)
+        finally:
+            # Port registry integration (T023)
+            if self._port_registry and self._port_assignment:
+                try:
+                    self._port_registry.release_port(self._project_path)
+                    logger.info(
+                        f"Port registry: released port {self._port_assignment.port} "
+                        f"for {self._project_path}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to release port assignment: {e}")
 
     @classmethod
     def community(
@@ -115,7 +245,15 @@ class IRISContainer(BaseIRISContainer):
             ...     conn = iris.get_connection()
             ...     # Test code here...
         """
-        container = cls(image="intersystemsdc/iris-community:latest", **kwargs)
+        # CRITICAL FIX (v1.4.5): Pass username/password/namespace to parent testcontainers-iris class
+        # Without this, testcontainers-iris uses defaults ("test"/"test") which don't match our config!
+        container = cls(
+            image="intersystemsdc/iris-community:latest",
+            username=username,
+            password=password,
+            namespace=namespace,
+            **kwargs
+        )
 
         # Store connection config
         container._config = IRISConfig(
@@ -227,7 +365,32 @@ class IRISContainer(BaseIRISContainer):
                 "     IRISContainer.community()\n"
             )
 
-        container = cls(image="intersystemsdc/iris:latest", **kwargs)
+        # CRITICAL: For Enterprise edition, DON'T create test user
+        # Enterprise containers have _SYSTEM by default, we don't need to create users
+        # (Community edition needs this because testcontainers-iris creates "test" user)
+
+        # Use ARM64 Enterprise image on ARM architecture
+        import platform as platform_module
+        if platform_module.machine() == "arm64":
+            # Use the ARM64 image we have locally (2025.1)
+            image = "containers.intersystems.com/intersystems/iris-arm64:2025.1"
+        else:
+            image = "intersystemsdc/iris:latest"
+
+        # CRITICAL FIX: Pass username="_SYSTEM" to prevent testcontainers-iris from creating "test" user
+        # testcontainers-iris._connect() tries to create self.username (defaults to "test")
+        # Enterprise containers have _SYSTEM by default, so we tell testcontainers to use that
+        container = cls(
+            image=image,
+            username=username,  # Pass username so testcontainers uses _SYSTEM, not "test"
+            password=password,  # Pass password for consistency
+            namespace=namespace,
+            **kwargs
+        )
+
+        # Set license key as environment variable for Enterprise container
+        # Use with_env() method instead of kwargs to avoid duplicate environment parameter
+        container.with_env("ISC_LICENSE_KEY", license_key)
 
         # Store connection config
         container._config = IRISConfig(
@@ -237,9 +400,6 @@ class IRISContainer(BaseIRISContainer):
             username=username,
             password=password,
         )
-
-        # TODO: Configure license key injection
-        # This would typically involve mounting license file or env var
 
         return container
 
@@ -448,24 +608,26 @@ class IRISContainer(BaseIRISContainer):
         else:
             logger.warning(f"⚠️  Could not unexpire passwords: {msg}")
 
-        # Update config with actual container host/port
+        # CRITICAL: PROACTIVELY reset password BEFORE first connection attempt
+        # (Feature 007 fix - Constitutional Principle #1: Automatic Remediation)
+        # This prevents "Access Denied" and "Password change required" errors
+        from iris_devtester.utils.password_reset import reset_password
         config = self.get_config()
 
-        try:
-            # Use connection manager (DBAPI-first, JDBC-fallback)
-            self._connection = get_connection(config)
-            return self._connection
+        logger.info("Proactively resetting password to ensure clean connection...")
+        reset_success, reset_msg = reset_password(
+            container_name=container_name,
+            username=config.username,
+            new_password=config.password,
+        )
+        if reset_success:
+            logger.info(f"✓ Password proactively reset: {reset_msg}")
+        else:
+            logger.warning(f"⚠️  Password reset failed (will attempt connection anyway): {reset_msg}")
 
-        except Exception as e:
-            # Try automatic password reset as last resort
-            logger.warning(f"Connection failed: {e}")
-
-            if reset_password_if_needed(e, container_name=container_name):
-                logger.info("Password reset successful, retrying connection...")
-                self._connection = get_connection(config)
-                return self._connection
-
-            raise
+        # Use connection manager (DBAPI-first, JDBC-fallback)
+        self._connection = get_connection(config)
+        return self._connection
 
     def get_config(self) -> IRISConfig:
         """
@@ -502,9 +664,11 @@ class IRISContainer(BaseIRISContainer):
 
     def wait_for_ready(self, timeout: int = 60) -> bool:
         """
-        Wait for IRIS to be fully ready.
+        Wait for IRIS to be fully ready and apply dual user hardening.
 
-        Uses IRISReadyWaitStrategy for thorough readiness checks.
+        Uses IRISReadyWaitStrategy for thorough readiness checks, then applies
+        the v1.4.5 dual user hardening fix to ensure both the target user AND
+        SuperUser are properly configured for DBAPI connections.
 
         Args:
             timeout: Maximum time to wait in seconds
@@ -523,7 +687,42 @@ class IRISContainer(BaseIRISContainer):
         strategy = IRISReadyWaitStrategy(port=config.port, timeout=timeout)
 
         try:
-            return strategy.wait_until_ready(config.host, config.port, timeout)
+            # Step 1: Wait for IRIS to be ready
+            ready = strategy.wait_until_ready(config.host, config.port, timeout)
+
+            if not ready:
+                return False
+
+            # Step 2: Apply dual user hardening (v1.4.5 fix)
+            # This ensures both the target user AND SuperUser are properly configured
+            logger.info("Applying dual user hardening to ensure reliable DBAPI connections...")
+
+            from iris_devtester.utils.password_reset import reset_password
+
+            # CRITICAL: Don't pass hostname - let reset_password() auto-detect
+            # This enables IPv4 forcing on macOS (127.0.0.1 vs localhost)
+            # Passing "localhost" explicitly bypasses the IPv4 forcing logic
+            result = reset_password(
+                container_name=self.get_container_name(),
+                username=config.username,
+                new_password=config.password,
+                hostname=None,  # Auto-detect (forces IPv4 on macOS)
+                port=config.port,
+                namespace=config.namespace,
+            )
+
+            # reset_password returns PasswordResetResult that can unpack to (bool, str)
+            success, message = result
+
+            if not success:
+                logger.warning(f"Password reset failed (will attempt connection anyway): {message}")
+                # Don't fail completely - user might already be configured correctly
+                # Connection attempts will reveal if there's a real problem
+            else:
+                logger.info(f"✓ {message}")
+
+            return True
+
         except TimeoutError:
             logger.error("IRIS container did not become ready in time")
             return False
@@ -555,7 +754,9 @@ class IRISContainer(BaseIRISContainer):
         )
 
         if success:
-            # Update stored config with new password
+            # Update stored config with new password (Bug #2 fix: ensure config exists)
+            if self._config is None:
+                self._config = self.get_config()
             self._config.password = new_password
             logger.info(f"✓ {message}")
         else:
@@ -1110,3 +1311,118 @@ Halt"""
                 "  2. Check user has namespace creation privileges\n"
                 "  3. Check namespace doesn't already exist\n"
             )
+
+    def get_assigned_port(self) -> int:
+        """
+        Get the port assigned to this container.
+
+        Returns port from port registry assignment if available, otherwise
+        returns the default port (1972) or manually configured port.
+
+        Returns:
+            Port number (e.g., 1972, 1973, etc.)
+
+        Example:
+            >>> registry = PortRegistry()
+            >>> with IRISContainer(port_registry=registry) as iris:
+            ...     port = iris.get_assigned_port()
+            ...     print(f"Container running on port {port}")
+        """
+        if self._port_assignment:
+            return self._port_assignment.port
+        elif self._config:
+            return self._config.port
+        else:
+            return 1972  # Default port
+
+    def get_project_path(self) -> Optional[str]:
+        """
+        Get the project path associated with this container.
+
+        Returns None if port_registry was not used.
+
+        Returns:
+            Absolute path to project directory, or None
+
+        Example:
+            >>> registry = PortRegistry()
+            >>> with IRISContainer(port_registry=registry) as iris:
+            ...     path = iris.get_project_path()
+            ...     print(f"Project: {path}")
+        """
+        return self._project_path
+
+    def validate(
+        self,
+        level: "HealthCheckLevel" = None
+    ) -> "ValidationResult":
+        """
+        Validate this container's health.
+
+        Performs defensive validation to detect container issues like:
+        - Container not running
+        - Stale container ID references
+        - Exec accessibility problems
+        - IRIS not responsive
+
+        Args:
+            level: Validation depth (MINIMAL, STANDARD, or FULL).
+                  Default: STANDARD
+
+        Returns:
+            ValidationResult for this container.
+
+        Example:
+            >>> with IRISContainer.community() as iris:
+            ...     result = iris.validate()
+            ...     if not result.success:
+            ...         print(result.format_message())
+
+        Constitutional Compliance:
+            - Principle #1: Automatic detection of issues
+            - Principle #5: Clear guidance on failures
+        """
+        from iris_devtester.containers.models import HealthCheckLevel
+        from iris_devtester.containers.validation import validate_container
+
+        if level is None:
+            level = HealthCheckLevel.STANDARD
+
+        # Get container name from underlying container
+        container_name = self.get_container_name()
+
+        return validate_container(
+            container_name=container_name,
+            level=level,
+            docker_client=None  # Auto-create
+        )
+
+    def assert_healthy(
+        self,
+        level: "HealthCheckLevel" = None
+    ):
+        """
+        Assert container is healthy, raise if not.
+
+        Convenience method for validation that raises an exception
+        if the container is not healthy.
+
+        Args:
+            level: Validation depth (default: STANDARD).
+
+        Raises:
+            RuntimeError: If validation fails. Error message includes
+                         full remediation guidance.
+
+        Example:
+            >>> with IRISContainer.community() as iris:
+            ...     iris.assert_healthy()  # Raises if not healthy
+            ...     conn = iris.get_connection()  # Safe to proceed
+
+        Constitutional Compliance:
+            - Principle #5: Structured error messages with remediation
+        """
+        result = self.validate(level=level)
+
+        if not result.success:
+            raise RuntimeError(result.format_message())

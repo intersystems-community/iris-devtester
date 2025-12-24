@@ -68,3 +68,9 @@ iris.key
 
 # Logs
 *.log
+
+# Agent/Development artifacts
+.specify/
+specs/
+.cursorrules
+CONSTITUTION.md

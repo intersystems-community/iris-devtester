@@ -21,7 +21,7 @@ class TestPgwireConfigProblem:
     Environment variable IRIS_HOSTNAME=iris-benchmark was set but not being read.
     This caused connections to hang for 2-5 minutes waiting for timeout.
 
-    SOLUTION: iris_devtools.config.discover_config() with proper precedence
+    SOLUTION: iris_devtester.config.discover_config() with proper precedence
     """
 
     @patch.dict(os.environ, {
@@ -106,8 +106,8 @@ class TestVectorGraphCallInProblem:
               for BOTH Community and Enterprise editions
     """
 
-    @patch("iris_devtools.containers.iris_container.HAS_TESTCONTAINERS_IRIS", True)
-    @patch("iris_devtools.containers.iris_container.BaseIRISContainer")
+    @patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS_IRIS", True)
+    @patch("iris_devtester.containers.iris_container.BaseIRISContainer")
     @patch("subprocess.run")
     def test_callin_service_can_be_enabled_transparently(self, mock_run, mock_base):
         """
@@ -152,8 +152,8 @@ class TestVectorGraphCallInProblem:
         # The actual pattern is: Set prop("Enabled")=1
         assert 'prop("Enabled")=1' in args_str or "Enabled=1" in args_str
 
-    @patch("iris_devtools.containers.iris_container.HAS_TESTCONTAINERS_IRIS", True)
-    @patch("iris_devtools.containers.iris_container.BaseIRISContainer")
+    @patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS_IRIS", True)
+    @patch("iris_devtester.containers.iris_container.BaseIRISContainer")
     @patch("subprocess.run")
     def test_callin_enabled_automatically_on_get_connection(self, mock_run, mock_base):
         """
@@ -181,7 +181,7 @@ class TestVectorGraphCallInProblem:
 
         # Attempt connection (will fail because no real container, but CallIn attempt happens)
         try:
-            with patch("iris_devtools.connections.manager.get_connection") as mock_conn:
+            with patch("iris_devtester.connections.manager.get_connection") as mock_conn:
                 mock_conn.return_value = Mock()
                 conn = container.get_connection()
 
@@ -190,8 +190,8 @@ class TestVectorGraphCallInProblem:
         except Exception:
             pass  # Expected to fail without real container
 
-    @patch("iris_devtools.containers.iris_container.HAS_TESTCONTAINERS_IRIS", True)
-    @patch("iris_devtools.containers.iris_container.BaseIRISContainer")
+    @patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS_IRIS", True)
+    @patch("iris_devtester.containers.iris_container.BaseIRISContainer")
     def test_callin_check_returns_status(self, mock_base):
         """
         Test that we can check CallIn status without side effects.
@@ -397,7 +397,7 @@ class TestDBAPIFirstJDBCFallbackInAction:
         from iris_devtester.config import IRISConfig
 
         # Minimal mocking: Mock at the connection.py module level where it's used
-        with patch("iris_devtools.connections.connection.is_dbapi_available", return_value=False):
+        with patch("iris_devtester.connections.connection.is_dbapi_available", return_value=False):
             config = IRISConfig()
 
             with pytest.raises(ConnectionError) as exc_info:

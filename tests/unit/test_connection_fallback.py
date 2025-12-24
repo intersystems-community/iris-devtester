@@ -17,8 +17,8 @@ class TestConnectionFallback:
 
         assert callable(get_connection)
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=True)
-    @patch("iris_devtools.connections.dbapi.create_dbapi_connection")
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
+    @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     def test_uses_dbapi_when_available(self, mock_dbapi_create, mock_dbapi_available):
         """Test that DBAPI is tried first when available."""
         from iris_devtester.connections.manager import get_connection
@@ -34,9 +34,9 @@ class TestConnectionFallback:
         mock_dbapi_create.assert_called_once_with(config)
         assert conn == mock_conn
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=False)
-    @patch("iris_devtools.connections.jdbc.is_jdbc_available", return_value=True)
-    @patch("iris_devtools.connections.jdbc.create_jdbc_connection")
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=False)
+    @patch("iris_devtester.connections.jdbc.is_jdbc_available", return_value=True)
+    @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
     def test_falls_back_to_jdbc_when_dbapi_unavailable(
         self, mock_jdbc_create, mock_jdbc_available, mock_dbapi_available
     ):
@@ -54,9 +54,9 @@ class TestConnectionFallback:
         mock_jdbc_create.assert_called_once_with(config)
         assert conn == mock_conn
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=True)
-    @patch("iris_devtools.connections.dbapi.create_dbapi_connection")
-    @patch("iris_devtools.connections.jdbc.create_jdbc_connection")
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
+    @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
+    @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
     def test_falls_back_to_jdbc_on_dbapi_failure(
         self, mock_jdbc_create, mock_dbapi_create, mock_dbapi_available
     ):
@@ -79,8 +79,8 @@ class TestConnectionFallback:
         mock_jdbc_create.assert_called_once_with(config)
         assert conn == mock_jdbc_conn
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=False)
-    @patch("iris_devtools.connections.jdbc.is_jdbc_available", return_value=False)
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=False)
+    @patch("iris_devtester.connections.jdbc.is_jdbc_available", return_value=False)
     def test_raises_error_when_no_drivers_available(
         self, mock_jdbc_available, mock_dbapi_available
     ):
@@ -97,9 +97,9 @@ class TestConnectionFallback:
         error_msg = str(exc_info.value)
         assert "driver" in error_msg.lower() or "install" in error_msg.lower()
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=True)
-    @patch("iris_devtools.connections.dbapi.create_dbapi_connection")
-    @patch("iris_devtools.connections.jdbc.create_jdbc_connection")
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
+    @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
+    @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
     def test_logs_driver_selection(
         self, mock_jdbc_create, mock_dbapi_create, mock_dbapi_available
     ):
@@ -117,8 +117,8 @@ class TestConnectionFallback:
 
         assert conn == mock_conn
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=True)
-    @patch("iris_devtools.connections.dbapi.create_dbapi_connection")
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
+    @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     def test_respects_explicit_driver_dbapi(self, mock_dbapi_create, mock_dbapi_available):
         """Test that explicit driver='dbapi' forces DBAPI."""
         from iris_devtester.connections.manager import get_connection
@@ -133,8 +133,8 @@ class TestConnectionFallback:
         mock_dbapi_create.assert_called_once_with(config)
         assert conn == mock_conn
 
-    @patch("iris_devtools.connections.jdbc.is_jdbc_available", return_value=True)
-    @patch("iris_devtools.connections.jdbc.create_jdbc_connection")
+    @patch("iris_devtester.connections.jdbc.is_jdbc_available", return_value=True)
+    @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
     def test_respects_explicit_driver_jdbc(self, mock_jdbc_create, mock_jdbc_available):
         """Test that explicit driver='jdbc' forces JDBC."""
         from iris_devtester.connections.manager import get_connection
@@ -153,8 +153,8 @@ class TestConnectionFallback:
 class TestConnectionInfo:
     """Test connection info tracking."""
 
-    @patch("iris_devtools.connections.dbapi.is_dbapi_available", return_value=True)
-    @patch("iris_devtools.connections.dbapi.create_dbapi_connection")
+    @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
+    @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     def test_returns_connection_info(self, mock_dbapi_create, mock_dbapi_available):
         """Test that connection returns metadata about driver used."""
         from iris_devtester.connections.manager import get_connection_with_info

@@ -12,7 +12,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 
 Bug reports are tracked as GitHub Issues. When creating a bug report:
 1. Use the bug report template
-2. Include iris-devtools version, Python version, IRIS edition
+2. Include iris-devtester version, Python version, IRIS edition
 3. Provide minimal reproduction steps
 4. Include relevant log output
 
@@ -43,8 +43,8 @@ Feature requests are also tracked as GitHub Issues. When suggesting enhancements
 
 ```bash
 # Clone repository
-git clone https://github.com/intersystems-community/iris-devtools.git
-cd iris-devtools
+git clone https://github.com/intersystems-community/iris-devtester.git
+cd iris-devtester
 
 # Install in development mode with all dependencies
 pip install -e ".[all,dev,test]"

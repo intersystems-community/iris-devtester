@@ -30,7 +30,7 @@ class TestDockerDetection:
             "postgres_db\t0.0.0.0:5432->5432/tcp\n"
         )
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=mock_output,
@@ -50,7 +50,7 @@ class TestDockerDetection:
             "iris_db\t0.0.0.0:51773->1972/tcp\n"
         )
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=mock_output,
@@ -68,7 +68,7 @@ class TestDockerDetection:
         """
         mock_output = "postgres_db\t0.0.0.0:5432->5432/tcp\n"
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=mock_output,
@@ -84,7 +84,7 @@ class TestDockerDetection:
 
         Expected: Returns None gracefully.
         """
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.side_effect = FileNotFoundError("docker not found")
 
             port = _detect_port_from_docker()
@@ -97,7 +97,7 @@ class TestDockerDetection:
 
         Expected: Returns None gracefully.
         """
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1)
 
             port = _detect_port_from_docker()
@@ -121,7 +121,7 @@ class TestNativeDetection:
             "    WebServers:   52773\n"
         )
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=mock_output,
@@ -142,7 +142,7 @@ class TestNativeDetection:
             "    SuperServers: 51972\n"
         )
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=mock_output,
@@ -158,7 +158,7 @@ class TestNativeDetection:
 
         Expected: Returns None gracefully.
         """
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.side_effect = FileNotFoundError("iris not found")
 
             port = _detect_port_from_native()
@@ -171,7 +171,7 @@ class TestNativeDetection:
 
         Expected: Returns None.
         """
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout="No configurations found\n",
@@ -194,7 +194,7 @@ class TestCombinedAutoDetection:
         docker_output = "iris_db\t0.0.0.0:1972->1972/tcp\n"
         native_output = "SuperServers: 51972\n"
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             def side_effect(*args, **kwargs):
                 cmd = args[0]
                 if cmd[0] == "docker":
@@ -218,7 +218,7 @@ class TestCombinedAutoDetection:
         """
         native_output = "SuperServers: 1972\n"
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             def side_effect(*args, **kwargs):
                 cmd = args[0]
                 if cmd[0] == "docker":
@@ -239,7 +239,7 @@ class TestCombinedAutoDetection:
 
         Expected: Returns None gracefully.
         """
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1)
 
             port = auto_detect_iris_port()
@@ -254,7 +254,7 @@ class TestCombinedAutoDetection:
         """
         docker_output = "iris_db\t0.0.0.0:1972->1972/tcp\n"
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=docker_output,
@@ -273,7 +273,7 @@ class TestCombinedAutoDetection:
         """
         native_output = "SuperServers: 1972\n"
 
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             def side_effect(*args, **kwargs):
                 cmd = args[0]
                 if cmd[0] == "docker":
@@ -295,7 +295,7 @@ class TestCombinedAutoDetection:
 
         Expected: Returns (None, None).
         """
-        with patch("iris_devtools.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1)
 
             host, port = auto_detect_iris_host_and_port()

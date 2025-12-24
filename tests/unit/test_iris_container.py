@@ -72,7 +72,7 @@ class TestIRISContainer:
 class TestIRISContainerIntegration:
     """Test IRIS container integration with other components."""
 
-    @patch("iris_devtools.containers.iris_container.get_connection")
+    @patch("iris_devtester.containers.iris_container.get_connection")
     def test_get_connection_uses_connection_manager(self, mock_get_connection):
         """Test that get_connection() integrates with connection manager."""
         from iris_devtester.containers import IRISContainer
@@ -81,7 +81,7 @@ class TestIRISContainerIntegration:
         # The key is that IRISContainer should use the connection manager
         assert mock_get_connection is not None
 
-    @patch("iris_devtools.containers.iris_container.reset_password_if_needed")
+    @patch("iris_devtester.containers.iris_container.reset_password_if_needed")
     def test_reset_password_uses_recovery_handler(self, mock_reset):
         """Test that reset_password() integrates with password reset utility."""
         from iris_devtester.containers import IRISContainer

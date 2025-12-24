@@ -39,7 +39,7 @@ class TestIRISContainerManagerCreateFromConfig:
 
         # Assert
         mock_iris_container_class.assert_called_once_with(
-            image="intersystems/iris-community:latest",
+            image="intersystemsdc/iris-community:latest",
             port=1972,
             username="_SYSTEM",
             password="SYS",
@@ -136,7 +136,7 @@ class TestIRISContainerManagerCreateFromConfig:
         IRISContainerManager.create_from_config(config)
 
         # Assert
-        assert mock_iris_container_class.call_args[1]["image"] == "intersystems/iris-community:2024.1.0"
+        assert mock_iris_container_class.call_args[1]["image"] == "intersystemsdc/iris-community:2024.1.0"
 
     @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
     def test_create_from_config_with_single_volume(self, mock_iris_container_class):
@@ -403,7 +403,7 @@ class TestTranslateDockerError:
         # Assert
         assert isinstance(result, ValueError)
         error_msg = str(result)
-        assert "intersystems/iris-community:nonexistent" in error_msg
+        assert "intersystemsdc/iris-community:nonexistent" in error_msg
         assert "not found" in error_msg
         assert "docker pull" in error_msg
 
@@ -527,3 +527,179 @@ class TestConstitutionalErrorFormat:
                 assert (
                     "Documentation:" in error_msg
                 ), f"Missing 'Docs' in {error_str}"
+
+
+class TestVolumeMountSpecParse:
+    """Test VolumeMountSpec.parse() method (Feature 011 - T002)."""
+
+    def test_parse_volume_host_container(self):
+        """Test parsing volume string with host and container paths."""
+        from iris_devtester.utils.iris_container_adapter import VolumeMountSpec
+
+        # Act
+        spec = VolumeMountSpec.parse("./data:/external")
+
+        # Assert
+        assert spec.host_path == "./data"
+        assert spec.container_path == "/external"
+        assert spec.mode == "rw"  # Default mode
+
+    def test_parse_volume_host_container_mode(self):
+        """Test parsing volume string with explicit read-only mode."""
+        from iris_devtester.utils.iris_container_adapter import VolumeMountSpec
+
+        # Act
+        spec = VolumeMountSpec.parse("./data:/external:ro")
+
+        # Assert
+        assert spec.host_path == "./data"
+        assert spec.container_path == "/external"
+        assert spec.mode == "ro"
+
+    def test_parse_volume_invalid_format(self):
+        """Test that missing container path raises ValueError."""
+        from iris_devtester.utils.iris_container_adapter import VolumeMountSpec
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            VolumeMountSpec.parse("./data")
+
+        error_msg = str(exc_info.value)
+        assert "invalid format" in error_msg.lower()
+        assert "host:container" in error_msg
+
+    def test_parse_volume_invalid_mode(self):
+        """Test that invalid mode (not rw/ro) raises ValueError."""
+        from iris_devtester.utils.iris_container_adapter import VolumeMountSpec
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            VolumeMountSpec.parse("./data:/external:invalid")
+
+        error_msg = str(exc_info.value)
+        assert "invalid mode" in error_msg.lower()
+        assert "rw" in error_msg
+        assert "ro" in error_msg
+
+    def test_parse_volume_default_mode(self):
+        """Test that mode defaults to 'rw' when not specified."""
+        from iris_devtester.utils.iris_container_adapter import VolumeMountSpec
+
+        # Act - Parse without mode suffix
+        spec1 = VolumeMountSpec.parse("./data1:/external1")
+        spec2 = VolumeMountSpec.parse("/absolute/path:/container/path")
+
+        # Assert - Both should default to read-write
+        assert spec1.mode == "rw"
+        assert spec2.mode == "rw"
+
+
+class TestContainerPersistenceCheck:
+    """Test ContainerPersistenceCheck class (Feature 011 - T003)."""
+
+    def test_persistence_check_success(self):
+        """Test that success property returns True when all checks pass."""
+        from iris_devtester.utils.iris_container_adapter import ContainerPersistenceCheck
+
+        # Arrange - All checks passing
+        check = ContainerPersistenceCheck(
+            container_name="test-container",
+            exists=True,
+            status="running",
+            volume_mounts_verified=True,
+            verification_time=2.0,
+            error_details=None
+        )
+
+        # Assert
+        assert check.success is True
+
+    def test_persistence_check_container_not_found(self):
+        """Test that success is False when container doesn't exist."""
+        from iris_devtester.utils.iris_container_adapter import ContainerPersistenceCheck
+
+        # Arrange - Container missing
+        check = ContainerPersistenceCheck(
+            container_name="missing-container",
+            exists=False,
+            status=None,
+            volume_mounts_verified=False,
+            verification_time=2.0,
+            error_details="Container not found after creation"
+        )
+
+        # Assert
+        assert check.success is False
+        assert check.exists is False
+
+    def test_persistence_check_wrong_status(self):
+        """Test that success is False when container has exited."""
+        from iris_devtester.utils.iris_container_adapter import ContainerPersistenceCheck
+
+        # Arrange - Container exists but exited
+        check = ContainerPersistenceCheck(
+            container_name="exited-container",
+            exists=True,
+            status="exited",
+            volume_mounts_verified=True,
+            verification_time=2.0,
+            error_details=None
+        )
+
+        # Assert
+        assert check.success is False
+        assert check.status == "exited"
+
+    def test_persistence_check_volumes_not_verified(self):
+        """Test that success is False when volume mounts failed verification."""
+        from iris_devtester.utils.iris_container_adapter import ContainerPersistenceCheck
+
+        # Arrange - Container running but volumes not mounted
+        check = ContainerPersistenceCheck(
+            container_name="test-container",
+            exists=True,
+            status="running",
+            volume_mounts_verified=False,
+            verification_time=2.0,
+            error_details=None
+        )
+
+        # Assert
+        assert check.success is False
+        assert check.volume_mounts_verified is False
+
+    def test_get_error_message_constitutional_format(self):
+        """Test that error message follows constitutional format (What/Why/How/Docs)."""
+        from iris_devtester.utils.iris_container_adapter import ContainerPersistenceCheck
+
+        # Arrange - Failed persistence check
+        check = ContainerPersistenceCheck(
+            container_name="failed-container",
+            exists=False,
+            status=None,
+            volume_mounts_verified=False,
+            verification_time=2.0,
+            error_details="Container removed by ryuk cleanup service"
+        )
+
+        config = ContainerConfig(
+            edition="community",
+            container_name="failed-container",
+            superserver_port=1972,
+            webserver_port=52773,
+            namespace="USER",
+            password="SYS",
+        )
+
+        # Act
+        error_msg = check.get_error_message(config)
+
+        # Assert - Constitutional format
+        assert "What went wrong:" in error_msg
+        assert "Why it matters:" in error_msg or "Why this happened:" in error_msg
+        assert "How to fix it:" in error_msg
+        assert "Documentation:" in error_msg
+
+        # Assert - Specific details
+        assert "failed-container" in error_msg
+        assert check.error_details in error_msg

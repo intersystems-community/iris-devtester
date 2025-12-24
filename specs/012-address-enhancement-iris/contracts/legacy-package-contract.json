@@ -1,0 +1,155 @@
+{
+  "contract_id": "legacy-package-fallback",
+  "contract_name": "Legacy Package Fallback and Backward Compatibility",
+  "version": "1.0.0",
+  "description": "When only intersystems-iris is installed, it must be detected and used for DBAPI connections (backward compatibility)",
+  "preconditions": {
+    "environment": "Python 3.9+",
+    "packages_installed": [
+      "intersystems-iris>=3.0.0"
+    ],
+    "packages_not_installed": [
+      "intersystems-irispython"
+    ]
+  },
+  "trigger": {
+    "action": "Import iris_devtester and attempt DBAPI connection",
+    "code_example": "from iris_devtester.utils.dbapi_compat import get_connection\nconn = get_connection(hostname='localhost', port=1972, namespace='USER', username='_SYSTEM', password='SYS')"
+  },
+  "expected_behavior": {
+    "package_detected": "intersystems-iris",
+    "import_path_used": "iris.irissdk",
+    "connection_successful": true,
+    "modern_package_attempted": true,
+    "fallback_occurred": true,
+    "detection_time_ms": {
+      "constraint": "less_than",
+      "value": 10,
+      "rationale": "NFR-001: Package detection must have negligible overhead even with fallback"
+    },
+    "no_errors_raised": true,
+    "backward_compatibility_maintained": true
+  },
+  "validation_criteria": [
+    {
+      "criterion": "Modern package import attempted first",
+      "test_method": "Check DEBUG log for fallback message",
+      "expected_result": "Contains 'Modern package not available, trying legacy'"
+    },
+    {
+      "criterion": "Legacy package import succeeds",
+      "test_method": "import iris.irissdk",
+      "expected_result": "No ImportError"
+    },
+    {
+      "criterion": "Package info reflects legacy package",
+      "test_method": "get_package_info().package_name",
+      "expected_result": "intersystems-iris"
+    },
+    {
+      "criterion": "Connection uses legacy package",
+      "test_method": "Inspect connection object type",
+      "expected_result": "Connection created via iris.irissdk"
+    },
+    {
+      "criterion": "Detection time acceptable",
+      "test_method": "get_package_info().detection_time_ms",
+      "expected_result": "< 10ms (including fallback attempt)"
+    },
+    {
+      "criterion": "Logging indicates legacy package",
+      "test_method": "Check INFO log messages",
+      "expected_result": "Contains 'Detected IRIS DBAPI package: intersystems-iris v3.2.0 (legacy)'"
+    }
+  ],
+  "backward_compatibility_tests": [
+    {
+      "test_name": "Existing code works unchanged",
+      "scenario": "User has legacy package installed from before Feature 012",
+      "existing_code": "from iris_devtester.fixtures import FixtureCreator\ncreator = FixtureCreator(container=iris)\nmanifest = creator.create_fixture(...)",
+      "expected_behavior": "Works exactly as before - no code changes required"
+    },
+    {
+      "test_name": "DAT fixtures work with legacy package",
+      "scenario": "User creates and loads DAT fixtures using legacy package",
+      "expected_behavior": "All fixture operations succeed without errors"
+    },
+    {
+      "test_name": "Connection manager works with legacy package",
+      "scenario": "User establishes connections using legacy package",
+      "expected_behavior": "Connections succeed, same performance as before"
+    }
+  ],
+  "error_scenarios": [
+    {
+      "scenario": "Package version too old",
+      "given": "intersystems-iris v2.9.0 installed",
+      "when": "Attempt connection",
+      "then": {
+        "error_type": "ImportError",
+        "error_format": "Constitutional (What/Why/How/Docs)",
+        "error_contains": "version 2.9.0 is too old",
+        "suggests_upgrade": true,
+        "minimum_version": "3.0.0"
+      }
+    }
+  ],
+  "constitutional_compliance": [
+    {
+      "principle": "Principle #2: Choose the Right Tool for the Job",
+      "how_satisfied": "Modern package attempted first, legacy as fallback maintains DBAPI priority"
+    },
+    {
+      "principle": "Principle #4: Zero Configuration Viable",
+      "how_satisfied": "Automatic fallback requires no user configuration or migration"
+    },
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Version errors provide clear upgrade instructions"
+    }
+  ],
+  "test_implementation": {
+    "test_file": "tests/contract/test_legacy_package_contract.py",
+    "test_class": "TestLegacyPackageContract",
+    "test_methods": [
+      "test_legacy_package_detected",
+      "test_legacy_package_import_path",
+      "test_connection_successful",
+      "test_modern_package_attempted_first",
+      "test_fallback_occurred",
+      "test_detection_time_under_threshold",
+      "test_package_info_correct",
+      "test_logging_legacy_package",
+      "test_version_validation",
+      "test_backward_compatibility_fixtures",
+      "test_backward_compatibility_connections"
+    ],
+    "fixtures_required": [
+      "mock_legacy_package_only"
+    ]
+  },
+  "acceptance_criteria": {
+    "functional": [
+      "Legacy package detected when modern unavailable",
+      "Connection succeeds using legacy package",
+      "Modern package attempted first (priority)",
+      "Fallback to legacy occurs gracefully",
+      "All existing code works without modification"
+    ],
+    "non_functional": [
+      "Detection completes in <10ms (including fallback)",
+      "Logging shows fallback occurred (DEBUG level)",
+      "Logging confirms legacy package used (INFO level)",
+      "Version validation enforces minimum 3.0.0",
+      "Zero breaking changes for existing users"
+    ]
+  },
+  "related_requirements": [
+    "FR-002: System MUST maintain backward compatibility with legacy package",
+    "FR-003: System MUST detect which package is installed automatically",
+    "FR-006: DAT fixture creation MUST work with both packages",
+    "FR-007: DAT fixture loading MUST work with both packages",
+    "FR-008: System MUST validate package version compatibility",
+    "NFR-001: Package detection <10ms overhead"
+  ]
+}

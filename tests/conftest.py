@@ -4,12 +4,16 @@ pytest configuration and fixtures for iris-devtools tests.
 Provides IRIS database connections and containers for integration testing.
 """
 
+import logging
+import os
 import pytest
-from testcontainers.iris import IRISContainer
+from iris_devtester.containers import IRISContainer
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="function")
-def iris_db():
+def iris_db(request):
     """
     Function-scoped IRIS database connection.
 
@@ -31,10 +35,35 @@ def iris_db():
             success, msg = configure_monitoring(iris_db)
             assert success is True
     """
-    # Start IRIS container
-    with IRISContainer() as iris:
-        # Get connection URL and create DBAPI connection
-        import irisnative
+    import time
+    import uuid
+    import sys
+
+    # Force unique container name per test to prevent reuse
+    test_name = request.node.name.replace("[", "_").replace("]", "_")
+    container_id = str(uuid.uuid4())[:8]
+
+    # Start IRIS container with unique name
+    iris_container = IRISContainer()
+    iris_container._name = f"iris_test_{test_name}_{container_id}"
+
+    with iris_container as iris:
+        # Enable CallIn service (required for DBAPI connections)
+        from iris_devtester.utils.enable_callin import enable_callin_service
+        import time
+        import sys
+
+        container_name = iris.get_wrapped_container().name
+
+        success, msg = enable_callin_service(container_name, timeout=30)
+        if not success:
+            raise RuntimeError(f"Failed to enable CallIn service: {msg}")
+
+        # Wait for test user creation to complete and CallIn to be fully ready
+        time.sleep(2)
+
+        # Get connection URL and create DBAPI connection using compatibility layer
+        from iris_devtester.utils.dbapi_compat import get_connection
 
         # Parse connection details from container
         host = iris.get_container_host_ip()
@@ -42,7 +71,7 @@ def iris_db():
 
         # Use the test user created by testcontainers-iris
         # (username="test", password="test", no expiration!)
-        conn = irisnative.createConnection(
+        conn = get_connection(
             hostname=host,
             port=port,
             namespace="USER",
@@ -66,12 +95,28 @@ def iris_db():
         try:
             yield conn
         finally:
-            # Cleanup
+            # Cleanup connection first
             if conn:
                 try:
                     conn.close()
                 except Exception:
                     pass
+    # Container cleanup handled by IRISContainer context manager
+
+    # CRITICAL: Wait for container to be fully removed before next test
+    # This prevents test isolation issues where test 2 connects to test 1's container
+    import docker
+    try:
+        client = docker.from_env()
+        # Wait up to 10 seconds for container to be fully removed
+        for _ in range(10):
+            try:
+                client.containers.get(iris.get_wrapped_container().id)
+                time.sleep(1)  # Container still exists, wait
+            except docker.errors.NotFound:
+                break  # Container removed, we're done
+    except Exception:
+        pass  # Ignore docker errors during cleanup verification
 
 
 @pytest.fixture(scope="module")
@@ -167,7 +212,173 @@ def iris_container():
             assert "IRIS started" in logs
     """
     with IRISContainer() as iris:
+        # Enable CallIn service (required for DBAPI connections)
+        from iris_devtester.utils.enable_callin import enable_callin_service
+        container_name = iris.get_wrapped_container().name
+        success, msg = enable_callin_service(container_name, timeout=30)
+        if not success:
+            raise RuntimeError(f"Failed to enable CallIn service: {msg}")
+
         yield iris
+
+
+@pytest.fixture(scope="function", params=["community", "enterprise"])
+def iris_db_both_editions(request):
+    """
+    Parametrized fixture that tests both Community and Enterprise editions.
+
+    Ensures Constitutional Principle #6 compliance: "Enterprise Ready, Community Friendly"
+
+    Yields:
+        Database connection for either Community or Enterprise edition
+
+    Example:
+        def test_password_reset_both_editions(iris_db_both_editions):
+            # This test will run twice: once with Community, once with Enterprise
+            conn = iris_db_both_editions
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            assert cursor.fetchone()[0] == 1
+    """
+    import time
+    import uuid
+
+    edition = request.param
+
+    # Force unique container name per test to prevent reuse
+    test_name = request.node.name.replace("[", "_").replace("]", "_")
+    container_id = str(uuid.uuid4())[:8]
+
+    if edition == "community":
+        # Community Edition
+        iris_container = IRISContainer()
+        iris_container._name = f"iris_test_community_{test_name}_{container_id}"
+    else:
+        # Enterprise Edition (requires license key)
+        # Try to load from environment variable first, then from iris.key file
+        license_key = os.environ.get("IRIS_LICENSE_KEY")
+
+        if not license_key:
+            # Try to load from iris.key file in project root
+            import pathlib
+            key_file = pathlib.Path(__file__).parent.parent / "iris.key"
+            if key_file.exists():
+                license_key = key_file.read_text().strip()
+                logger.info(f"Loaded IRIS license key from {key_file}")
+
+        if not license_key:
+            pytest.skip("IRIS_LICENSE_KEY not set and iris.key not found - skipping Enterprise edition test")
+
+        iris_container = IRISContainer.enterprise(license_key=license_key)
+        iris_container._name = f"iris_test_enterprise_{test_name}_{container_id}"
+
+    with iris_container as iris:
+        # Enable CallIn service (required for DBAPI connections)
+        from iris_devtester.utils.enable_callin import enable_callin_service
+
+        container_name = iris.get_wrapped_container().name
+
+        success, msg = enable_callin_service(container_name, timeout=30)
+        if not success:
+            raise RuntimeError(f"Failed to enable CallIn service: {msg}")
+
+        # Wait for IRIS to settle (longer for Enterprise on macOS)
+        import platform as platform_module
+        if edition == "enterprise" and platform_module.system() == "Darwin":
+            logger.info("Enterprise on macOS: waiting 12s for IRIS to fully settle...")
+            time.sleep(12)  # macOS Docker Desktop networking delay
+        else:
+            time.sleep(2)  # Community or Linux
+
+        # Get connection URL and create DBAPI connection using compatibility layer
+        from iris_devtester.utils.dbapi_compat import get_connection
+
+        # Parse connection details from container
+        host = iris.get_container_host_ip()
+        port = int(iris.get_exposed_port(1972))
+
+        # Use appropriate credentials based on edition
+        if edition == "community":
+            # Community: Use test user created by testcontainers-iris
+            username, password = "test", "test"
+        else:
+            # Enterprise: Use SuperUser (default Enterprise credentials)
+            # Note: testcontainers-iris tries to create this user (harmless if exists)
+            username, password = "SuperUser", "SYS"
+
+        # CRITICAL: Harden password BEFORE any connection attempt
+        # testcontainers-iris creates users with "password change required" state
+        # which causes "Access Denied" errors on first connection
+        from iris_devtester.utils.password_reset import reset_password
+
+        # WORKAROUND FOR BUG #015: Enterprise edition password reset via docker exec
+        # requires longer settle time on macOS (empirically determined: 15s minimum)
+        if edition == "enterprise" and platform_module.system() == "Darwin":
+            extra_wait = 3.0  # Additional wait beyond the 12s already done
+            logger.info(f"[{edition.upper()}] Enterprise/macOS: waiting extra {extra_wait}s before password reset...")
+            time.sleep(extra_wait)
+
+        logger.info(f"[{edition.upper()}] Hardening {username} account...")
+        success, msg = reset_password(
+            container_name=container_name,
+            username=username,
+            new_password=password,
+            hostname=host,
+            port=port
+        )
+
+        if not success:
+            logger.error(f"[{edition.upper()}] Password hardening FAILED: {msg}")
+            raise RuntimeError(f"Password hardening failed for {username}: {msg}")
+
+        logger.info(f"[{edition.upper()}] Password hardening complete: {msg}")
+
+        # NOW get connection using hardened credentials
+        conn = get_connection(
+            hostname=host,
+            port=port,
+            namespace="USER",
+            username=username,
+            password=password,
+        )
+
+        # Add ObjectScript execution capability (TEST-ONLY workaround)
+        def execute_objectscript(code):
+            """Execute ObjectScript code via container exec (TEST-ONLY)."""
+            result = iris.exec(
+                ["iris", "session", "IRIS", "-U", "USER", code]
+            )
+            return result.output.decode() if result.output else ""
+
+        # Attach method and metadata to connection
+        conn.execute_objectscript = execute_objectscript
+        conn._container = iris
+        conn._edition = edition  # Track which edition we're testing
+
+        try:
+            yield conn
+        finally:
+            # Cleanup connection first
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+    # Container cleanup handled by IRISContainer context manager
+
+    # CRITICAL: Wait for container to be fully removed before next test
+    import docker
+    try:
+        client = docker.from_env()
+        # Wait up to 10 seconds for container to be fully removed
+        for _ in range(10):
+            try:
+                client.containers.get(iris.get_wrapped_container().id)
+                time.sleep(1)  # Container still exists, wait
+            except docker.errors.NotFound:
+                break  # Container removed, we're done
+    except Exception:
+        pass  # Ignore docker errors during cleanup verification
 
 
 # Configure pytest markers
@@ -181,4 +392,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers", "unit: mark test as unit test (no external dependencies)"
+    )
+    config.addinivalue_line(
+        "markers", "enterprise: mark test as requiring Enterprise edition (needs IRIS_LICENSE_KEY)"
     )

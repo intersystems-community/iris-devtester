@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iris-devtester"
-version = "1.2.1"
+version = "1.5.2"
 description = "Battle-tested InterSystems IRIS infrastructure utilities for Python development"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -43,6 +43,7 @@ dependencies = [
     "testcontainers-iris>=1.2.2",
     "python-dotenv>=1.0.0",
     "docker>=6.0.0",
+    "filelock>=3.13.0",
     "click>=8.0.0",
     "PyYAML>=6.0",
     "pydantic>=2.0.0",
@@ -97,11 +98,11 @@ docs = [
 iris-devtester = "iris_devtester.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/intersystems-community/iris-devtools"
-Documentation = "https://github.com/intersystems-community/iris-devtools#readme"
-Repository = "https://github.com/intersystems-community/iris-devtools"
-Issues = "https://github.com/intersystems-community/iris-devtools/issues"
-Changelog = "https://github.com/intersystems-community/iris-devtools/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/intersystems-community/iris-devtester"
+Documentation = "https://github.com/intersystems-community/iris-devtester#readme"
+Repository = "https://github.com/intersystems-community/iris-devtester"
+Issues = "https://github.com/intersystems-community/iris-devtester/issues"
+Changelog = "https://github.com/intersystems-community/iris-devtester/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]

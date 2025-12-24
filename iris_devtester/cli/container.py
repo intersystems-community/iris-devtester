@@ -8,7 +8,11 @@ import click
 from iris_devtester.config.container_config import ContainerConfig
 from iris_devtester.config.container_state import ContainerState
 from iris_devtester.utils import health_checks, progress
-from iris_devtester.utils.iris_container_adapter import IRISContainerManager, translate_docker_error
+from iris_devtester.utils.iris_container_adapter import (
+    IRISContainerManager,
+    translate_docker_error,
+    verify_container_persistence,
+)
 
 
 @click.group(name="container")
@@ -48,13 +52,24 @@ def up(ctx, config, detach, timeout):
     Similar to docker-compose up. Creates a new container or starts existing one.
     Supports zero-config mode - works without any configuration file.
 
+    Container Lifecycle (Feature 011):
+      - Containers persist until explicitly removed with 'container remove'
+      - Volume mounts are verified during creation
+      - No automatic cleanup when CLI exits
+
     \b
     Examples:
         # Zero-config (uses Community edition defaults)
         iris-devtester container up
 
-        # With custom configuration
+        # With custom configuration including volumes
         iris-devtester container up --config iris-config.yml
+
+        # Example iris-config.yml with volumes:
+        # edition: community
+        # volumes:
+        #   - ./workspace:/external/workspace
+        #   - ./config:/opt/config:ro
 
         # Foreground mode (see logs)
         iris-devtester container up --no-detach
@@ -108,23 +123,43 @@ def up(ctx, config, detach, timeout):
             existing_container.start()
             click.echo(f"✓ Container '{container_config.container_name}' started")
         else:
-            # Create new container using testcontainers-iris
+            # Create new container using Docker SDK (Feature 011 - T015: CLI mode persistence)
             click.echo(f"  → Edition: {container_config.edition}")
             click.echo(f"  → Image: {container_config.get_image_name()}")
             click.echo(f"  → Ports: {container_config.superserver_port}, {container_config.webserver_port}")
+            if container_config.volumes:
+                click.echo(f"  → Volumes: {len(container_config.volumes)} mount(s)")
 
-            # Create and configure IRISContainer
-            click.echo("⏳ Configuring container...")
-            iris = IRISContainerManager.create_from_config(container_config)
+            # Validate volume paths before creation
+            volume_errors = container_config.validate_volume_paths()
+            if volume_errors:
+                error_msg = "Volume path validation failed:\n\n"
+                for error in volume_errors:
+                    error_msg += f"  {error}\n"
+                raise ValueError(error_msg)
 
-            # Start container (pulls image if needed, creates, and starts)
-            click.echo("⏳ Pulling image (if needed) and starting container...")
+            # Create container using Docker SDK (no testcontainers labels, prevents ryuk cleanup)
+            click.echo("⏳ Creating container with Docker SDK...")
             try:
-                iris.start()
+                existing_container = IRISContainerManager.create_from_config(
+                    container_config,
+                    use_testcontainers=False  # CLI mode: manual lifecycle, no ryuk cleanup
+                )
                 click.echo(f"✓ Container '{container_config.container_name}' created and started")
 
-                # Get wrapped Docker SDK container for health checks
-                existing_container = iris.get_wrapped_container()
+                # Verify container persistence (Feature 011 - T015)
+                click.echo("⏳ Verifying container persistence...")
+                check = verify_container_persistence(
+                    container_config.container_name,
+                    container_config,
+                    wait_seconds=2.0
+                )
+
+                if not check.success:
+                    raise ValueError(check.get_error_message(container_config))
+
+                click.echo(f"✓ Container persistence verified")
+
             except Exception as e:
                 # Translate Docker errors to constitutional format
                 translated_error = translate_docker_error(e, container_config)
@@ -211,6 +246,12 @@ def start(ctx, container_name, config, timeout):
     Start existing IRIS container or create new one.
 
     If container exists, starts it. If not found, creates from config.
+    Containers persist until explicitly removed with 'container remove'.
+
+    Volume Support (Feature 011):
+      - Volume mounts specified in config are applied during creation
+      - Host paths are validated before container creation
+      - Supports read-only (`:ro`) and read-write (`:rw`) modes
 
     \b
     Examples:
@@ -219,6 +260,9 @@ def start(ctx, container_name, config, timeout):
 
         # Start specific container
         iris-devtester container start my_iris
+
+        # Create with volumes (if not exists)
+        iris-devtester container start --config iris-config.yml
     """
     try:
         # Check if container exists
@@ -238,13 +282,34 @@ def start(ctx, container_name, config, timeout):
                 else:
                     container_config = ContainerConfig.default()
 
-            # Create and start container using testcontainers-iris
-            click.echo("⏳ Configuring and starting container...")
+            # Create and start container using Docker SDK (Feature 011 - T015)
+            click.echo("⏳ Configuring and starting container with Docker SDK...")
+
+            # Validate volume paths before creation
+            volume_errors = container_config.validate_volume_paths()
+            if volume_errors:
+                error_msg = "Volume path validation failed:\n\n"
+                for error in volume_errors:
+                    error_msg += f"  {error}\n"
+                raise ValueError(error_msg)
+
             try:
-                iris = IRISContainerManager.create_from_config(container_config)
-                iris.start()
-                container = iris.get_wrapped_container()
+                container = IRISContainerManager.create_from_config(
+                    container_config,
+                    use_testcontainers=False  # CLI mode: manual lifecycle, no ryuk cleanup
+                )
                 click.echo(f"✓ Container '{container_name}' created and started")
+
+                # Verify container persistence (Feature 011 - T015)
+                check = verify_container_persistence(
+                    container_name,
+                    container_config,
+                    wait_seconds=2.0
+                )
+
+                if not check.success:
+                    raise ValueError(check.get_error_message(container_config))
+
             except Exception as e:
                 translated_error = translate_docker_error(e, container_config)
                 raise translated_error from e
@@ -412,6 +477,9 @@ def status(ctx, container_name, format):
 
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        # Let Click handle these - don't catch them
+        raise
     except Exception as e:
         if format == "json":
             print(json.dumps({"error": str(e)}))
@@ -564,4 +632,213 @@ def remove(ctx, container_name, force, volumes):
         ctx.exit(3)
     except Exception as e:
         progress.print_error(f"Failed to remove container: {e}")
+        ctx.exit(1)
+
+
+@container_group.command(name="reset-password")
+@click.argument("container_name")
+@click.option(
+    "--user",
+    default="_SYSTEM",
+    help="Username to reset password for (default: _SYSTEM)"
+)
+@click.option(
+    "--password",
+    default="SYS",
+    help="New password (default: SYS)"
+)
+@click.pass_context
+def reset_password_cmd(ctx, container_name, user, password):
+    """
+    Reset password for IRIS user in container.
+
+    Uses iris session to reset the password via ObjectScript.
+
+    \b
+    Examples:
+        # Reset _SYSTEM password to SYS
+        iris-devtester container reset-password my_iris
+
+        # Reset specific user password
+        iris-devtester container reset-password my_iris --user admin --password newpass
+    """
+    try:
+        from iris_devtester.utils.password_reset import reset_password
+
+        click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}'...")
+
+        # Call password reset utility
+        success, message = reset_password(
+            container_name=container_name,
+            username=user,
+            new_password=password
+        )
+
+        if success:
+            click.echo(f"✓ Password reset successful for user '{user}'")
+            ctx.exit(0)
+        else:
+            progress.print_error(f"Failed to reset password: {message}")
+            ctx.exit(1)
+
+    except (ImportError, ModuleNotFoundError) as e:
+        progress.print_error(f"password_reset utility not available: {e}")
+        ctx.exit(1)
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        # Let Click handle these - don't catch them
+        raise
+    except Exception as e:
+        progress.print_error(f"Failed to reset password: {e}")
+        ctx.exit(1)
+
+
+@container_group.command(name="test-connection")
+@click.argument("container_name")
+@click.option(
+    "--namespace",
+    default="USER",
+    help="IRIS namespace to test connection to (default: USER)"
+)
+@click.option(
+    "--username",
+    default="_SYSTEM",
+    help="Username for connection (default: _SYSTEM)"
+)
+@click.option(
+    "--password",
+    default="SYS",
+    help="Password for connection (default: SYS)"
+)
+@click.pass_context
+def test_connection_cmd(ctx, container_name, namespace, username, password):
+    """
+    Test database connection to IRIS container.
+
+    Verifies that DBAPI connection works to the specified container and namespace.
+
+    \b
+    Examples:
+        # Test connection to default namespace (USER)
+        iris-devtester container test-connection my_iris
+
+        # Test connection to specific namespace
+        iris-devtester container test-connection my_iris --namespace MYAPP
+
+        # Test with custom credentials
+        iris-devtester container test-connection my_iris --user admin --password secret
+    """
+    try:
+        from iris_devtester.config import IRISConfig
+        from iris_devtester.connections import get_connection
+
+        click.echo(f"⚡ Testing connection to container '{container_name}' namespace '{namespace}'...")
+
+        # Get container to extract connection details
+        container = IRISContainerManager.get_existing(container_name)
+
+        if not container:
+            progress.print_error(f"Container '{container_name}' not found")
+            ctx.exit(2)
+
+        # Get port mappings
+        container.reload()
+        port_bindings = container.attrs.get("NetworkSettings", {}).get("Ports", {})
+
+        # Extract superserver port
+        superserver_port = 1972  # Default
+        if "1972/tcp" in port_bindings and port_bindings["1972/tcp"]:
+            superserver_port = int(port_bindings["1972/tcp"][0]["HostPort"])
+
+        # Create configuration
+        config = IRISConfig(
+            host="localhost",
+            port=superserver_port,
+            namespace=namespace,
+            username=username,
+            password=password,
+            driver="auto"
+        )
+
+        # Try to connect
+        try:
+            conn = get_connection(config)
+
+            # Test the connection with a simple query
+            cursor = conn.cursor()
+            cursor.execute("SELECT $NAMESPACE as namespace")
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            click.echo(f"✓ Connection successful to namespace '{namespace}'")
+            click.echo(f"  Host: {config.host}:{config.port}")
+            click.echo(f"  Namespace: {namespace}")
+            click.echo(f"  User: {username}")
+            ctx.exit(0)
+
+        except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+            # Let Click handle these - don't catch them
+            raise
+        except Exception as e:
+            progress.print_error(f"Connection failed: {e}")
+            ctx.exit(1)
+
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        # Let Click handle these - don't catch them
+        raise
+    except Exception as e:
+        progress.print_error(f"Failed to test connection: {e}")
+        ctx.exit(1)
+
+
+@container_group.command(name="enable-callin")
+@click.argument("container_name")
+@click.option(
+    "--timeout",
+    type=int,
+    default=30,
+    help="Timeout in seconds for docker commands (default: 30)"
+)
+@click.pass_context
+def enable_callin(ctx, container_name, timeout):
+    """
+    Enable CallIn service in IRIS container.
+
+    Required for DBAPI connections to work properly.
+
+    \b
+    Examples:
+        # Enable CallIn service
+        iris-devtester container enable-callin my_iris
+
+        # With longer timeout
+        iris-devtester container enable-callin my_iris --timeout 60
+    """
+    try:
+        from iris_devtester.utils.enable_callin import enable_callin_service
+
+        click.echo(f"⚡ Enabling CallIn service in container '{container_name}'...")
+
+        # Call enable callin utility
+        success, message = enable_callin_service(
+            container_name=container_name,
+            timeout=timeout
+        )
+
+        if success:
+            click.echo(f"✓ CallIn service enabled in container '{container_name}'")
+            click.echo(f"  {message}")
+            ctx.exit(0)
+        else:
+            progress.print_error(f"Failed to enable CallIn service:\n{message}")
+            ctx.exit(1)
+
+    except (ImportError, ModuleNotFoundError) as e:
+        progress.print_error(f"enable_callin utility not available: {e}")
+        ctx.exit(1)
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        # Let Click handle these - don't catch them
+        raise
+    except Exception as e:
+        progress.print_error(f"Failed to enable CallIn: {e}")
         ctx.exit(1)

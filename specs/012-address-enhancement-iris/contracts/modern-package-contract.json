@@ -1,0 +1,119 @@
+{
+  "contract_id": "modern-package-detection",
+  "contract_name": "Modern Package Detection and Usage",
+  "version": "1.0.0",
+  "description": "When intersystems-irispython is installed, it must be detected and used for DBAPI connections",
+  "preconditions": {
+    "environment": "Python 3.9+",
+    "packages_installed": [
+      "intersystems-irispython>=5.3.0"
+    ],
+    "packages_not_installed": [
+      "intersystems-iris"
+    ]
+  },
+  "trigger": {
+    "action": "Import iris_devtester and attempt DBAPI connection",
+    "code_example": "from iris_devtester.utils.dbapi_compat import get_connection\nconn = get_connection(hostname='localhost', port=1972, namespace='USER', username='_SYSTEM', password='SYS')"
+  },
+  "expected_behavior": {
+    "package_detected": "intersystems-irispython",
+    "import_path_used": "intersystems_iris.dbapi._DBAPI",
+    "connection_successful": true,
+    "detection_time_ms": {
+      "constraint": "less_than",
+      "value": 10,
+      "rationale": "NFR-001: Package detection must have negligible overhead"
+    },
+    "no_errors_raised": true,
+    "legacy_package_attempted": false
+  },
+  "validation_criteria": [
+    {
+      "criterion": "Modern package import succeeds",
+      "test_method": "from intersystems_iris.dbapi._DBAPI import connect",
+      "expected_result": "No ImportError"
+    },
+    {
+      "criterion": "Package info reflects modern package",
+      "test_method": "get_package_info().package_name",
+      "expected_result": "intersystems-irispython"
+    },
+    {
+      "criterion": "Connection uses modern package",
+      "test_method": "Inspect connection object type",
+      "expected_result": "Connection created via intersystems_iris.dbapi._DBAPI"
+    },
+    {
+      "criterion": "Detection time acceptable",
+      "test_method": "get_package_info().detection_time_ms",
+      "expected_result": "< 10ms"
+    },
+    {
+      "criterion": "Logging indicates modern package",
+      "test_method": "Check INFO log messages",
+      "expected_result": "Contains 'Detected IRIS DBAPI package: intersystems-irispython'"
+    }
+  ],
+  "error_scenarios": [
+    {
+      "scenario": "Package version too old",
+      "given": "intersystems-irispython v5.2.0 installed",
+      "when": "Attempt connection",
+      "then": {
+        "error_type": "ImportError",
+        "error_format": "Constitutional (What/Why/How/Docs)",
+        "error_contains": "version 5.2.0 is too old",
+        "suggests_upgrade": true
+      }
+    }
+  ],
+  "constitutional_compliance": [
+    {
+      "principle": "Principle #2: Choose the Right Tool for the Job",
+      "how_satisfied": "Modern package is prioritized as it's the current standard with better performance"
+    },
+    {
+      "principle": "Principle #4: Zero Configuration Viable",
+      "how_satisfied": "Automatic detection requires no user configuration"
+    },
+    {
+      "principle": "Principle #5: Fail Fast with Guidance",
+      "how_satisfied": "Version errors provide clear upgrade instructions"
+    }
+  ],
+  "test_implementation": {
+    "test_file": "tests/contract/test_modern_package_contract.py",
+    "test_class": "TestModernPackageContract",
+    "test_methods": [
+      "test_modern_package_detected",
+      "test_modern_package_import_path",
+      "test_connection_successful",
+      "test_detection_time_under_threshold",
+      "test_package_info_correct",
+      "test_logging_modern_package",
+      "test_version_validation"
+    ],
+    "fixtures_required": [
+      "mock_modern_package_only"
+    ]
+  },
+  "acceptance_criteria": {
+    "functional": [
+      "Modern package detected when installed",
+      "Connection succeeds using modern package",
+      "No attempt to import legacy package"
+    ],
+    "non_functional": [
+      "Detection completes in <10ms",
+      "Logging provides debugging transparency",
+      "Version validation enforces minimum 5.3.0"
+    ]
+  },
+  "related_requirements": [
+    "FR-001: System MUST support DBAPI connections using modern package",
+    "FR-003: System MUST detect which package is installed automatically",
+    "FR-008: System MUST validate package version compatibility",
+    "NFR-001: Package detection <10ms overhead"
+  ]
+}
