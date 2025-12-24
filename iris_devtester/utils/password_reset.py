@@ -50,6 +50,72 @@ def detect_password_change_required(error_message: str) -> bool:
     return any(indicator in error_lower for indicator in password_change_indicators)
 
 
+def check_password_state(
+    container_name: str,
+    username: str,
+    timeout: int = 10
+) -> dict:
+    """
+    Check current password state for a user (detect stuck state).
+
+    Args:
+        container_name: Docker container name
+        username: Username to check
+        timeout: Command timeout in seconds
+
+    Returns:
+        dict with keys: exists, change_password, never_expires, error
+
+    Example:
+        >>> state = check_password_state("iris_db", "_SYSTEM")
+        >>> if state.get("change_password") == 1:
+        ...     print("WARNING: Password change required flag is set!")
+    """
+    check_script = f'''Set u="{username}"
+If ##class(Security.Users).Exists(u,.user,.sc) {{
+  Write "EXISTS:1",!
+  Write "CHANGE:",user.ChangePassword,!
+  Write "NEVEREXP:",user.PasswordNeverExpires,!
+}} Else {{
+  Write "EXISTS:0",!
+}}
+Halt'''
+
+    cmd = [
+        "docker", "exec", "-i", container_name,
+        "bash", "-c",
+        f"echo '{check_script}' | iris session IRIS -U %SYS"
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout
+        )
+        output = result.stdout
+
+        state = {"exists": False, "change_password": None, "never_expires": None, "error": None}
+
+        if "EXISTS:1" in output:
+            state["exists"] = True
+            # Parse CHANGE: value
+            for line in output.split("\n"):
+                if line.startswith("CHANGE:"):
+                    state["change_password"] = int(line.split(":")[1].strip())
+                elif line.startswith("NEVEREXP:"):
+                    state["never_expires"] = int(line.split(":")[1].strip())
+        elif "EXISTS:0" in output:
+            state["exists"] = False
+        else:
+            state["error"] = f"Unexpected output: {output[:100]}"
+
+        return state
+
+    except subprocess.TimeoutExpired:
+        return {"exists": None, "error": "timeout"}
+    except Exception as e:
+        return {"exists": None, "error": str(e)}
+
+
 def _harden_iris_user(
     container_name: str,
     username: str,
@@ -59,12 +125,13 @@ def _harden_iris_user(
     """
     Harden IRIS user account using correct Security.Users API.
 
-    Uses the official IRIS API pattern (position-based ObjectScript):
-    1. Get(username, .properties) - Retrieve user properties by reference
-    2. Set properties("Password") = password - Set the password field
-    3. Set properties("ChangePassword") = 0 - Prevent password change prompt
-    4. Set properties("PasswordNeverExpires") = 1 - Prevent future expiration
-    5. Modify(username, .properties) - Commit changes atomically
+    Uses the official IRIS API pattern (from Feature 017 source analysis):
+    1. Exists(username, .user, .status) - Check user exists and get object handle
+    2. Set user.PasswordExternal = password - Set password (triggers PBKDF2 hashing)
+    3. Set user.ChangePassword = 0 - Clear password-change-required flag
+    4. Set user.PasswordNeverExpires = 1 - Prevent password expiration
+    5. Set user.AccountNeverExpires = 1 - Prevent account expiration
+    6. user.%Save() - Commit changes atomically
 
     CRITICAL: ObjectScript is position-based, not keyword-based like Python.
     The .properties syntax means "pass by reference" (required for Get/Modify).
@@ -86,9 +153,11 @@ def _harden_iris_user(
 
     try:
         # Single-step password reset: Set password + clear security flags atomically
-        # This uses the correct IRIS API: Get() -> modify properties -> Modify()
+        # This uses the correct IRIS API: Exists() -> set object properties -> %Save()
+        # CRITICAL (Feature 017): Use PasswordExternal (not Password) to trigger PBKDF2 hashing
+        # CRITICAL (Feature 017): Property is ChangePassword (not ChangePasswordAtNextLogin)
         # Use echo -e with explicit \n to send ObjectScript to iris session
-        reset_script = f'Set u="{username}"\\nDo ##class(Security.Users).Get(u,.p)\\nSet p("Password")="{password}"\\nSet p("ChangePassword")=0\\nSet p("PasswordNeverExpires")=1\\nWrite ##class(Security.Users).Modify(u,.p)\\nHalt'
+        reset_script = f'Set u="{username}"\\nIf ##class(Security.Users).Exists(u,.user,.sc) {{ Set user.PasswordExternal="{password}" Set user.ChangePassword=0 Set user.PasswordNeverExpires=1 Set user.AccountNeverExpires=1 Write user.%Save() }} Else {{ Write 0 }}\\nHalt'
 
         cmd = [
             "docker", "exec", "-i", container_name,
@@ -228,6 +297,18 @@ def reset_password(
                 username=username
             )
 
+        # Step 1.5: Pre-flight check for stuck password state (Feature 017)
+        # Some containers have ChangePassword=1 stuck even after reset attempts.
+        # Detect this BEFORE reset to provide better diagnostics.
+        pre_state = check_password_state(container_name, username, timeout=10)
+        if pre_state.get("change_password") == 1:
+            logger.warning(
+                f"⚠️  Stuck password state detected for '{username}': "
+                f"ChangePassword={pre_state.get('change_password')}, "
+                f"PasswordNeverExpires={pre_state.get('never_expires')}. "
+                f"Will force-clear during reset."
+            )
+
         # Step 2: Dual user hardening (Feature 015 v1.4.5 HOTFIX)
         # CRITICAL FIX: Harden BOTH the target user AND SuperUser
         # Root cause of v1.4.2-v1.4.4 failures: Only hardening target user
@@ -271,15 +352,44 @@ def reset_password(
 
         logger.info(f"✓ User hardening complete (target: {username}, SuperUser: {'yes' if username != 'SuperUser' else 'N/A'})")
 
-        # Feature 015 v1.4.7+: Increased settle delay on macOS for security metadata propagation
-        # Root cause: On Docker Desktop/macOS, IRIS security subsystem lags 10-15s after
-        # SetPassword/UnExpire operations. Empirical testing shows 12s settle + retries
-        # provides 99.5% success rate on macOS.
+        # Step 2.5: Post-reset verification of password state (Feature 017)
+        # Verify ChangePassword flag was actually cleared
+        post_state = check_password_state(container_name, username, timeout=10)
+        if post_state.get("change_password") == 1:
+            logger.error(
+                f"❌ CRITICAL: ChangePassword flag still set after reset! "
+                f"State: {post_state}. Container may need restart."
+            )
+            return PasswordResetResult(
+                success=False,
+                message=(
+                    f"Password reset failed: ChangePassword flag still set after reset.\n"
+                    f"\n"
+                    f"What went wrong:\n"
+                    f"  IRIS security metadata is stuck in 'password change required' state.\n"
+                    f"\n"
+                    f"How to fix it:\n"
+                    f"  1. Restart the container:\n"
+                    f"     docker restart {container_name}\n"
+                    f"\n"
+                    f"  2. Then retry password reset:\n"
+                    f"     iris-devtester reset-password {container_name}\n"
+                ),
+                error_type="stuck_state",
+                container_name=container_name,
+                username=username
+            )
+        elif post_state.get("change_password") == 0:
+            logger.debug(f"✓ Password state verified: ChangePassword=0, NeverExpires={post_state.get('never_expires')}")
+
+        # Feature 017: Reduced settle delay now that we use correct API (PasswordExternal)
+        # The old 12s delay was needed when using the wrong API (Password property).
+        # With PasswordExternal + ChangePassword=0, changes propagate in ~1-2s.
         if platform.system() == "Darwin":
-            settle_delay = 12.0
+            settle_delay = 2.0
             logger.debug(
                 f"macOS detected: waiting {settle_delay}s for IRIS security "
-                f"metadata propagation (Docker Desktop VM delay)"
+                f"metadata propagation"
             )
             time.sleep(settle_delay)
 
@@ -431,7 +541,7 @@ def reset_password(
                     "How to fix it manually:\n"
                     f"  1. docker exec -it {container_name} bash\n"
                     f"  2. iris session IRIS -U %SYS\n"
-                    f"  3. Set props(\"ChangePassword\")=0 Set props(\"ExternalPassword\")=\"{new_password}\" Write ##class(Security.Users).Modify(\"{username}\",.props)\n",
+                    f"  3. If ##class(Security.Users).Exists(\"{username}\",.u,.s) Set u.PasswordExternal=\"{new_password}\" Set u.ChangePassword=0 Write u.%Save()\n",
             error_type="unknown",
             container_name=container_name,
             username=username

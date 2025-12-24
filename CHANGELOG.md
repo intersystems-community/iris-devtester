@@ -5,6 +5,88 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2025-12-24 - Performance & Reliability
+
+### Fixed
+
+- **Password Reset Performance Regression** - Reduced from 55s to ~3s
+  - `settle_delay`: 12s → 2s (correct API doesn't need long waits)
+  - `initial_backoff_ms`: 3000 → 1000 (faster retries)
+  - `max_retries`: 5 → 3 (fewer attempts needed)
+  - `timeout_ms`: 60000 → 10000 (10s hard cap, NFR-004)
+
+- **Stuck Password State Detection** - New `check_password_state()` function
+  - Detects containers with `ChangePassword=1` stuck after failed resets
+  - Pre-flight check warns before reset attempt
+  - Post-reset verification confirms flag was cleared
+  - Fails fast with remediation steps if container needs restart
+
+- **ObjectScript Syntax Fixes** - Fixed `$$ISOK` macro issues
+  - Changed to `$Select(sc=1:1,1:0)` for interactive ObjectScript compatibility
+  - Affects: `export_classes()`, `import_classes()`, `export_global()`, `import_global()`, `export_package()`
+
+- **Unit Test Fixes** - Fixed `iris_devtools` → `iris_devtester` in 10+ test files
+
+### Added
+
+- **Container Performance Documentation** - `docs/learnings/iris-container-performance.md`
+  - Root cause analysis of IRIS container startup bottlenecks
+  - Optimization strategies: namespace isolation, container reuse, pre-baked images
+  - Quick wins for faster development cycles
+
+## [Unreleased] - Feature 017: IRIS Source Insights
+
+### Added
+
+- **Container Health: $SYSTEM.Monitor.State() Integration (US6)**
+  - Added Layer 4 to `wait_for_healthy()`: IRIS-level health check using `$SYSTEM.Monitor.State()`
+  - New `check_iris_monitor_state()` function for checking true IRIS readiness
+  - New `wait_for_iris_healthy()` function for polling until IRIS is ready
+  - New `IrisHealthState` enum matching IRIS API values (0=OK, 1=Warning, 2=Error, 3=Fatal)
+  - New `IrisMonitorResult` dataclass for structured health check results
+  - Source: `docs/learnings/iris-container-readiness.md`
+
+- **Password Reset: Correct IRIS API Patterns (US5)**
+  - Fixed ObjectScript to use `ChangePassword` property (not `ChangePasswordAtNextLogin`)
+  - Fixed ObjectScript to use `PasswordExternal` for setting passwords (triggers PBKDF2 hashing)
+  - Added `AccountNeverExpires=1` to password reset pattern for reliability
+  - Source: `docs/learnings/iris-security-users-api.md`
+
+- **DAT Fixture Export/Import Utilities (US7)**
+  - New `export_classes()` function using `$SYSTEM.OBJ.Export`
+  - New `import_classes()` function using `$SYSTEM.OBJ.Import`
+  - New `export_global()` function using `##class(%Library.Global).Export` (%GOF format)
+  - New `import_global()` function using `##class(%Library.Global).Import`
+  - New `export_package()` function using `$SYSTEM.OBJ.ExportPackage`
+  - New `ExportResult` and `ImportResult` dataclasses for structured results
+  - Source: `docs/learnings/iris-backup-patterns.md`
+
+- **Documentation: IRIS Source Code Insights**
+  - New `docs/learnings/iris-security-users-api.md` - Password management patterns from Security.Users
+  - New `docs/learnings/iris-container-readiness.md` - Container health check patterns from SYS.Container
+  - New `docs/learnings/iris-backup-patterns.md` - Export/Import patterns for DAT fixtures
+  - Updated `CLAUDE.md` with ObjectScript Patterns section for AI assistant reference
+
+### Changed
+
+- **health_checks.py**: wait_for_healthy() now includes 4 layers (was 3)
+  - Layer 1: Container running
+  - Layer 2: Docker health check
+  - Layer 3: SuperServer port accessible
+  - Layer 4: IRIS Monitor.State() = OK (NEW)
+
+### Technical Details
+
+**$SYSTEM.Monitor.State() Return Values**:
+- 0: OK - System healthy, ready for connections
+- 1: Warning - Minor issues, may still work
+- 2: Error - Significant problems, connections may fail
+- 3: Fatal - Critical failure, do not use
+
+**Why This Matters**: A container with SuperServer port open is NOT necessarily ready.
+The Monitor.State() API checks true IRIS-level health, preventing intermittent
+connection failures during container startup.
+
 ## [1.5.0] - 2025-11-24
 
 ### Fixed

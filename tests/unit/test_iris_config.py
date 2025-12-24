@@ -1,7 +1,7 @@
 """
 Unit tests for IRISConfig model.
 
-Tests MUST FAIL until iris_devtools/config/models.py is implemented.
+Tests MUST FAIL until iris_devtester/config/models.py is implemented.
 """
 
 import pytest

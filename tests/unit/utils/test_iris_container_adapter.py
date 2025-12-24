@@ -39,7 +39,7 @@ class TestIRISContainerManagerCreateFromConfig:
 
         # Assert
         mock_iris_container_class.assert_called_once_with(
-            image="intersystems/iris-community:latest",
+            image="intersystemsdc/iris-community:latest",
             port=1972,
             username="_SYSTEM",
             password="SYS",
@@ -136,7 +136,7 @@ class TestIRISContainerManagerCreateFromConfig:
         IRISContainerManager.create_from_config(config)
 
         # Assert
-        assert mock_iris_container_class.call_args[1]["image"] == "intersystems/iris-community:2024.1.0"
+        assert mock_iris_container_class.call_args[1]["image"] == "intersystemsdc/iris-community:2024.1.0"
 
     @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
     def test_create_from_config_with_single_volume(self, mock_iris_container_class):
@@ -403,7 +403,7 @@ class TestTranslateDockerError:
         # Assert
         assert isinstance(result, ValueError)
         error_msg = str(result)
-        assert "intersystems/iris-community:nonexistent" in error_msg
+        assert "intersystemsdc/iris-community:nonexistent" in error_msg
         assert "not found" in error_msg
         assert "docker pull" in error_msg
 

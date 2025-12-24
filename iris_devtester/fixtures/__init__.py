@@ -70,6 +70,18 @@ from .validator import FixtureValidator
 from .loader import DATFixtureLoader
 from .creator import FixtureCreator
 
+# Import $SYSTEM.OBJ export/import utilities
+# Source: docs/learnings/iris-backup-patterns.md
+from .obj_export import (
+    ExportResult,
+    ImportResult,
+    export_classes,
+    import_classes,
+    export_global,
+    import_global,
+    export_package,
+)
+
 # Public API
 __all__ = [
     # Data models
@@ -87,4 +99,12 @@ __all__ = [
     "FixtureValidator",
     "DATFixtureLoader",
     "FixtureCreator",
+    # $SYSTEM.OBJ utilities (Feature 017)
+    "ExportResult",
+    "ImportResult",
+    "export_classes",
+    "import_classes",
+    "export_global",
+    "import_global",
+    "export_package",
 ]

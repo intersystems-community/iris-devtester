@@ -1,7 +1,7 @@
 """
 Unit tests for schema definition models.
 
-Tests MUST FAIL until iris_devtools/testing/models.py is implemented.
+Tests MUST FAIL until iris_devtester/testing/models.py is implemented.
 """
 
 import pytest

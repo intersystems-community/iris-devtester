@@ -1,7 +1,7 @@
 """
 Unit tests for ConnectionInfo model.
 
-Tests MUST FAIL until iris_devtools/connections/models.py is implemented.
+Tests MUST FAIL until iris_devtester/connections/models.py is implemented.
 """
 
 import pytest

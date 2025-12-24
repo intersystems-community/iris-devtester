@@ -199,8 +199,8 @@ volumes:
         """Test that YAMLError is raised for invalid syntax."""
         yaml_content = """
 edition: community
-  invalid indentation
-container_name: test
+container_name: [unclosed bracket
+invalid: yaml: here: too: many: colons
 """
         with NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(yaml_content)

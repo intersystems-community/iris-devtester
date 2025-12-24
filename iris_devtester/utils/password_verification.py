@@ -102,9 +102,9 @@ class VerificationConfig:
         ... )
     """
 
-    max_retries: int = 5
-    initial_backoff_ms: int = 3000  # 3s between retries (macOS Docker Desktop delay)
-    timeout_ms: int = 60000  # 60s (increased for macOS Docker Desktop)
+    max_retries: int = 3
+    initial_backoff_ms: int = 1000  # 1s between retries (sufficient with correct API)
+    timeout_ms: int = 10000  # 10s hard cap (NFR-004)
     exponential_backoff: bool = True
     verify_via_dbapi: bool = True
 
