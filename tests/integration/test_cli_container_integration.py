@@ -35,7 +35,7 @@ class TestCLIContainerCommands:
             ],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,  # Allow up to 60s for password verification on slow systems
         )
 
         assert result.returncode == 0, f"Command should succeed: {result.stderr}"

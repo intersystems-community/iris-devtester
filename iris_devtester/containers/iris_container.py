@@ -619,6 +619,9 @@ class IRISContainer(BaseIRISContainer):
             container_name=container_name,
             username=config.username,
             new_password=config.password,
+            hostname=config.host,
+            port=config.port,
+            namespace=config.namespace,
         )
         if reset_success:
             logger.info(f"✓ Password proactively reset: {reset_msg}")
@@ -747,17 +750,21 @@ class IRISContainer(BaseIRISContainer):
         """
         from iris_devtester.utils.password_reset import reset_password
 
+        # Get config for host/port (Bug #2 fix: initialize if needed)
+        config = self.get_config()
+
         success, message = reset_password(
             container_name=self.get_container_name(),
             username=username,
             new_password=new_password,
+            hostname=config.host,
+            port=config.port,
+            namespace=config.namespace,
         )
 
         if success:
-            # Update stored config with new password (Bug #2 fix: ensure config exists)
-            if self._config is None:
-                self._config = self.get_config()
-            self._config.password = new_password
+            # Update stored config with new password
+            config.password = new_password
             logger.info(f"✓ {message}")
         else:
             logger.error(f"✗ {message}")

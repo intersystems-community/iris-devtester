@@ -62,8 +62,8 @@ class TestBugFix1ImageName:
         config = ContainerConfig(
             edition="community",
             container_name=container_name,
-            superserver_port=31972,  # Non-standard port to avoid conflicts
-            webserver_port=58773,
+            superserver_port=41972,  # Non-standard port to avoid conflicts
+            webserver_port=48773,
             namespace="USER",
             password="SYS",
             image_tag="latest"
@@ -183,8 +183,8 @@ class TestBugFix3VolumeMounting:
             config = ContainerConfig(
                 edition="community",
                 container_name=container_name,
-                superserver_port=32972,
-                webserver_port=58774,
+                superserver_port=42972,
+                webserver_port=48774,
                 namespace="USER",
                 password="SYS",
                 volumes=[f"{temp_dir}:/external"]
@@ -258,8 +258,8 @@ class TestBugFix3VolumeMounting:
             config = ContainerConfig(
                 edition="community",
                 container_name=container_name,
-                superserver_port=33972,
-                webserver_port=58775,
+                superserver_port=43972,
+                webserver_port=48775,
                 namespace="USER",
                 password="SYS",
                 volumes=[
@@ -321,8 +321,8 @@ class TestBugFix3VolumeMounting:
             config = ContainerConfig(
                 edition="community",
                 container_name=container_name,
-                superserver_port=34972,
-                webserver_port=58776,
+                superserver_port=44972,
+                webserver_port=48776,
                 namespace="USER",
                 password="SYS",
                 volumes=[f"{temp_dir}:/readonly:ro"]
@@ -383,8 +383,8 @@ class TestBugFix3VolumeMounting:
         config = ContainerConfig(
             edition="community",
             container_name=container_name,
-            superserver_port=35972,
-            webserver_port=58777,
+            superserver_port=45972,
+            webserver_port=48777,
             namespace="USER",
             password="SYS",
             volumes=[]  # Empty volumes list
@@ -430,8 +430,8 @@ class TestBugFixesIntegration:
             config = ContainerConfig(
                 edition="community",
                 container_name=container_name,
-                superserver_port=36972,
-                webserver_port=58778,
+                superserver_port=46972,
+                webserver_port=48778,
                 namespace="USER",
                 password="SYS",
                 volumes=[f"{temp_dir}:/production-data"]
@@ -487,8 +487,8 @@ class TestBugFixesIntegration:
 edition: community
 container_name: {container_name}
 ports:
-  superserver: 37972
-  webserver: 58779
+  superserver: 47972
+  webserver: 48779
 namespace: USER
 password: SYS
 volumes:

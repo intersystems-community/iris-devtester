@@ -16,6 +16,7 @@ from iris_devtester.utils.password_reset import reset_password
 from iris_devtester.utils.enable_callin import enable_callin_service
 from iris_devtester.utils.test_connection import test_connection
 from iris_devtester.utils.container_status import get_container_status
+from iris_devtester.utils.container_port import get_container_port
 
 
 @click.group()
@@ -35,16 +36,31 @@ def container():
 @click.argument("container_name")
 @click.option("--user", default="_SYSTEM", help="Username to reset (default: _SYSTEM)")
 @click.option("--password", default="SYS", help="New password (default: SYS)")
-def reset_password_command(container_name: str, user: str, password: str):
+@click.option("--port", default=None, type=int, help="IRIS SuperServer port (auto-detected if not specified)")
+def reset_password_command(container_name: str, user: str, password: str, port: int):
     """
     Reset password for IRIS user.
 
     Examples:
         iris-devtester container reset-password iris-fhir
         iris-devtester container reset-password iris-fhir --user _SYSTEM --password ISCDEMO
+        iris-devtester container reset-password iris-fhir --port 1973
     """
+    # Auto-detect port if not specified (for random port containers like testcontainers)
+    if port is None:
+        detected_port = get_container_port(container_name)
+        if detected_port:
+            port = detected_port
+        else:
+            port = 1972  # Default fallback
+
+    click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}'...")
+
     success, msg = reset_password(
-        container_name=container_name, username=user, new_password=password
+        container_name=container_name,
+        username=user,
+        new_password=password,
+        port=port,
     )
 
     if success:

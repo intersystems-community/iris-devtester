@@ -647,12 +647,19 @@ def remove(ctx, container_name, force, volumes):
     default="SYS",
     help="New password (default: SYS)"
 )
+@click.option(
+    "--port",
+    default=None,
+    type=int,
+    help="IRIS SuperServer port (auto-detected if not specified)"
+)
 @click.pass_context
-def reset_password_cmd(ctx, container_name, user, password):
+def reset_password_cmd(ctx, container_name, user, password, port):
     """
     Reset password for IRIS user in container.
 
     Uses iris session to reset the password via ObjectScript.
+    Port is auto-detected for testcontainers with random port mapping.
 
     \b
     Examples:
@@ -661,17 +668,31 @@ def reset_password_cmd(ctx, container_name, user, password):
 
         # Reset specific user password
         iris-devtester container reset-password my_iris --user admin --password newpass
+
+        # Specify port explicitly
+        iris-devtester container reset-password my_iris --port 51972
     """
     try:
         from iris_devtester.utils.password_reset import reset_password
+        from iris_devtester.utils.container_port import get_container_port
 
-        click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}'...")
+        # Auto-detect port if not specified (for random port containers like testcontainers)
+        if port is None:
+            detected_port = get_container_port(container_name)
+            if detected_port:
+                port = detected_port
+                click.echo(f"🔍 Auto-detected port: {port}")
+            else:
+                port = 1972  # Default fallback
+
+        click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}' on port {port}...")
 
         # Call password reset utility
         success, message = reset_password(
             container_name=container_name,
             username=user,
-            new_password=password
+            new_password=password,
+            port=port
         )
 
         if success:

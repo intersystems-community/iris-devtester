@@ -44,11 +44,15 @@ class TestPasswordResetActuallyWorks:
             # Now manually reset password to a DIFFERENT value
             new_password = "NEWSYS123"
             container_name = iris.get_container_name()
+            config = iris.get_config()
 
             success, message = reset_password(
                 container_name=container_name,
                 username="SuperUser",
                 new_password=new_password,
+                hostname=config.host,
+                port=config.port,
+                namespace=config.namespace,
             )
 
             # Verify reset returned success
@@ -95,17 +99,18 @@ class TestPasswordResetActuallyWorks:
             # Reset password to new value
             new_password = "NEWSYS456"
             container_name = iris.get_container_name()
+            config = iris.get_config()
 
             success, message = reset_password(
                 container_name=container_name,
                 username="SuperUser",
                 new_password=new_password,
+                hostname=config.host,
+                port=config.port,
+                namespace=config.namespace,
             )
 
             assert success, f"Password reset failed: {message}"
-
-            # Get connection config
-            config = iris.get_config()
 
             # CRITICAL: Try to connect with OLD password (should FAIL)
             old_password = "SYS"

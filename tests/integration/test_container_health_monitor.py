@@ -33,14 +33,16 @@ class TestCheckIrisMonitorState:
     """Test check_iris_monitor_state() function."""
 
     def test_returns_ok_for_healthy_container(self, running_iris_container):
-        """Healthy container should return IrisHealthState.OK (state=0)."""
+        """Healthy container should return IrisHealthState.OK (state=0 or -1)."""
         container = running_iris_container._container
 
         result = check_iris_monitor_state(container)
 
         assert result.state == IrisHealthState.OK
         assert result.is_healthy is True
-        assert result.message == "OK - Container healthy"
+        # Message can be either "OK - Container healthy" or include "(monitoring not configured)"
+        # for IRIS instances where $SYSTEM.Monitor.State() returns -1
+        assert result.message.startswith("OK - Container healthy")
 
     def test_returns_state_value(self, running_iris_container):
         """Should return the actual state value from IRIS."""
