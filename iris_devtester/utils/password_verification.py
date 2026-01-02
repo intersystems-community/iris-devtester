@@ -95,16 +95,16 @@ class VerificationConfig:
         >>> # Default config (macOS optimized)
         >>> config = VerificationConfig()
         >>>
-        >>> # Custom config for slow systems
+        >>> # Custom config for extra slow systems
         >>> slow_config = VerificationConfig(
-        ...     max_retries=5,
-        ...     timeout_ms=30000
+        ...     max_retries=7,
+        ...     timeout_ms=45000
         ... )
     """
 
-    max_retries: int = 3
-    initial_backoff_ms: int = 1000  # 1s between retries (sufficient with correct API)
-    timeout_ms: int = 10000  # 10s hard cap (NFR-004)
+    max_retries: int = 5
+    initial_backoff_ms: int = 2000  # 2s initial backoff for macOS Docker Desktop
+    timeout_ms: int = 35000  # 35s allows all 5 retries with exponential backoff (2+4+8+16=30s)
     exponential_backoff: bool = True
     verify_via_dbapi: bool = True
 
@@ -139,7 +139,7 @@ class VerificationConfig:
         if not self.exponential_backoff:
             return self.initial_backoff_ms
 
-        # Exponential backoff: 2s → 4s → 8s (optimized for macOS Docker Desktop)
+        # Exponential backoff: 2s → 4s → 8s → 16s (optimized for macOS Docker Desktop)
         return self.initial_backoff_ms * (2 ** attempt)
 
 
@@ -186,24 +186,38 @@ class ConnectionVerificationResult:
 
 
 # Retryable errors (timing issues - retry with backoff)
+# These are transient errors that should resolve with time
 RETRYABLE_ERRORS = {
     "access denied",
     "password change required",
     "authentication failed",
+    # IRIS COMMUNICATION LINK errors (transient connection issues)
+    "communication link error",
+    "communication error",
+    "invalid message received",
+    "failed to connect to server",
+    # Error codes from IRIS DBAPI (transient)
+    "error code: -1",  # Generic connection error
+    "error code: 60",  # Communication timed out
+    "failed to receive message",
 }
 
 # Non-retryable errors (real failures - fail fast)
+# These indicate infrastructure problems that won't resolve with retries
 NON_RETRYABLE_ERRORS = {
-    "connection refused",
-    "connection timeout",
-    "network unreachable",
-    "unknown host",
+    "connection refused",  # Service not running
+    "network unreachable",  # Network infrastructure problem
+    "unknown host",  # DNS failure
+    "no route to host",  # Routing problem
 }
 
 
 def classify_error(error_message: str) -> Tuple[str, bool]:
     """
     Classify connection error as retryable or non-retryable.
+
+    Default behavior: Unknown errors are RETRYABLE during password verification.
+    Most connection errors during container startup are transient timing issues.
 
     Args:
         error_message: Error message from connection attempt
@@ -216,8 +230,17 @@ def classify_error(error_message: str) -> Tuple[str, bool]:
         ('access_denied', True)
         >>> classify_error("Connection refused")
         ('connection_refused', False)
+        >>> classify_error("Some unknown error")  # Defaults to retryable
+        ('unknown', True)
     """
     error_lower = error_message.lower()
+
+    # Check non-retryable errors FIRST (infrastructure failures)
+    # These indicate problems that won't resolve with retries
+    for non_retryable_error in NON_RETRYABLE_ERRORS:
+        if non_retryable_error in error_lower:
+            error_type = non_retryable_error.replace(" ", "_")
+            return error_type, False
 
     # Check retryable errors
     for retryable_error in RETRYABLE_ERRORS:
@@ -225,14 +248,10 @@ def classify_error(error_message: str) -> Tuple[str, bool]:
             error_type = retryable_error.replace(" ", "_")
             return error_type, True
 
-    # Check non-retryable errors
-    for non_retryable_error in NON_RETRYABLE_ERRORS:
-        if non_retryable_error in error_lower:
-            error_type = non_retryable_error.replace(" ", "_")
-            return error_type, False
-
-    # Unknown error - don't retry (fail fast)
-    return "unknown", False
+    # Unknown error - DEFAULT TO RETRYABLE (Constitutional Principle #1)
+    # During password verification, most unknown errors are transient timing issues
+    # that will resolve after IRIS finishes initializing
+    return "unknown", True
 
 
 def verify_password_via_connection(

@@ -22,10 +22,13 @@ The `$SYSTEM.Monitor.State()` method returns the overall health status of the IR
 
 | Value | State | Meaning | Container Action |
 |-------|-------|---------|------------------|
+| -1 | N/A | Monitoring not configured | Treat as healthy (container is running) |
 | 0 | OK | System is healthy | Ready for connections |
 | 1 | Warning | Minor issues detected | May work, log warning |
 | 2 | Error | Significant problems | Likely connection failures |
 | 3 | Fatal | Critical failure | Do not use container |
+
+**Note**: Community Edition containers often return `-1` because system monitoring is not configured. This should be treated as healthy since the container is running and accepting connections.
 
 ### Usage Pattern
 

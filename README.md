@@ -700,6 +700,7 @@ Benchmarks on MacBook Pro M1:
 
 This project is optimized for AI coding assistants:
 
+- **[Agent Skills](docs/features/agent-skills.md)** (NEW!) - Structured guidance for Claude, Cursor, and Copilot
 - **[AGENTS.md](AGENTS.md)** - Vendor-neutral AI configuration (build commands, CI/CD)
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code-specific context and patterns
 - **Comprehensive examples** - All examples include expected outputs

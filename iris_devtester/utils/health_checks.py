@@ -452,9 +452,10 @@ def check_iris_monitor_state(container: Container) -> IrisMonitorResult:
         ...         print("Container ready for connections")
     """
     # ObjectScript command to get Monitor state
-    # Use heredoc format for reliable execution
+    # Use $SYSTEM.Monitor.State() which returns 0=OK, 1=Warning, 2=Error, 3=Fatal
+    # Note: ##class(%SYSTEM.System).GetInstanceState() does NOT exist in Community Edition
     objectscript_cmd = '''iris session IRIS -U %SYS << 'EOF'
-Write ##class(%SYSTEM.System).GetInstanceState()
+Write $SYSTEM.Monitor.State()
 Halt
 EOF'''
 
@@ -474,11 +475,21 @@ EOF'''
                 raw_output=raw_output,
             )
 
-        # Parse the state from output - should be 0, 1, 2, or 3
-        # The output may contain prompts/banners, so look for the number
-        match = re.search(r'\b([0-3])\b', raw_output)
+        # Parse the state from output - should be 0, 1, 2, 3, or -1
+        # -1 means "monitoring not configured" - treat as healthy since container is running
+        # The output may contain prompts/banners, so look for the number on its own line
+        # Check for -1 first (monitoring unconfigured), then 0-3
+        match = re.search(r'(?:^|\n)(-1)\s*(?:\n|$)', raw_output) or re.search(r'(?:^|\n)([0-3])\s*(?:\n|$)', raw_output)
         if match:
             state_value = int(match.group(1))
+            # Handle -1 (monitoring unconfigured) as OK since container is running
+            if state_value == -1:
+                return IrisMonitorResult(
+                    state=IrisHealthState.OK,
+                    is_healthy=True,
+                    message="OK - Container healthy (monitoring not configured)",
+                    raw_output=raw_output,
+                )
             state = IrisHealthState(state_value)
             return IrisMonitorResult(
                 state=state,
