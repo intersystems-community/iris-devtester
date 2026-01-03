@@ -106,7 +106,7 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
                 "How to fix it:\n"
                 "  1. Use the password reset utility:\n"
                 "     from iris_devtester.utils import reset_password_if_needed\n"
-                "     reset_password_if_needed()\n"
+                f"     reset_password_if_needed(e, username='{config.username}')\n"
                 "\n"
                 "  2. Or manually reset via Management Portal:\n"
                 "     http://{config.host}:52773/csp/sys/UtilHome.csp\n"

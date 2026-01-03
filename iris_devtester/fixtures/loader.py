@@ -5,6 +5,9 @@ into IRIS namespaces via namespace mounting.
 """
 
 import time
+import subprocess
+from subprocess import TimeoutExpired
+import logging
 from pathlib import Path
 from typing import Optional, Any
 
@@ -131,6 +134,7 @@ class DATFixtureLoader:
         fixture_path: str,
         target_namespace: Optional[str] = None,
         validate_checksum: bool = True,
+        force_refresh: bool = False,
     ) -> LoadResult:
         """
         Load fixture into IRIS namespace.
@@ -145,6 +149,7 @@ class DATFixtureLoader:
             fixture_path: Path to fixture directory containing manifest.json and IRIS.DAT
             target_namespace: Target namespace name (default: use manifest's namespace)
             validate_checksum: Validate IRIS.DAT checksum before loading (default: True)
+            force_refresh: If True, delete existing namespace before loading (default: False)
 
         Returns:
             LoadResult with success status, manifest, and timing info
@@ -189,6 +194,7 @@ class DATFixtureLoader:
         # Step 2: Mount database via docker exec (similar to creator BACKUP approach)
         # Cannot use iris.connect() + iris.execute() - only works in embedded Python
         try:
+            import subprocess
             # Auto-create container if not provided (Constitutional Principle #4: Zero Configuration)
             if not self.container:
                 from iris_devtester.containers import IRISContainer
@@ -260,11 +266,23 @@ class DATFixtureLoader:
             # just print SUCCESS and skip database/namespace creation
             #
             # ObjectScript syntax note: No braces needed, just If...Else...
+            if force_refresh:
+                refresh_commands = f"""
+                    Set dbName = "{db_name}"
+                    If ##class(Config.Databases).Exists(dbName,.obj) {{
+                        Do ##class(SYS.Database).DismountDatabase(obj.Directory)
+                    }}
+                """
+            else:
+                refresh_commands = f"""
+                    Do ##class(Config.Namespaces).Exists("{namespace}",.obj,.nsStatus)
+                    If nsStatus=1 Write "NAMESPACE_EXISTS","SUCCESS" Halt
+                """
+
             objectscript_commands = f"""Set dbDir = "{db_dir}"
 Set dbName = "{db_name}"
 
-Do ##class(Config.Namespaces).Exists("{namespace}",.obj,.nsStatus)
-If nsStatus=1 Write "NAMESPACE_EXISTS","SUCCESS" Halt
+{refresh_commands}
 
 If '##class(%File).DirectoryExists(dbDir) Do ##class(%File).CreateDirectoryChain(dbDir)
 Do ##class(%File).CopyFile("{container_dat_path}",dbDir_"/IRIS.DAT")
@@ -276,23 +294,28 @@ If status'=1 Write "DB_CREATE_FAILED" Halt
 Set nsProps("Globals") = dbName
 Set nsProps("Routines") = dbName
 Set nsProps("TempGlobals") = "IRISTEMP"
-Set status = ##class(Config.Namespaces).Create("{namespace}",.nsProps)
-If status'=1 Write "NAMESPACE_CREATE_FAILED" Halt
+            Set status = ##class(Config.Namespaces).Create("{namespace}",.nsProps)
+            If status'=1 Write "NAMESPACE_CREATE_FAILED" Halt
 
-Write "SUCCESS"
-Halt"""
+            Write "SUCCESS"
+            Halt"""
+
+
 
             cmd = [
                 "docker",
                 "exec",
+                "-i",
                 container_name,
-                "sh",
-                "-c",
-                f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
+                "iris", "session", "IRIS", "-U", "%SYS"
             ]
 
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=60
+                cmd,
+                input=f"{objectscript_commands}\nHalt\n",
+                capture_output=True,
+                text=True,
+                timeout=60
             )
 
             if result.returncode != 0 or "SUCCESS" not in result.stdout:
@@ -333,7 +356,7 @@ Halt"""
                     f"Failed to fix permissions on {db_dir}: {chown_result.stderr}"
                 )
 
-        except subprocess.TimeoutExpired:
+        except TimeoutExpired:
             raise FixtureLoadError(
                 f"Timeout during RESTORE of namespace '{namespace}'\n"
                 "\n"
@@ -482,14 +505,17 @@ Halt"""
                 cmd = [
                     "docker",
                     "exec",
+                    "-i",
                     container_name,
-                    "sh",
-                    "-c",
-                    f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
+                    "iris", "session", "IRIS", "-U", "%SYS"
                 ]
 
                 result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=30
+                    cmd,
+                    input=f"{objectscript_commands}\nHalt\n",
+                    capture_output=True,
+                    text=True,
+                    timeout=30
                 )
 
                 if result.returncode != 0 or "SUCCESS" not in result.stdout:
@@ -507,18 +533,14 @@ Halt"""
                         "  3. Check if namespace is in use by other connections\n"
                     )
             else:
-                # Just unmount (clear data but keep namespace definition)
-                # Note: This path is deprecated - prefer delete_namespace=True
-                # Cannot switch namespace via SQL, need to reconnect
-                pass  # TODO: Implement if needed - current tests use delete_namespace=True
+                conn = self.get_connection()
+                cursor = conn.cursor()
 
-                # Get list of all tables
                 cursor.execute(
                     "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'"
                 )
                 tables = [row[0] for row in cursor.fetchall()]
 
-                # Drop each table
                 for table_name in tables:
                     cursor.execute(f"DROP TABLE {table_name}")
 
