@@ -283,6 +283,8 @@ The repository exposes core functionality as "Skills" to help AI agents work aut
 ## Active Technologies
 - Markdown (primary), Python 3.9+ (for snippet examples) + None (skills are static documentation) (019-agent-skills)
 - File system (git) (019-agent-skills)
+- Python 3.9+ + `testcontainers`, `testcontainers-iris`, `docker`, `pydantic` (020-fix-pgwire-issues)
+- N/A (Infrastructure layer) (020-fix-pgwire-issues)
 
 ## Recent Changes
 - 019-agent-skills: Added Markdown (primary), Python 3.9+ (for snippet examples) + None (skills are static documentation)

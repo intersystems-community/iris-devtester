@@ -253,18 +253,20 @@ Do ##class(Config.Databases).Get(dbName,.dbProps)
 Write dbProps("Directory")
 Halt"""
 
-            # Execute via iris session with heredoc
             cmd = [
                 "docker",
                 "exec",
+                "-i",
                 container_name,
-                "sh",
-                "-c",
-                f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
+                "iris", "session", "IRIS", "-U", "%SYS"
             ]
 
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=60
+                cmd,
+                input=f"{objectscript_commands}\nHalt\n",
+                capture_output=True,
+                text=True,
+                timeout=60
             )
 
             # Parse database directory from output

@@ -95,9 +95,16 @@ def get_connection(
 
     # Create connection function
     def _connect():
-        return create_dbapi_connection(config)
+        try:
+            return create_dbapi_connection(config)
+        except Exception as e:
+            from iris_devtester.utils.password_reset import reset_password_if_needed
+            if reset_password_if_needed(e, username=config.username):
+                return create_dbapi_connection(config)
+            raise e
 
     # Connect with or without retry
+
     if auto_retry:
         return create_connection_with_retry(_connect, max_retries=max_retries)
     else:

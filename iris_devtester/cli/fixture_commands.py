@@ -109,8 +109,9 @@ def create(name: str, namespace: str, output: str, description: str, version: st
 @click.option('--fixture', required=True, help='Path to fixture directory')
 @click.option('--namespace', default=None, help='Target namespace (default: use manifest namespace)')
 @click.option('--no-validate', is_flag=True, help='Skip checksum validation (faster, less safe)')
+@click.option('--force', is_flag=True, help='Force reload by deleting existing namespace')
 @click.option('--verbose', is_flag=True, help='Show detailed progress')
-def load(fixture: str, namespace: Optional[str], no_validate: bool, verbose: bool):
+def load(fixture: str, namespace: Optional[str], no_validate: bool, force: bool, verbose: bool):
     """Load .DAT fixture into IRIS database."""
     try:
         if verbose:
@@ -129,7 +130,8 @@ def load(fixture: str, namespace: Optional[str], no_validate: bool, verbose: boo
         result = loader.load_fixture(
             fixture_path=fixture,
             target_namespace=namespace,
-            validate_checksum=validate_checksum
+            validate_checksum=validate_checksum,
+            force_refresh=force
         )
 
         # Calculate totals
