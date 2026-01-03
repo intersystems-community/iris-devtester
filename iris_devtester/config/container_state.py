@@ -111,30 +111,6 @@ class ContainerState(BaseModel):
 
         return v
 
-    @field_validator("started_at")
-    @classmethod
-    def validate_started_at(cls, v: Optional[datetime], info) -> Optional[datetime]:
-        """Ensure started_at is after created_at if present."""
-        if v is not None and "created_at" in info.data:
-            created_at = info.data["created_at"]
-            if v < created_at:
-                raise ValueError(
-                    f"started_at ({v}) must be after created_at ({created_at})"
-                )
-        return v
-
-    @field_validator("finished_at")
-    @classmethod
-    def validate_finished_at(cls, v: Optional[datetime], info) -> Optional[datetime]:
-        """Ensure finished_at is after started_at if both present."""
-        if v is not None and "started_at" in info.data:
-            started_at = info.data["started_at"]
-            if started_at is not None and v < started_at:
-                raise ValueError(
-                    f"finished_at ({v}) must be after started_at ({started_at})"
-                )
-        return v
-
     @classmethod
     def from_container(cls, container) -> "ContainerState":
         """

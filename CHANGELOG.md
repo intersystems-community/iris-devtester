@@ -55,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Deterministic Readiness**: `IRISReadyWaitStrategy` now uses application-level checks via `docker exec`.
   - **Fixture Refresh Support**: `DATFixtureLoader` now supports `force_refresh=True` to clear existing namespaces.
 - **CLI Version Reporting**: Fixed CLI reporting stale version (`1.2.0`); now dynamically uses library version.
+- **Container Status Validation**: Removed overly strict timestamp validators in `ContainerState` that caused crashes on restarted containers.
+- **Architecture Mismatch Detection**: Improved Docker error translation to explicitly detect and report CPU architecture mismatches (e.g., Apple Silicon).
+- **Flexible Image Configuration**: Added `image` key to configuration to support custom registries and full image names without forced prefixes.
+- **False Negative Reporting**: Fixed CLI `container up` reporting failure after successful creation due to incorrect exception handling.
 
 ## [1.6.0] - 2026-01-02 - Feature 019: Agent Skills
 

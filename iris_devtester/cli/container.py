@@ -213,7 +213,11 @@ def up(ctx, config, detach, timeout):
         # Exit code 0 (success)
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except ValueError as e:
+
+
         # Configuration error (exit code 2)
         progress.print_error(str(e))
         ctx.exit(2)
@@ -332,6 +336,8 @@ def start(ctx, container_name, config, timeout):
         click.echo(f"✓ Container '{container_name}' started successfully")
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except Exception as e:
         progress.print_error(f"Failed to start container: {e}")
         ctx.exit(1)
@@ -381,6 +387,8 @@ def stop(ctx, container_name, timeout):
         click.echo(f"✓ Container '{container_name}' stopped successfully")
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except Exception as e:
         progress.print_error(f"Failed to stop container: {e}")
         ctx.exit(1)
@@ -426,6 +434,8 @@ def restart(ctx, container_name, timeout):
         click.echo(f"✓ Container '{container_name}' restarted successfully")
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except TimeoutError as e:
         progress.print_error(str(e))
         ctx.exit(5)
@@ -559,6 +569,8 @@ def logs(ctx, container_name, follow, tail, since):
 
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except Exception as e:
         progress.print_error(f"Failed to get container logs: {e}")
         ctx.exit(1)
@@ -626,6 +638,8 @@ def remove(ctx, container_name, force, volumes):
 
         ctx.exit(0)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except ValueError as e:
         # Running without --force (exit code 3)
         progress.print_error(str(e))
@@ -798,14 +812,12 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
             ctx.exit(0)
 
         except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
-            # Let Click handle these - don't catch them
             raise
         except Exception as e:
             progress.print_error(f"Connection failed: {e}")
             ctx.exit(1)
 
     except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
-        # Let Click handle these - don't catch them
         raise
     except Exception as e:
         progress.print_error(f"Failed to test connection: {e}")
@@ -854,6 +866,8 @@ def enable_callin(ctx, container_name, timeout):
             progress.print_error(f"Failed to enable CallIn service:\n{message}")
             ctx.exit(1)
 
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
     except (ImportError, ModuleNotFoundError) as e:
         progress.print_error(f"enable_callin utility not available: {e}")
         ctx.exit(1)

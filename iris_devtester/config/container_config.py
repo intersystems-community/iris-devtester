@@ -90,6 +90,10 @@ class ContainerConfig(BaseModel):
         default_factory=list,
         description="Volume mount strings"
     )
+    image: Optional[str] = Field(
+        default=None,
+        description="Full Docker image name (overrides edition/image_tag)"
+    )
     image_tag: str = Field(
         default="latest",
         description="Docker image tag"
@@ -162,7 +166,7 @@ class ContainerConfig(BaseModel):
         config_data = {}
 
         # Map direct fields
-        for field in ["edition", "container_name", "namespace", "password", "license_key", "volumes", "image_tag"]:
+        for field in ["edition", "container_name", "namespace", "password", "license_key", "volumes", "image", "image_tag"]:
             if field in yaml_data:
                 config_data[field] = yaml_data[field]
 
@@ -211,6 +215,7 @@ class ContainerConfig(BaseModel):
             "IRIS_NAMESPACE": "namespace",
             "IRIS_PASSWORD": "password",
             "IRIS_LICENSE_KEY": "license_key",
+            "IRIS_IMAGE": "image",
             "IRIS_IMAGE_TAG": "image_tag",
         }
 
@@ -247,22 +252,11 @@ class ContainerConfig(BaseModel):
         return cls()
 
     def get_image_name(self) -> str:
-        """
-        Get the full Docker image name based on edition and tag.
+        if self.image:
+            return self.image
 
-        Returns:
-            Full Docker image reference
-
-        Example:
-            >>> config = ContainerConfig(edition="community", image_tag="latest")
-            >>> config.get_image_name()
-            'intersystems/iris-community:latest'
-
-            >>> config = ContainerConfig(edition="enterprise", image_tag="2024.1")
-            >>> config.get_image_name()
-            'intersystems/iris:2024.1'
-        """
         if self.edition == "community":
+
             # Bug Fix #1: Community images use 'intersystemsdc/' prefix on Docker Hub
             return f"intersystemsdc/iris-community:{self.image_tag}"
         else:
