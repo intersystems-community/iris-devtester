@@ -1,13 +1,14 @@
 """CLI commands for iris-devtools."""
 
 import click
+from iris_devtester import __version__
 from .fixture_commands import fixture
 from .container import container_group as container
 from .connection_commands import test_connection
 
 
 @click.group()
-@click.version_option(version="1.2.0", prog_name="iris-devtester")
+@click.version_option(version=__version__, prog_name="iris-devtester")
 def main():
     """
     iris-devtester - Battle-tested InterSystems IRIS infrastructure utilities.

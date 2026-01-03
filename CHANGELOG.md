@@ -34,7 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimization strategies: namespace isolation, container reuse, pre-baked images
   - Quick wins for faster development cycles
 
-## [Unreleased] - Feature 017: IRIS Source Insights
+## [1.6.0] - 2026-01-02 - Feature 019: Agent Skills
+
+### Added
+
+- **Agent Skills (Feature 019)**
+  - New "Skills" documentation for AI coding assistants (Claude, Cursor, Copilot)
+  - **Claude Code**: `.claude/commands/` support (`/container`, `/connection`, `/fixture`, `/troubleshoot`)
+  - **Cursor IDE**: `.cursor/rules/` support (`@iris-container`, `@iris-connection`, etc.)
+  - **GitHub Copilot**: `.github/copilot-instructions.md` configuration
+  - **Documentation**: New `docs/features/agent-skills.md` guide
+  - **Verification**: Contract tests ensuring skill file integrity
+
+## [1.5.3] - Feature 017: IRIS Source Insights
 
 ### Added
 

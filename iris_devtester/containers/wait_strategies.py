@@ -51,30 +51,8 @@ class IRISReadyWaitStrategy:
         host: str,
         port: Optional[int] = None,
         timeout: Optional[int] = None,
+        container_name: Optional[str] = None,
     ) -> bool:
-        """
-        Wait until IRIS container is ready.
-
-        Args:
-            host: Container host/IP
-            port: Port to check (uses self.port if not provided)
-            timeout: Timeout in seconds (uses self.timeout if not provided)
-
-        Returns:
-            True if ready within timeout, False otherwise
-
-        Raises:
-            TimeoutError: If container not ready within timeout
-
-        Example:
-            >>> strategy = IRISReadyWaitStrategy(timeout=30)
-            >>> with IRISContainer.community() as iris:
-            ...     iris.start()
-            ...     config = iris.get_config()
-            ...     ready = strategy.wait_until_ready(config.host, config.port)
-            ...     if ready:
-            ...         print("IRIS is ready to accept connections")
-        """
         port = port or self.port
         timeout = timeout or self.timeout
 
@@ -89,12 +67,15 @@ class IRISReadyWaitStrategy:
                 if self._check_port_open(host, port):
                     logger.debug(f"✓ Port {port} is open")
 
-                    # Check 2: IRIS process running (optional - requires container access)
-                    # This would need Docker exec, skipping for now
-
-                    # Port open is sufficient for basic readiness
-                    logger.info(f"✓ IRIS ready at {host}:{port}")
-                    return True
+                    if container_name:
+                        if self.check_iris_initialized(container_name):
+                            logger.info(f"✓ IRIS application initialized at {host}:{port}")
+                            return True
+                        else:
+                            logger.debug("Port open but IRIS application not fully ready yet")
+                    else:
+                        logger.info(f"✓ IRIS ready at {host}:{port} (port check only)")
+                        return True
 
             except Exception as e:
                 last_error = e
@@ -103,6 +84,7 @@ class IRISReadyWaitStrategy:
             time.sleep(self.poll_interval)
 
         # Timeout reached
+
         elapsed = time.time() - start_time
         raise TimeoutError(
             f"IRIS not ready after {elapsed:.1f}s\n"
@@ -119,6 +101,19 @@ class IRISReadyWaitStrategy:
             "  3. Increase timeout if needed:\n"
             f"     IRISReadyWaitStrategy(timeout={timeout * 2})\n"
         )
+
+    def check_iris_initialized(self, container_name: str) -> bool:
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["docker", "exec", container_name, "iris", "session", "IRIS", "-U", "%SYS", "W 1", "Halt"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return result.returncode == 0 and "1" in result.stdout
+        except Exception:
+            return False
 
     def check_iris_running(self, container_name: str) -> bool:
         """
