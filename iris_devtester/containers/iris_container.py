@@ -38,7 +38,20 @@ except ImportError:
     class BaseIRISContainer:
         """Fallback base class when testcontainers-iris not available."""
 
-        pass
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def start(self):
+            return self
+
+        def stop(self):
+            pass
+
+        def get_wrapped_container(self):
+            return None
 
 
 class IRISContainer(BaseIRISContainer):
@@ -691,7 +704,12 @@ class IRISContainer(BaseIRISContainer):
 
         try:
             # Step 1: Wait for IRIS to be ready
-            ready = strategy.wait_until_ready(config.host, config.port, timeout)
+            ready = strategy.wait_until_ready(
+                config.host,
+                config.port,
+                timeout,
+                container_name=self.get_container_name()
+            )
 
             if not ready:
                 return False

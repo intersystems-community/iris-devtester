@@ -44,6 +44,7 @@ def detect_password_change_required(error_message: str) -> bool:
         "password expired",
         "password_change_required",
         "user must change password",
+        "access denied",
     ]
 
     error_lower = error_message.lower()
@@ -122,52 +123,25 @@ def _harden_iris_user(
     password: str,
     timeout: int = 30
 ) -> Tuple[bool, str]:
-    """
-    Harden IRIS user account using correct Security.Users API.
-
-    Uses the official IRIS API pattern (from Feature 017 source analysis):
-    1. Exists(username, .user, .status) - Check user exists and get object handle
-    2. Set user.PasswordExternal = password - Set password (triggers PBKDF2 hashing)
-    3. Set user.ChangePassword = 0 - Clear password-change-required flag
-    4. Set user.PasswordNeverExpires = 1 - Prevent password expiration
-    5. Set user.AccountNeverExpires = 1 - Prevent account expiration
-    6. user.%Save() - Commit changes atomically
-
-    CRITICAL: ObjectScript is position-based, not keyword-based like Python.
-    The .properties syntax means "pass by reference" (required for Get/Modify).
-
-    Args:
-        container_name: Docker container name
-        username: Username to harden
-        password: Password to set
-        timeout: Command timeout in seconds
-
-    Returns:
-        (success, message) tuple
-
-    Example:
-        >>> success, msg = _harden_iris_user("iris_db", "_SYSTEM", "SYS")
-        >>> print(f"Success: {success}")
-    """
     logger.debug(f"Resetting password for user '{username}'...")
 
     try:
-        # Single-step password reset: Set password + clear security flags atomically
-        # This uses the correct IRIS API: Exists() -> set object properties -> %Save()
-        # CRITICAL (Feature 017): Use PasswordExternal (not Password) to trigger PBKDF2 hashing
-        # CRITICAL (Feature 017): Property is ChangePassword (not ChangePasswordAtNextLogin)
-        # Use echo -e with explicit \n to send ObjectScript to iris session
-        reset_script = f'Set u="{username}"\\nIf ##class(Security.Users).Exists(u,.user,.sc) {{ Set user.PasswordExternal="{password}" Set user.ChangePassword=0 Set user.PasswordNeverExpires=1 Set user.AccountNeverExpires=1 Write user.%Save() }} Else {{ Write 0 }}\\nHalt'
+        modify_script = (
+            f'Set p("PasswordExternal")="{password}" '
+            f'Set p("ChangePassword")=0 '
+            f'Set p("PasswordNeverExpires")=1 '
+            f'Set p("AccountNeverExpires")=1 '
+            f'Write ##class(Security.Users).Modify("{username}",.p)'
+        )
 
         cmd = [
             "docker", "exec", "-i", container_name,
-            "bash", "-c",
-            f"echo -e '{reset_script}' | iris session IRIS -U %SYS"
+            "iris", "session", "IRIS", "-U", "%SYS"
         ]
 
-        # Execute password reset via docker exec
         result = subprocess.run(
             cmd,
+            input=f"{modify_script}\nHalt\n",
             capture_output=True,
             text=True,
             timeout=timeout
@@ -181,7 +155,6 @@ def _harden_iris_user(
             logger.error(f"Failed to reset password: {result.stderr}")
             return False, f"Failed to reset password for '{username}': {result.stderr}"
 
-        # Check if Modify() returned 1 (success)
         if "1" not in result.stdout:
             logger.error(f"Modify() did not return success: {result.stdout}")
             return False, f"Password reset failed for '{username}': {result.stdout}"
@@ -194,12 +167,14 @@ def _harden_iris_user(
         return False, f"Exception resetting password for '{username}': {str(e)}"
 
 
+
+
 def reset_password(
     container_name: str = "iris_db",
     username: str = "_SYSTEM",
     new_password: str = "SYS",
     timeout: int = 30,
-    hostname: str = None,
+    hostname: Optional[str] = None,
     port: int = 1972,
     namespace: str = "USER",
     verification_config: Optional[VerificationConfig] = None,
@@ -551,40 +526,40 @@ def reset_password(
 def reset_password_if_needed(
     error: Exception,
     container_name: str = "iris_db",
+    username: str = "_SYSTEM",
     max_retries: int = 1,
 ) -> bool:
-    """
-    Automatically detect and remediate password change requirement.
-
-    This is the main entry point for automatic password reset. It:
-    1. Detects if the error is a password change requirement
-    2. Attempts to reset the password automatically
-    3. Retries if needed
-    4. Updates environment variables
-
-    Implements Constitutional Principle #1: "Automatic Remediation Over Manual Intervention"
-
-    Args:
-        error: Exception from connection attempt
-        container_name: Name of IRIS Docker container (default: "iris_db")
-        max_retries: Maximum number of reset attempts (default: 1)
-
-    Returns:
-        True if password was reset successfully, False otherwise
-
-    Example:
-        >>> try:
-        ...     conn = get_connection(config)
-        ... except Exception as e:
-        ...     if reset_password_if_needed(e):
-        ...         conn = get_connection(config)  # Retry connection
-    """
     error_msg = str(error)
 
-    # Check if this is a password change error
     if not detect_password_change_required(error_msg):
         logger.debug("Error is not password-related, skipping reset")
         return False
+
+    logger.warning("⚠️  IRIS password change required. Attempting automatic remediation...")
+
+    for attempt in range(max_retries):
+        if attempt > 0:
+            logger.info(f"Retry {attempt + 1}/{max_retries} for password reset...")
+            time.sleep(3)
+
+        success, message = reset_password(
+            container_name=container_name,
+            username=username
+        )
+
+        if success:
+            logger.info(f"✓ {message}")
+            logger.info("Connection should now work. Please retry your operation.")
+            return True
+        else:
+            logger.error(f"✗ {message}")
+
+            if attempt == max_retries - 1:
+                logger.error("\nAutomatic password reset failed after all retries.")
+                logger.error("Manual intervention may be required.")
+
+    return False
+
 
     logger.warning("⚠️  IRIS password change required. Attempting automatic remediation...")
 
@@ -594,7 +569,10 @@ def reset_password_if_needed(
             logger.info(f"Retry {attempt + 1}/{max_retries} for password reset...")
             time.sleep(3)
 
-        success, message = reset_password(container_name=container_name)
+        success, message = reset_password(
+            container_name=container_name,
+            username=username
+        )
 
         if success:
             logger.info(f"✓ {message}")
