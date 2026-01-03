@@ -34,6 +34,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimization strategies: namespace isolation, container reuse, pre-baked images
   - Quick wins for faster development cycles
 
+## [1.7.0] - 2026-01-02 - Feature 021: Hierarchical Agent Skills
+
+### Added
+
+- **Hierarchical Agent Skill Manifest (`skill.md`)**
+  - Root-level guide for AI coding assistants following the "Progressive Disclosure" pattern.
+  - **Level 1: Onboarding** - Automated pytest integration and conftest templates.
+  - **Level 2: Operations** - Reliable container and connection management patterns.
+  - **Level 3: Advanced** - DAT fixtures and resource monitoring guidance.
+  - **Level 4: Debugging** - Autonomous troubleshooting for macOS latency and security flags.
+- **Project Integration Module**: Specific instructions for agents to incorporate the library into new/existing repositories.
+- **Enhanced Distribution**: Added `MANIFEST.in` to ensure AI metadata files (`skill.md`, `AGENTS.md`, `CLAUDE.md`) ship with the package.
+
+### Fixed
+
+- **Critical Bug Fixes (Feature 020)**
+  - **Parametrized Password Reset**: `reset_password_if_needed` now supports custom users (e.g., `SuperUser`).
+  - **Robust Security API**: Switched to `Security.Users.Modify` for clearing `ChangePassword` flags in IRIS 2024.1+.
+  - **Deterministic Readiness**: `IRISReadyWaitStrategy` now uses application-level checks via `docker exec`.
+  - **Fixture Refresh Support**: `DATFixtureLoader` now supports `force_refresh=True` to clear existing namespaces.
+- **CLI Version Reporting**: Fixed CLI reporting stale version (`1.2.0`); now dynamically uses library version.
+
 ## [1.6.0] - 2026-01-02 - Feature 019: Agent Skills
 
 ### Added
