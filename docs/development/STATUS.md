@@ -61,8 +61,8 @@ Previous integration test work from January 4, 2025 achieved 55/90 passing (61%)
 iris-devtester v1.0.0 is a battle-tested Python package providing automatic, reliable infrastructure for InterSystems IRIS development.
 
 **Package Details**:
-- **Wheel**: `iris_devtools-1.0.0-py3-none-any.whl` (78KB)
-- **Source**: `iris_devtools-1.0.0.tar.gz` (64KB)
+- **Wheel**: `iris_devtester-1.0.0-py3-none-any.whl` (78KB)
+- **Source**: `iris_devtester-1.0.0.tar.gz` (64KB)
 - **Validation**: ✅ Passed `twine check`
 - **Git Tag**: v1.0.0 created and pushed
 
@@ -85,7 +85,7 @@ iris-devtester v1.0.0 is a battle-tested Python package providing automatic, rel
 
 **Package Preparation**:
 - ✅ Fixed pyproject.toml (author, URLs, classifiers)
-- ✅ Created CLI entry point (`iris-devtools` command)
+- ✅ Created CLI entry point (`iris-devtester` command)
 - ✅ Updated README.md (badges, URLs)
 - ✅ Created CHANGELOG.md (complete v1.0.0 release notes)
 - ✅ Created examples/ directory (3 examples)
@@ -114,12 +114,12 @@ iris-devtester v1.0.0 is a battle-tested Python package providing automatic, rel
 - Fixed `pyproject.toml` metadata
   - Author: InterSystems Community
   - Development Status: Beta
-  - GitHub URLs: intersystems-community/iris-devtools
+  - GitHub URLs: intersystems-community/iris-devtester
   - CLI entry point: `iris-devtester` command
   - Coverage threshold: 90% (realistic)
 
 **CLI Implementation**:
-- Created `iris_devtools/cli/__init__.py` with `main()` function
+- Created `iris_devtester/cli/__init__.py` with `main()` function
 - Click-based CLI with version option
 - Registered `fixture` subcommand
 
@@ -161,8 +161,8 @@ Phase 2 (Complete Missing Features) successfully implemented:
 **Key Deliverables**:
 - `docs/SQL_VS_OBJECTSCRIPT.md` - Critical execution guide
 - `docs/learnings/rag-templates-production-patterns.md` - 7 production patterns
-- `iris_devtools/config/auto_discovery.py` - Zero-config IRIS detection
-- `iris_devtools/testing/schema_reset.py` - Schema management utilities
+- `iris_devtester/config/auto_discovery.py` - Zero-config IRIS detection
+- `iris_devtester/testing/schema_reset.py` - Schema management utilities
 - `tests/integration/conftest.py` - Complete fixture infrastructure
 - `ROADMAP.md` - v1.1.0 VECTOR introspection feature
 - `PHASE2_RESULTS.md` - Complete Phase 2 documentation
@@ -225,8 +225,8 @@ Auto-configure ^SystemPerformance monitoring in IRIS containers with intelligent
 **Branch**: `main` (merged from `002-set-default-stats`)
 
 **Implementation Summary**:
-- `iris_devtools/containers/monitoring.py` - ~1,000 lines
-- `iris_devtools/containers/performance.py` - ~312 lines
+- `iris_devtester/containers/monitoring.py` - ~1,000 lines
+- `iris_devtester/containers/performance.py` - ~312 lines
 - Complete test suite (67 unit + 93 contract + 30 integration)
 - 14 API functions (monitoring, task management, resource tracking)
 

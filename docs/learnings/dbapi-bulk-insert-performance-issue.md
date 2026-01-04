@@ -116,7 +116,7 @@ Based on industry benchmarks for IRIS with similar workloads:
 - **Expected**: ~40,000 rows/second (40-45 min for 100M rows)
 - **Actual**: 0 rows/second (infinite time, process blocked)
 
-## Impact on iris-devtools
+## Impact on iris-devtester
 
 This finding suggests:
 
@@ -125,12 +125,12 @@ This finding suggests:
 3. **Alternative Methods**: Document ObjectScript bulk load methods
 4. **Connection Management**: Warn about connection exhaustion during bulk ops
 
-## Recommended iris-devtools Enhancements
+## Recommended iris-devtester Enhancements
 
 ### 1. Add Bulk Insert Helper
 
 ```python
-# iris_devtools/utils/bulk_insert.py
+# iris_devtester/utils/bulk_insert.py
 def calculate_safe_batch_size(num_columns: int, max_batch_mb: float = 1.0) -> int:
     """
     Calculate safe batch size for IRIS executemany() based on table width.
@@ -252,7 +252,7 @@ Use smaller batches based on table width:
 
 **Example:**
 ```python
-from iris_devtools.utils.bulk_insert import calculate_safe_batch_size
+from iris_devtester.utils.bulk_insert import calculate_safe_batch_size
 
 num_columns = 105
 batch_size = calculate_safe_batch_size(num_columns)  # Returns 100
@@ -293,7 +293,7 @@ subprocess.run(['docker', 'exec', 'iris', 'iris', 'session', 'IRIS', '-UUSER'],
 # tests/contract/test_bulk_insert_performance.py
 import pytest
 import time
-from iris_devtools.utils.bulk_insert import calculate_safe_batch_size, bulk_insert_with_progress
+from iris_devtester.utils.bulk_insert import calculate_safe_batch_size, bulk_insert_with_progress
 
 def test_wide_table_bulk_insert(iris_container):
     """Test that bulk insert works with wide tables (100+ columns)."""
@@ -343,7 +343,7 @@ This issue was discovered during ClickBench benchmark implementation comparing N
 - DB-API script: /tmp/dbapi_load_clickbench.py
 - IRIS container config: benchmarks/iris_comparison/docker/docker-compose.yml
 
-## Recommendations for iris-devtools
+## Recommendations for iris-devtester
 
 1. ✅ Add `calculate_safe_batch_size()` helper
 2. ✅ Add `bulk_insert_with_progress()` utility

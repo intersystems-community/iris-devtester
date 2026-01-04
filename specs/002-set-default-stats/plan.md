@@ -2,7 +2,7 @@
 # Implementation Plan: IRIS Server-Side Performance Monitoring Configuration
 
 **Branch**: `002-set-default-stats` | **Date**: 2025-10-05 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/spec.md`
+**Input**: Feature specification from `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -34,7 +34,7 @@
 
 Automatically configure IRIS ^SystemPerformance monitoring in containers to collect performance data every 30 seconds with 1-hour retention, ensuring diagnostic data is immediately available when debugging issues. The monitoring will be scheduled via IRIS Task Manager, with auto-disable protection when CPU exceeds 90% or memory exceeds 95%. This provides "batteries-included" IRIS containers that are automatically debugging-ready, following InterSystems best practices.
 
-**Technical Approach**: Extend IRISContainer class to configure ^SystemPerformance policies during container initialization using IRIS Task Manager for continuous execution. Implement CPF parameter configuration for monitoring settings, resource threshold monitoring for auto-disable protection, and optional Yaspe integration for visualization (installable via `pip install 'iris-devtools[yaspe]'`).
+**Technical Approach**: Extend IRISContainer class to configure ^SystemPerformance policies during container initialization using IRIS Task Manager for continuous execution. Implement CPF parameter configuration for monitoring settings, resource threshold monitoring for auto-disable protection, and optional Yaspe integration for visualization (installable via `pip install 'iris-devtester[yaspe]'`).
 
 ## Technical Context
 **Language/Version**: Python 3.9+ (supports 3.9, 3.10, 3.11, 3.12)
@@ -43,7 +43,7 @@ Automatically configure IRIS ^SystemPerformance monitoring in containers to coll
 - testcontainers-iris-python>=1.2.2 (IRIS containers)
 - intersystems-irispython>=3.2.0 (DBAPI connections)
 - python-dotenv>=1.0.0 (config management)
-- yaspe (optional, via `pip install 'iris-devtools[yaspe]'`)
+- yaspe (optional, via `pip install 'iris-devtester[yaspe]'`)
 
 **Storage**: IRIS embedded database (^SystemPerformance globals, CPF configuration files)
 **Testing**: pytest>=8.0.0 with testcontainers for integration tests
@@ -84,7 +84,7 @@ Automatically configure IRIS ^SystemPerformance monitoring in containers to coll
 ### Principle 2: DBAPI First, JDBC Fallback
 **Status**: ✅ PASS
 - Uses existing IRISContainer connection management
-- Leverages DBAPI-first connections already implemented in iris_devtools.connections
+- Leverages DBAPI-first connections already implemented in iris_devtester.connections
 - Task Manager configuration uses ObjectScript via existing connection layer
 
 ### Principle 3: Isolation by Default
@@ -99,7 +99,7 @@ Automatically configure IRIS ^SystemPerformance monitoring in containers to coll
 - Default 30s interval, 1-hour retention - no config required
 - Auto-enables on container start unless IRIS_DISABLE_MONITORING=true
 - Works with both Community and Enterprise editions
-- Optional Yaspe integration via `pip install 'iris-devtools[yaspe]'`
+- Optional Yaspe integration via `pip install 'iris-devtester[yaspe]'`
 - Sensible defaults for all thresholds (CPU 90%, memory 95%)
 
 ### Principle 5: Fail Fast with Guidance
@@ -155,7 +155,7 @@ specs/002-set-default-stats/
 
 ### Source Code (repository root)
 ```
-iris_devtools/
+iris_devtester/
 ├── __init__.py
 ├── config/              # Existing config discovery
 │   ├── __init__.py
@@ -198,7 +198,7 @@ tests/
     └── test_monitoring_e2e.py           # NEW
 ```
 
-**Structure Decision**: Single Python package (iris_devtools) following existing structure. This feature extends the `containers/` module with new monitoring capabilities and adds monitoring-specific utilities. The implementation follows the established pattern of clean module separation with comprehensive test coverage at unit, contract, integration, and E2E levels.
+**Structure Decision**: Single Python package (iris_devtester) following existing structure. This feature extends the `containers/` module with new monitoring capabilities and adds monitoring-specific utilities. The implementation follows the established pattern of clean module separation with comprehensive test coverage at unit, contract, integration, and E2E levels.
 
 ## Phase 0: Outline & Research
 
@@ -211,7 +211,7 @@ All unknowns from Technical Context resolved in `research.md`:
 1. ✅ **IRIS Task Manager API** - Use `%SYS.Task` class via ObjectScript
 2. ✅ **^SystemPerformance Configuration** - Policy-based via `%SYS.PTools.StatsSQL`
 3. ✅ **CPF Parameters** - Configure via `Config.CPF` API (optional, defaults sufficient)
-4. ✅ **Yaspe Integration** - Optional dependency via `pip install 'iris-devtools[yaspe]'`
+4. ✅ **Yaspe Integration** - Optional dependency via `pip install 'iris-devtester[yaspe]'`
 5. ✅ **Resource Threshold Monitoring** - Use `$SYSTEM.Process.GetSystemPerformance()`
 6. ✅ **Performance Impact** - <2% CPU overhead at 30s intervals (benchmarked)
 7. ✅ **Community vs Enterprise** - No differences, works transparently
@@ -227,7 +227,7 @@ All unknowns from Technical Context resolved in `research.md`:
 | Yaspe as optional dependency | Community tool, proven visualization | Bundle directly (licensing), Build custom (reinventing wheel) |
 | 30-second default interval | Balance between utility and overhead (<2% CPU) | 10s (3% overhead), 1s (10% overhead) |
 
-**Output**: `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/research.md`
+**Output**: `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/research.md`
 
 ## Phase 1: Design & Contracts
 
@@ -306,12 +306,12 @@ All unknowns from Technical Context resolved in `research.md`:
   - Definition of done
 
 **Outputs**:
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/data-model.md`
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/monitoring_config_api.md`
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/task_manager_api.md`
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/resource_monitoring_api.md`
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/quickstart.md`
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/CLAUDE.md`
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/data-model.md`
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/monitoring_config_api.md`
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/task_manager_api.md`
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/resource_monitoring_api.md`
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/quickstart.md`
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/CLAUDE.md`
 
 ## Phase 2: Task Planning Approach
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
@@ -435,15 +435,15 @@ No complexity deviations to justify.
 - [x] Complexity deviations documented - ✅ None (full constitutional compliance)
 
 **Artifacts Created**:
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/plan.md` (this file)
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/research.md`
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/data-model.md`
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/monitoring_config_api.md`
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/task_manager_api.md`
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/resource_monitoring_api.md`
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/quickstart.md`
-- [x] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/CLAUDE.md`
-- [ ] `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/tasks.md` (created by /tasks command)
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/plan.md` (this file)
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/research.md`
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/data-model.md`
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/monitoring_config_api.md`
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/task_manager_api.md`
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/resource_monitoring_api.md`
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/quickstart.md`
+- [x] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/CLAUDE.md`
+- [ ] `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/tasks.md` (created by /tasks command)
 
 **Ready for**: /tasks command to generate implementation tasks
 

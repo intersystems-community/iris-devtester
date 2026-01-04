@@ -627,7 +627,7 @@ raise FixtureError(
     "  2. Verify the .DAT file is not corrupted: ls -lh fixtures/\n"
     "  3. Check disk space: df -h\n"
     "\n"
-    "Documentation: https://iris-devtools.readthedocs.io/fixtures/\n"
+    "Documentation: https://iris-devtester.readthedocs.io/fixtures/\n"
 )
 ```
 
@@ -680,7 +680,7 @@ raise FixtureError(
    - **Resolution**: Document limitation, future enhancement
 
 4. **Fixture Registry**: Central discovery of available fixtures?
-   - Could support `iris-devtools fixture list --all`
+   - Could support `iris-devtester fixture list --all`
    - **Resolution**: Nice-to-have, not required for MVP
 
 ---

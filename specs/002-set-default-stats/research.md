@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This research resolves all technical unknowns for implementing automatic ^SystemPerformance monitoring configuration in iris-devtools containers. Key findings:
+This research resolves all technical unknowns for implementing automatic ^SystemPerformance monitoring configuration in iris-devtester containers. Key findings:
 
 1. **Task Manager API**: Use `%SYS.Task` class with ObjectScript via DBAPI/JDBC connections
 2. **CPF Parameters**: Configure via `##class(Config.CPF).SetParameter()` for monitoring settings
@@ -28,7 +28,7 @@ This research resolves all technical unknowns for implementing automatic ^System
 conn.cursor().execute("""
     set task = ##class(%SYS.Task).%New()
     set task.Name = "SystemPerformance Monitor"
-    set task.Description = "Auto-configured by iris-devtools"
+    set task.Description = "Auto-configured by iris-devtester"
     set task.TaskClass = "%SYS.Task.SystemPerformance"
     set task.RunAsUser = "_SYSTEM"
     set task.Suspended = 0
@@ -81,7 +81,7 @@ conn.cursor().execute("""
 conn.cursor().execute("""
     // Create or update monitoring policy
     set policy = ##class(%SYS.PTools.StatsSQL).%New()
-    set policy.Name = "iris-devtools-default"
+    set policy.Name = "iris-devtester-default"
     set policy.Description = "Auto-configured 30s/1h monitoring"
 
     // Collection settings
@@ -212,7 +212,7 @@ yaspe = [
 
 2. **Helper Utilities**:
 ```python
-# iris_devtools/utils/yaspe_integration.py
+# iris_devtester/utils/yaspe_integration.py
 from typing import Optional
 import subprocess
 
@@ -237,7 +237,7 @@ def visualize_performance_data(
         import yaspe
     except ImportError:
         raise ImportError(
-            "Yaspe not installed. Install with: pip install 'iris-devtools[yaspe]'"
+            "Yaspe not installed. Install with: pip install 'iris-devtester[yaspe]'"
         )
 
     # Call yaspe to generate visualizations
@@ -248,11 +248,11 @@ def visualize_performance_data(
 ```markdown
 ## Visualizing Performance Data
 
-iris-devtools automatically collects performance data. To visualize:
+iris-devtester automatically collects performance data. To visualize:
 
-1. Install Yaspe: `pip install 'iris-devtools[yaspe]'`
+1. Install Yaspe: `pip install 'iris-devtester[yaspe]'`
 2. Export data from your container
-3. Visualize: `python -m iris_devtools.utils.yaspe_viz /path/to/data`
+3. Visualize: `python -m iris_devtester.utils.yaspe_viz /path/to/data`
 ```
 
 **Rationale**:
@@ -441,7 +441,7 @@ Original unknowns from spec:
 ### Internal References
 - `~/ws/rag-templates/common/iris_connection_manager.py` - Connection patterns
 - `~/ws/rag-templates/tests/utils/iris_password_reset.py` - Container interaction patterns
-- iris_devtools CONSTITUTION.md - Design principles
+- iris_devtester CONSTITUTION.md - Design principles
 
 ---
 

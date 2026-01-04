@@ -1,7 +1,7 @@
 # Implementation Plan: IRIS DevTools Package
 
-**Branch**: `001-implement-iris-devtools` | **Date**: 2025-10-05 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-implement-iris-devtools/spec.md`
+**Branch**: `001-implement-iris-devtester` | **Date**: 2025-10-05 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/001-implement-iris-devtester/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -129,7 +129,7 @@ All 8 principles are satisfied by the feature requirements. This is an extractio
 
 ### Documentation (this feature)
 ```
-specs/001-implement-iris-devtools/
+specs/001-implement-iris-devtester/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
 ├── data-model.md        # Phase 1 output (/plan command)
@@ -143,8 +143,8 @@ specs/001-implement-iris-devtools/
 
 ### Source Code (repository root)
 ```
-iris-devtools/
-├── iris_devtools/                    # Main package
+iris-devtester/
+├── iris_devtester/                    # Main package
 │   ├── __init__.py                   # Package exports
 │   ├── connections/                  # Connection management
 │   │   ├── __init__.py
@@ -249,7 +249,7 @@ Since this is an **extraction project** with proven source code in `~/ws/rag-tem
    - Schema validation caching impact
 
 **Output**: research.md documenting:
-- Source code mapping (rag-templates → iris-devtools)
+- Source code mapping (rag-templates → iris-devtester)
 - Technology decisions with rationale
 - Performance benchmarks and targets
 - Migration compatibility strategy
@@ -320,7 +320,7 @@ Extract from user stories:
 Step-by-step validation of primary user story:
 ```python
 # 1. Install
-pip install iris-devtools
+pip install iris-devtester
 
 # 2. Write test
 def test_my_iris_feature(iris_db):
@@ -336,7 +336,7 @@ pytest  # Just works!
 ### 6. Update CLAUDE.md
 
 Incremental update (preserving manual content):
-- Add iris-devtools technical context
+- Add iris-devtester technical context
 - Note testcontainers integration
 - Reference CONSTITUTION.md principles
 - Update recent changes (Feature 001)
@@ -394,7 +394,7 @@ Validation (46-50)
 
 Tasks will reference:
 - Source files in `~/ws/rag-templates/` to extract
-- Target files in `iris_devtools/` to create
+- Target files in `iris_devtester/` to create
 - Test files to write/run
 - Documentation to update
 

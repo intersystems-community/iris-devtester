@@ -51,7 +51,7 @@ cursor.execute("""
 
 **What Works**:
 ```python
-from iris_devtools.containers.monitor_utils import get_monitoring_status
+from iris_devtester.containers.monitor_utils import get_monitoring_status
 
 status = get_monitoring_status(conn)
 # ✓ Tables exist: True
@@ -156,7 +156,7 @@ status = get_monitoring_status(conn)
 ### What Works ✅
 ```bash
 # Test monitor infrastructure
-python -c "from iris_devtools.containers.monitor_utils import get_monitoring_status; ..."
+python -c "from iris_devtester.containers.monitor_utils import get_monitoring_status; ..."
 # Result: Tables exist, not collecting
 
 # Test SQL task creation
@@ -225,7 +225,7 @@ cursor.execute("INSERT INTO %SYS.Task ...")
 - ✅ Can create scheduled tasks via SQL
 - ✅ Clear documentation on limitations
 
-### For iris-devtools Package ✅
+### For iris-devtester Package ✅
 - ✅ Working utilities for %Monitor.System
 - ✅ SQL-based task management
 - ✅ No dependency on ObjectScript execution
@@ -243,8 +243,8 @@ cursor.execute("INSERT INTO %SYS.Task ...")
 
 1. `docs/learnings/iris-performance-monitoring-landscape.md` - Comprehensive research
 2. `docs/learnings/feature-002-pivot-summary.md` - This file
-3. `iris_devtools/containers/monitor_utils.py` - Working utilities
-4. `iris_devtools/containers/monitoring.py` - Updated with SQL approach
+3. `iris_devtester/containers/monitor_utils.py` - Working utilities
+4. `iris_devtester/containers/monitoring.py` - Updated with SQL approach
 
 ---
 

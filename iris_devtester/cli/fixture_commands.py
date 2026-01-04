@@ -75,8 +75,8 @@ def create(name: str, namespace: str, output: str, description: str, version: st
         click.echo(f"Size: {sizes['total_mb']:.2f} MB")
 
         click.echo("\nNext steps:")
-        click.echo(f"  1. Validate: iris-devtools fixture validate --fixture {output}")
-        click.echo(f"  2. Load: iris-devtools fixture load --fixture {output}")
+        click.echo(f"  1. Validate: iris-devtester fixture validate --fixture {output}")
+        click.echo(f"  2. Load: iris-devtester fixture load --fixture {output}")
         click.echo(f"  3. Commit to git: git add {output}")
 
         sys.exit(0)
@@ -286,7 +286,7 @@ def list(path: str, verbose: bool):
         if not manifests:
             click.secho(f"\nNo fixtures found in {path}", fg='yellow')
             click.echo(f"\nTo create a fixture:")
-            click.echo(f"  iris-devtools fixture create --name my-fixture --namespace USER --output {path}/my-fixture")
+            click.echo(f"  iris-devtester fixture create --name my-fixture --namespace USER --output {path}/my-fixture")
             sys.exit(0)
 
         # Load and display fixtures

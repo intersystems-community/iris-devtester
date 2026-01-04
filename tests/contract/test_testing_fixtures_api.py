@@ -2,7 +2,7 @@
 Contract tests for Testing Fixtures API.
 
 These tests validate the public API interface defined in:
-specs/001-implement-iris-devtools/contracts/testing-fixtures-api.md
+specs/001-implement-iris-devtester/contracts/testing-fixtures-api.md
 
 These tests MUST FAIL until implementation is complete.
 """

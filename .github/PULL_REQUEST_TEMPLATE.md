@@ -94,7 +94,7 @@ None / N/A
 
 ## Pre-submission Checklist
 
-- [ ] I have read and followed the [Contributing Guidelines](https://github.com/intersystems-community/iris-devtools/blob/main/CONTRIBUTING.md)
+- [ ] I have read and followed the [Contributing Guidelines](https://github.com/intersystems-community/iris-devtester/blob/main/CONTRIBUTING.md)
 - [ ] I have verified constitutional compliance for all changes
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] I have maintained or improved test coverage (≥95%)

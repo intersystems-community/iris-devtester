@@ -59,7 +59,7 @@ docs/
 **Current Status**:
 ```toml
 [project]
-name = "iris-devtools"
+name = "iris-devtester"
 version = "1.0.0"
 description = "Battle-tested InterSystems IRIS infrastructure utilities for Python development"
 readme = "README.md"
@@ -109,7 +109,7 @@ license = {text = "MIT"}
 
 **README Quickstart Example**:
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
@@ -126,7 +126,7 @@ with IRISContainer.community() as iris:
 
 ### Docstring Audit (FR-021, FR-022)
 
-**Sample Check** (`iris_devtools/containers/__init__.py`):
+**Sample Check** (`iris_devtester/containers/__init__.py`):
 - Need to audit all public APIs for:
   - Google-style docstrings
   - Working examples in docstrings
@@ -139,7 +139,7 @@ with IRISContainer.community() as iris:
 
 1. **Relative Links** (FR-009):
    - Current: `[CONTRIBUTING.md](CONTRIBUTING.md)`
-   - Should be: `[CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtools/blob/main/CONTRIBUTING.md)`
+   - Should be: `[CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtester/blob/main/CONTRIBUTING.md)`
 
 2. **README Length** (FR-068):
    - Current: 221 lines (~6,729 bytes)
@@ -148,7 +148,7 @@ with IRISContainer.community() as iris:
 
 3. **Badge URLs** (FR-004):
    - Need to verify all badges point to correct URLs for PyPI package
-   - PyPI badge currently shows `iris-devtools` (correct)
+   - PyPI badge currently shows `iris-devtester` (correct)
 
 ## Gap Analysis by Requirement Category
 
@@ -259,7 +259,7 @@ with IRISContainer.community() as iris:
 
 4. **Docstring validation**:
    ```bash
-   pydocstyle iris_devtools/
+   pydocstyle iris_devtester/
    # Or use darglint for docstring/signature matching
    ```
 

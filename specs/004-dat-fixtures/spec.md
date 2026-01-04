@@ -43,11 +43,11 @@ As an IRIS application developer, I need to export database namespaces as .DAT f
 
 ### Acceptance Scenarios
 
-1. **Given** I have a namespace with test data I want to preserve, **When** I run `iris-devtools fixture create --namespace USER_TEST`, **Then** I get a fixture directory containing IRIS.DAT and manifest.json with metadata and checksum
+1. **Given** I have a namespace with test data I want to preserve, **When** I run `iris-devtester fixture create --namespace USER_TEST`, **Then** I get a fixture directory containing IRIS.DAT and manifest.json with metadata and checksum
 
-2. **Given** I have a .DAT fixture directory, **When** I run `iris-devtools fixture load` pointing to that directory, **Then** the entire namespace is loaded into my test database in under 10 seconds for 10K rows
+2. **Given** I have a .DAT fixture directory, **When** I run `iris-devtester fixture load` pointing to that directory, **Then** the entire namespace is loaded into my test database in under 10 seconds for 10K rows
 
-3. **Given** I have a fixture directory, **When** I run `iris-devtools fixture validate`, **Then** I see confirmation that the IRIS.DAT checksum matches and all referenced tables exist
+3. **Given** I have a fixture directory, **When** I run `iris-devtester fixture validate`, **Then** I see confirmation that the IRIS.DAT checksum matches and all referenced tables exist
 
 4. **Given** I'm writing pytest tests, **When** I use the Python API `DATFixtureLoader`, **Then** I can programmatically load and cleanup fixtures within my test lifecycle
 
@@ -73,7 +73,7 @@ As an IRIS application developer, I need to export database namespaces as .DAT f
 - System MUST create manifest.json with namespace, metadata, table list, row counts, and SHA256 checksum
 - System MUST validate namespace existence before export
 - System MUST export entire namespace (all tables) to single IRIS.DAT file
-- CLI syntax: `iris-devtools fixture create --name <name> --namespace <namespace> --output <dir>`
+- CLI syntax: `iris-devtester fixture create --name <name> --namespace <namespace> --output <dir>`
 
 **FR-002: DAT Fixture Loading**
 - System MUST provide CLI command to load .DAT fixture into test database
@@ -81,7 +81,7 @@ As an IRIS application developer, I need to export database namespaces as .DAT f
 - System MUST perform atomic loading (entire namespace loaded or none)
 - System MUST be idempotent (can reload same fixture multiple times)
 - System MUST support loading to different target namespace than source
-- CLI syntax: `iris-devtools fixture load --fixture <dir> --namespace <target-namespace>`
+- CLI syntax: `iris-devtester fixture load --fixture <dir> --namespace <target-namespace>`
 
 **FR-003: Fixture Validation**
 - System MUST provide CLI command to validate .DAT fixture integrity
@@ -232,6 +232,6 @@ As an IRIS application developer, I need to export database namespaces as .DAT f
 ### Open Questions (to be resolved during planning)
 1. ~~Does IRIS Python SDK support .DAT export/load directly, or do we need ObjectScript?~~ **RESOLVED**: Use BACKUP^DBACK routine via DBAPI cursor for backup, database mounting for load
 2. ~~Should fixtures create temporary namespaces for isolation?~~ **RESOLVED**: Yes, each fixture load can specify unique target namespace
-3. Should iris-devtools recommend Git LFS for .DAT files >10MB?
+3. Should iris-devtester recommend Git LFS for .DAT files >10MB?
 4. Should there be a central registry of available fixtures?
 5. How to handle fixtures when namespace schema changes (tables added/removed after fixture creation)?

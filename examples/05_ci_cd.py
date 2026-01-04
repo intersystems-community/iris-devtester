@@ -74,12 +74,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install iris-devtools[all]
+          pip install iris-devtester[all]
           pip install pytest pytest-cov
 
       - name: Run tests
         run: |
-          pytest tests/ -v --cov=iris_devtools
+          pytest tests/ -v --cov=iris_devtester
 
       # IRIS container starts automatically!
       # No manual Docker setup needed

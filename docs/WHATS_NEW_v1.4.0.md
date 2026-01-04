@@ -437,7 +437,7 @@ python -c "import iris_devtester; print(iris_devtester.__version__)"
 ## Questions or Issues?
 
 - **Documentation**: See `CLAUDE.md` for complete feature documentation
-- **Issues**: https://github.com/intersystems-community/iris-devtools/issues
+- **Issues**: https://github.com/intersystems-community/iris-devtester/issues
 - **PyPI**: https://pypi.org/project/iris-devtester/1.4.0/
 
 ---

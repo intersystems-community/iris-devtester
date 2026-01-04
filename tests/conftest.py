@@ -1,5 +1,5 @@
 """
-pytest configuration and fixtures for iris-devtools tests.
+pytest configuration and fixtures for iris-devtester tests.
 
 Provides IRIS database connections and containers for integration testing.
 """

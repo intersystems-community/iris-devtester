@@ -51,7 +51,7 @@ IRIS DevTools automatically handles this, but if you encounter the error:
 ```python
 # The library should automatically reset the password
 # If it doesn't work, check Docker container access:
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 with IRISContainer.community() as iris:
     # Auto-remediation happens here
@@ -91,7 +91,7 @@ Another IRIS instance or container is using the default port (1972).
 
 **Option 1: Let testcontainers auto-assign ports (recommended)**
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Testcontainers will automatically find available port
 with IRISContainer.community() as iris:
@@ -152,7 +152,7 @@ docker logs <container_id>
 
 **Step 3: Wait for startup**
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 import time
 
 with IRISContainer.community() as iris:
@@ -244,7 +244,7 @@ If your issue isn't covered here:
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 # You'll now see detailed logs
 ```
 
@@ -267,7 +267,7 @@ docker exec -it <container_id> iris session IRIS -U%SYS "WRITE \$ZVERSION"
 ### Test Connection Manually
 
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 with IRISContainer.community() as iris:
     print(f"Connection URL: {iris.get_connection_url()}")

@@ -159,7 +159,7 @@ docs/
 
 **Priority 2 (Polish - Continuous improvement)**:
 ```
-iris_devtools/
+iris_devtester/
 ├── containers/
 │   └── *.py                                  # Audit docstrings (FR-021, FR-022)
 ├── connections/
@@ -169,7 +169,7 @@ iris_devtools/
 ```
 
 **Structure Decision**:
-This is a documentation-only feature with no source code changes. The work focuses on creating missing community health files, enhancing existing documentation for PyPI compatibility, and ensuring all examples and API references are complete and accurate. The existing project structure (`iris_devtools/` for source, `tests/` for tests, `docs/` for documentation, `examples/` for demos) is maintained.
+This is a documentation-only feature with no source code changes. The work focuses on creating missing community health files, enhancing existing documentation for PyPI compatibility, and ensuring all examples and API references are complete and accurate. The existing project structure (`iris_devtester/` for source, `tests/` for tests, `docs/` for documentation, `examples/` for demos) is maintained.
 
 ## Phase 0: Research & Current State Analysis
 
@@ -286,9 +286,9 @@ Provides step-by-step implementation guide:
 
 **3. Audit Tasks** (Parallel):
 ```
-- Audit iris_devtools/containers/ docstrings
-- Audit iris_devtools/connections/ docstrings
-- Audit iris_devtools/testing/ docstrings
+- Audit iris_devtester/containers/ docstrings
+- Audit iris_devtester/connections/ docstrings
+- Audit iris_devtester/testing/ docstrings
 - Verify LICENSE year current
 - Check contact email validity
 ```

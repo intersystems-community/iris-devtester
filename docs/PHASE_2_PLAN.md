@@ -27,7 +27,7 @@ Phase 2 focuses on completing the infrastructure needed to run integration tests
 
 ### Current Status
 
-**Exists** (`iris_devtools/containers/iris_container.py`):
+**Exists** (`iris_devtester/containers/iris_container.py`):
 - ✅ Community/Enterprise factory methods
 - ✅ DBAPI connection via `get_connection()`
 - ✅ CallIn service enablement
@@ -46,7 +46,7 @@ Phase 2 focuses on completing the infrastructure needed to run integration tests
 
 #### Task 1: Add iris.connect() Support
 
-**File**: `iris_devtools/containers/iris_container.py`
+**File**: `iris_devtester/containers/iris_container.py`
 
 **New Method**: `get_iris_connection()`
 
@@ -263,8 +263,8 @@ iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")
 ### Current Status
 
 **Files Exist**:
-- `iris_devtools/testing/__init__.py`
-- `iris_devtools/testing/fixtures.py`
+- `iris_devtester/testing/__init__.py`
+- `iris_devtester/testing/fixtures.py`
 
 **Missing**:
 - Complete pytest fixture implementations
@@ -275,11 +275,11 @@ iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")
 
 #### Task 1: Complete `iris_test_fixture()`
 
-**File**: `iris_devtools/testing/fixtures.py`
+**File**: `iris_devtester/testing/fixtures.py`
 
 ```python
 import pytest
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 
 @pytest.fixture(scope="function")
@@ -320,7 +320,7 @@ def iris_test_fixture():
 
 #### Task 2: Add Schema Reset Utilities
 
-**File**: `iris_devtools/testing/schema_reset.py`
+**File**: `iris_devtester/testing/schema_reset.py`
 
 ```python
 def reset_namespace(connection, namespace: str):
@@ -356,7 +356,7 @@ def reset_namespace(connection, namespace: str):
 
 #### Task 3: Add Test Isolation Helpers
 
-**File**: `iris_devtools/testing/isolation.py`
+**File**: `iris_devtester/testing/isolation.py`
 
 ```python
 import uuid

@@ -42,7 +42,7 @@
 
 ### Primary User Story
 
-**As a Python developer discovering iris-devtools on PyPI**, I need comprehensive, accurate, and accessible documentation so that I can:
+**As a Python developer discovering iris-devtester on PyPI**, I need comprehensive, accurate, and accessible documentation so that I can:
 1. Quickly understand what the package does and whether it solves my problem
 2. Install it successfully on my first attempt
 3. Get a working "hello world" example running in under 5 minutes
@@ -57,7 +57,7 @@
 
 ### Acceptance Scenarios
 
-1. **Given** a developer browsing PyPI search results, **When** they view the iris-devtools listing, **Then** they can determine within 30 seconds whether this package solves their IRIS integration needs
+1. **Given** a developer browsing PyPI search results, **When** they view the iris-devtester listing, **Then** they can determine within 30 seconds whether this package solves their IRIS integration needs
 
 2. **Given** a developer with no prior IRIS experience, **When** they read the README quickstart, **Then** they can install the package and run their first query without referring to external documentation
 
@@ -96,7 +96,7 @@
 - **FR-003**: README MUST render correctly on both GitHub and PyPI with identical content and formatting
 - **FR-004**: README MUST include badges for PyPI version, Python versions, license, and test coverage that are accurate and functional
 - **FR-005**: Package homepage MUST present "what problem does this solve" before "how to install"
-- **FR-006**: README MUST include visual comparison showing "before iris-devtools" vs "after" (problem/solution clarity)
+- **FR-006**: README MUST include visual comparison showing "before iris-devtester" vs "after" (problem/solution clarity)
 - **FR-007**: README MUST state minimum requirements (Python version, Docker, IRIS editions supported) in a dedicated "Requirements" section
 - **FR-008**: Keywords in pyproject.toml MUST enable discovery by users searching for "iris testing", "iris docker", "testcontainers iris"
 - **FR-009**: All documentation links MUST use absolute URLs to prevent broken links when viewed on PyPI

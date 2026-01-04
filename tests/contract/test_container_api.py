@@ -2,7 +2,7 @@
 Contract tests for Container Management API.
 
 These tests validate the public API interface defined in:
-specs/001-implement-iris-devtools/contracts/container-api.md
+specs/001-implement-iris-devtester/contracts/container-api.md
 
 These tests MUST FAIL until implementation is complete.
 """

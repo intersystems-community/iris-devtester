@@ -107,8 +107,8 @@ pytest tests/integration/test_fixture_performance.py -v
 **Current Status**: Incomplete, referenced in README but not working
 
 **Files to fix**:
-- `iris_devtools/containers/iris_container.py`
-- `iris_devtools/containers/__init__.py`
+- `iris_devtester/containers/iris_container.py`
+- `iris_devtester/containers/__init__.py`
 
 **Requirements**:
 - Wrap testcontainers for IRIS
@@ -128,8 +128,8 @@ pytest tests/integration/test_fixture_performance.py -v
 **Current Status**: Incomplete, basic fixtures exist
 
 **Files to complete**:
-- `iris_devtools/testing/fixtures.py`
-- `iris_devtools/testing/schema_reset.py`
+- `iris_devtester/testing/fixtures.py`
+- `iris_devtester/testing/schema_reset.py`
 
 **Requirements**:
 - `iris_test_fixture()` - pytest fixture for IRIS
@@ -184,7 +184,7 @@ pytest tests/integration/test_fixture_performance.py -v
 - [ ] Add CLI entry point
 - [ ] Verify all dependencies
 
-**iris_devtools/__init__.py fixes**:
+**iris_devtester/__init__.py fixes**:
 - [ ] Uncomment working imports
 - [ ] Expose public API
 - [ ] Update version to 1.0.0
@@ -255,16 +255,16 @@ python -m venv /tmp/burnin-test
 source /tmp/burnin-test/bin/activate
 
 # Build and install
-cd /Users/tdyar/ws/iris-devtools
+cd /Users/tdyar/ws/iris-devtester
 python -m build
-pip install dist/iris_devtools-1.0.0-py3-none-any.whl
+pip install dist/iris_devtester-1.0.0-py3-none-any.whl
 
 # Test imports
-python -c "from iris_devtools.connections import get_connection"
-python -c "from iris_devtools.fixtures import FixtureCreator"
+python -c "from iris_devtester.connections import get_connection"
+python -c "from iris_devtester.fixtures import FixtureCreator"
 
 # Test CLI
-iris-devtools --help
+iris-devtester --help
 iris-devtester fixture --help
 
 # Cleanup
@@ -284,7 +284,7 @@ following our README.md to get started.
 """
 
 # Step 1: Import (from README quickstart)
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Step 2: Create container (from README)
 with IRISContainer.community() as iris:
@@ -297,7 +297,7 @@ with IRISContainer.community() as iris:
     print(f"✓ IRIS Version: {cursor.fetchone()[0]}")
 
     # Step 5: Test fixtures (from README)
-    from iris_devtools.fixtures import FixtureCreator
+    from iris_devtester.fixtures import FixtureCreator
     creator = FixtureCreator()
     # ... etc
 ```
@@ -337,7 +337,7 @@ python -m twine upload --repository testpypi dist/*
 
 **Test install**:
 ```bash
-pip install --index-url https://test.pypi.org/simple/ iris-devtools
+pip install --index-url https://test.pypi.org/simple/ iris-devtester
 ```
 
 **Tasks**:
@@ -425,7 +425,7 @@ python -m twine upload dist/*
 
 ### Package
 - [ ] Installs cleanly: `pip install iris-devtester`
-- [ ] CLI works: `iris-devtools --help`
+- [ ] CLI works: `iris-devtester --help`
 - [ ] Imports work
 - [ ] Zero-config viable
 

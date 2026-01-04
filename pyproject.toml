@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iris-devtester"
-version = "1.7.0"
+version = "1.7.1"
 description = "Battle-tested InterSystems IRIS infrastructure utilities for Python development"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -50,25 +50,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# DBAPI support (recommended)
 dbapi = [
     "intersystems-irispython>=3.2.0",
 ]
 
-# JDBC support (fallback)
 jdbc = [
     "jaydebeapi>=1.2.3",
     "JPype1>=1.4.0",
 ]
 
-# Full installation (all connection types)
 all = [
     "intersystems-irispython>=3.2.0",
     "jaydebeapi>=1.2.3",
     "JPype1>=1.4.0",
 ]
 
-# Testing dependencies
 test = [
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
@@ -76,7 +72,6 @@ test = [
     "pytest-timeout>=2.2.0",
 ]
 
-# Development dependencies
 dev = [
     "black>=24.0.0",
     "isort>=5.13.0",
@@ -87,7 +82,6 @@ dev = [
     "twine>=5.0.0",
 ]
 
-# Documentation dependencies
 docs = [
     "sphinx>=7.0.0",
     "sphinx-rtd-theme>=2.0.0",
@@ -156,8 +150,8 @@ omit = [
     "*/tests/*",
     "*/test_*",
     "*/__pycache__/*",
-    "*/cli/*",  # CLI is integration code, not library API
-    "*/testing/*",  # Testing fixtures/utilities, not library API
+    "*/cli/*",
+    "*/testing/*",
 ]
 
 [tool.coverage.report]

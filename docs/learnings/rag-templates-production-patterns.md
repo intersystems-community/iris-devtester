@@ -1,14 +1,14 @@
 # Production IRIS Patterns from rag-templates
 
 **Source**: `~/ws/rag-templates/`
-**Purpose**: Extract battle-tested patterns for iris-devtools
+**Purpose**: Extract battle-tested patterns for iris-devtester
 **Date**: 2025-10-18
 
 ---
 
 ## Overview
 
-This document captures production-proven patterns from the rag-templates project that should be integrated into iris-devtools to make it "facile with database container ops."
+This document captures production-proven patterns from the rag-templates project that should be integrated into iris-devtester to make it "facile with database container ops."
 
 **Key Files Analyzed**:
 - `common/iris_connection_manager.py` - Connection management
@@ -70,8 +70,8 @@ except Exception:
 - **Graceful degradation** - tries each port until one succeeds
 - **pytest.skip()** instead of failing when no IRIS available
 
-**Integration into iris-devtools**:
-- Add to `iris_devtools/config/auto_discovery.py`
+**Integration into iris-devtester**:
+- Add to `iris_devtester/config/auto_discovery.py`
 - Use in IRISContainer.from_existing()
 - Document port conventions in CONSTITUTION.md
 
@@ -128,7 +128,7 @@ def auto_detect_iris_port():
 - **Native fallback** - checks `iris list` if Docker not available
 - **Timeout protection** - won't hang on slow Docker
 
-**Integration into iris-devtools**:
+**Integration into iris-devtester**:
 - Add to IRISContainer.get_config()
 - Use in zero-config connections
 - Document in "Zero Configuration Viable" principle
@@ -210,8 +210,8 @@ class IRISConnectionPool:
 **Business Impact** (from rag-templates):
 > "Implements connection pooling to eliminate the connection overhead observed in production (60s per 100-ticket batch from connection churn)."
 
-**Integration into iris-devtools**:
-- Add to `iris_devtools/connections/` as optional feature
+**Integration into iris-devtester**:
+- Add to `iris_devtester/connections/` as optional feature
 - Document in performance guide
 - Make available via `IRISContainer.get_pool()`
 
@@ -277,8 +277,8 @@ class IRISPasswordResetHandler:
 - **Wait period** - Gives IRIS 2s to apply password change
 - **Helpful error messages** - Includes manual steps if automation fails
 
-**Integration into iris-devtools**:
-- Already implemented in `iris_devtools/containers/iris_container.py:321-412`
+**Integration into iris-devtester**:
+- Already implemented in `iris_devtester/containers/iris_container.py:321-412`
 - Matches Constitutional Principle #1 (Automatic Remediation)
 - Keep existing implementation ✅
 
@@ -336,7 +336,7 @@ Standard IRIS:        1972, 52773 (reserved, don't use)
 Testcontainers:      31972, 35273 (random high ports)
 ```
 
-**Integration into iris-devtools**:
+**Integration into iris-devtester**:
 - Document port conventions in README
 - Use 31972+ for testcontainers (high ephemeral range)
 - Add to auto-discovery pattern
@@ -394,9 +394,9 @@ class TestSchemaResetIntegration:
 - **Clear errors** - Detailed assertion messages
 - **Set operations** - Uses set difference to find missing tables
 
-**Integration into iris-devtools**:
+**Integration into iris-devtester**:
 - Add to Phase 2.2 testing utilities
-- Create `iris_devtools/testing/schema_reset.py`
+- Create `iris_devtester/testing/schema_reset.py`
 - Implement pattern from PHASE_2_PLAN.md:326-351
 
 ---
@@ -461,7 +461,7 @@ def get_iris_dbapi_connection():
 - **Logging** - Clear feedback on each retry attempt
 - **Graceful failure** - Returns None instead of raising
 
-**Integration into iris-devtools**:
+**Integration into iris-devtester**:
 - Already partially in IRISContainer.wait_for_ready()
 - Add to get_connection() methods
 - Document in reliability guide
@@ -473,7 +473,7 @@ def get_iris_dbapi_connection():
 ### High Priority (Phase 2)
 
 1. ✅ **Automatic Password Reset** - Already implemented in IRISContainer
-2. **Multi-Port Discovery** - Add to `iris_devtools/config/auto_discovery.py`
+2. **Multi-Port Discovery** - Add to `iris_devtester/config/auto_discovery.py`
 3. **Docker Port Auto-Detection** - Add to IRISContainer.from_existing()
 4. **Schema Reset Utilities** - Add to Phase 2.2 testing utilities
 
@@ -493,12 +493,12 @@ def get_iris_dbapi_connection():
 ## Code Extraction Priority
 
 **Immediate (Phase 2.1-2.2)**:
-1. Extract schema reset pattern → `iris_devtools/testing/schema_reset.py`
-2. Extract port discovery → `iris_devtools/config/auto_discovery.py`
+1. Extract schema reset pattern → `iris_devtester/testing/schema_reset.py`
+2. Extract port discovery → `iris_devtester/config/auto_discovery.py`
 3. Update integration test fixtures with port discovery
 
 **Next (Phase 3)**:
-4. Extract connection pool → `iris_devtools/connections/pool.py` (optional import)
+4. Extract connection pool → `iris_devtester/connections/pool.py` (optional import)
 5. Document port conventions → README.md
 6. Add retry enhancements → IRISContainer methods
 
@@ -507,7 +507,7 @@ def get_iris_dbapi_connection():
 ## References
 
 - **Source**: `~/ws/rag-templates/`
-- **Target**: `~/ws/iris-devtools/`
+- **Target**: `~/ws/iris-devtester/`
 - **Constitutional Principles**: All 8 principles, especially #1 (Automatic Remediation) and #4 (Zero Config)
 - **Related Docs**:
   - `docs/SQL_VS_OBJECTSCRIPT.md`

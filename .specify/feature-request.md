@@ -20,7 +20,7 @@ The implementation should be based on proven code from:
 
 ## What to Build
 
-### 1. Connection Management (`iris_devtools/connections/`)
+### 1. Connection Management (`iris_devtester/connections/`)
 
 Extract from `rag-templates/common/iris_connection_manager.py`:
 
@@ -43,7 +43,7 @@ Extract from `rag-templates/common/iris_connection_manager.py`:
   from .recovery import IRISPasswordResetHandler, reset_iris_password_if_needed
   ```
 
-### 2. Container Management (`iris_devtools/containers/`)
+### 2. Container Management (`iris_devtester/containers/`)
 
 Build on testcontainers-iris-python:
 
@@ -62,7 +62,7 @@ Build on testcontainers-iris-python:
 
 - `__init__.py` - Convenience exports
 
-### 3. Testing Utilities (`iris_devtools/testing/`)
+### 3. Testing Utilities (`iris_devtester/testing/`)
 
 Extract from `rag-templates/tests/`:
 
@@ -95,7 +95,7 @@ Extract from `rag-templates/tests/`:
   - SchemaValidationResult, SchemaMismatch
   - From `tests/utils/schema_models.py`
 
-### 4. Configuration (`iris_devtools/config/`)
+### 4. Configuration (`iris_devtester/config/`)
 
 **Files to create**:
 - `discovery.py` - Auto-discovery
@@ -110,7 +110,7 @@ Extract from `rag-templates/tests/`:
   - Default schema definitions
   - Default wait strategies
 
-### 5. Utilities (`iris_devtools/utils/`)
+### 5. Utilities (`iris_devtester/utils/`)
 
 **Files to create**:
 - `docker_helpers.py` - Docker utilities

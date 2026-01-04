@@ -1,4 +1,4 @@
-# RAG-Templates Project Analysis for iris-devtools Extraction
+# RAG-Templates Project Analysis for iris-devtester Extraction
 
 **Analysis Date:** 2025-10-06
 **Analyst:** Claude Code
@@ -6,9 +6,9 @@
 
 ## Executive Summary
 
-The **rag-templates** project is a production-grade RAG (Retrieval-Augmented Generation) framework built on InterSystems IRIS. It contains ~6,500 lines of battle-tested IRIS infrastructure code that has been refined through real-world usage. This analysis identifies opportunities to extract proven connection management, testing utilities, and configuration patterns into the new **iris-devtools** package.
+The **rag-templates** project is a production-grade RAG (Retrieval-Augmented Generation) framework built on InterSystems IRIS. It contains ~6,500 lines of battle-tested IRIS infrastructure code that has been refined through real-world usage. This analysis identifies opportunities to extract proven connection management, testing utilities, and configuration patterns into the new **iris-devtester** package.
 
-**Key Finding:** Approximately **2,000+ lines of reusable IRIS infrastructure code** can be extracted, which would eliminate ~30% of the boilerplate in rag-templates while creating a robust foundation for iris-devtools.
+**Key Finding:** Approximately **2,000+ lines of reusable IRIS infrastructure code** can be extracted, which would eliminate ~30% of the boilerplate in rag-templates while creating a robust foundation for iris-devtester.
 
 ---
 
@@ -240,10 +240,10 @@ services:
 
 | File | Lines | Extraction Value | Target Module |
 |------|-------|------------------|---------------|
-| `common/iris_connection_manager.py` | 412 | ★★★★★ | `iris_devtools/connections/manager.py` |
-| `common/iris_dbapi_connector.py` | 324 | ★★★★★ | `iris_devtools/connections/dbapi.py` |
-| `common/environment_manager.py` | 221 | ★★★★☆ | `iris_devtools/utils/environment.py` |
-| `common/config.py` | 59 | ★★★☆☆ | `iris_devtools/config/discovery.py` |
+| `common/iris_connection_manager.py` | 412 | ★★★★★ | `iris_devtester/connections/manager.py` |
+| `common/iris_dbapi_connector.py` | 324 | ★★★★★ | `iris_devtester/connections/dbapi.py` |
+| `common/environment_manager.py` | 221 | ★★★★☆ | `iris_devtester/utils/environment.py` |
+| `common/config.py` | 59 | ★★★☆☆ | `iris_devtester/config/discovery.py` |
 
 **Specific Code Locations:**
 
@@ -271,11 +271,11 @@ Lines 24-150: EnvironmentManager class
 
 | File | Lines | Extraction Value | Target Module |
 |------|-------|------------------|---------------|
-| `tests/utils/iris_password_reset.py` | 230 | ★★★★★ | `iris_devtools/testing/password_reset.py` |
-| `tests/utils/preflight_checks.py` | 256 | ★★★★☆ | `iris_devtools/testing/preflight.py` |
-| `tests/fixtures/database_cleanup.py` | 186 | ★★★★★ | `iris_devtools/testing/cleanup.py` |
-| `tests/fixtures/database_state.py` | 181 | ★★★★★ | `iris_devtools/testing/state.py` |
-| `tests/fixtures/schema_reset.py` | 179 | ★★★★☆ | `iris_devtools/testing/schema.py` |
+| `tests/utils/iris_password_reset.py` | 230 | ★★★★★ | `iris_devtester/testing/password_reset.py` |
+| `tests/utils/preflight_checks.py` | 256 | ★★★★☆ | `iris_devtester/testing/preflight.py` |
+| `tests/fixtures/database_cleanup.py` | 186 | ★★★★★ | `iris_devtester/testing/cleanup.py` |
+| `tests/fixtures/database_state.py` | 181 | ★★★★★ | `iris_devtester/testing/state.py` |
+| `tests/fixtures/schema_reset.py` | 179 | ★★★★☆ | `iris_devtester/testing/schema.py` |
 
 **Specific Code Locations:**
 
@@ -358,11 +358,11 @@ Lines 126-158: iris_test_session fixture
 
 ---
 
-## 5. Code That Could Be Replaced by iris-devtools
+## 5. Code That Could Be Replaced by iris-devtester
 
 ### 5.1 Immediate Replacement Opportunities
 
-Once iris-devtools is built, rag-templates can replace:
+Once iris-devtester is built, rag-templates can replace:
 
 #### Connection Management (~900 lines → ~50 lines)
 
@@ -379,8 +379,8 @@ conn = get_iris_connection()
 
 **After:**
 ```python
-# Using iris-devtools (~5 lines)
-from iris_devtools.connections import get_connection
+# Using iris-devtester (~5 lines)
+from iris_devtester.connections import get_connection
 conn = get_connection()  # Auto-detects DBAPI/JDBC, environment, port
 ```
 
@@ -404,9 +404,9 @@ from tests.fixtures.schema_reset import SchemaResetter
 
 **After:**
 ```python
-# Using iris-devtools (~20 lines)
+# Using iris-devtester (~20 lines)
 import pytest
-from iris_devtools.testing import iris_db, clean_schema
+from iris_devtester.testing import iris_db, clean_schema
 
 @pytest.fixture
 def my_test_db(iris_db):
@@ -418,7 +418,7 @@ def my_test_db(iris_db):
 
 #### Development Time Savings
 
-| Activity | Current (rag-templates) | With iris-devtools | Savings |
+| Activity | Current (rag-templates) | With iris-devtester | Savings |
 |----------|------------------------|-------------------|---------|
 | Initial connection setup | 2-4 hours | 15 minutes | **90%** |
 | Test infrastructure setup | 8-12 hours | 1 hour | **88%** |
@@ -428,7 +428,7 @@ def my_test_db(iris_db):
 
 #### Code Maintenance Savings
 
-| Metric | rag-templates | With iris-devtools | Reduction |
+| Metric | rag-templates | With iris-devtester | Reduction |
 |--------|---------------|-------------------|-----------|
 | Connection code to maintain | ~960 lines | ~50 lines | **95%** |
 | Test infrastructure code | ~1,230 lines | ~100 lines | **92%** |
@@ -444,7 +444,7 @@ def my_test_db(iris_db):
 4. ❌ Test cleanup failures can pollute database
 5. ❌ Schema validation is test-specific, not reusable
 
-**With iris-devtools:**
+**With iris-devtester:**
 1. ✅ Automatic password reset (constitutional requirement)
 2. ✅ Robust port auto-detection with fallback chain
 3. ✅ Transparent environment switching
@@ -459,16 +459,16 @@ def my_test_db(iris_db):
 |----------|-----------|---------------|----------------|
 | **From scratch** | 2-3 days | ~2,500 lines | High (every project reinvents) |
 | **Copy from rag-templates** | 1-2 days | ~1,000 lines | Medium (manual adaptation) |
-| **With iris-devtools** | **1-2 hours** | **~100 lines** | **Low (tested framework)** |
+| **With iris-devtester** | **1-2 hours** | **~100 lines** | **Low (tested framework)** |
 
-**Example iris-devtools usage:**
+**Example iris-devtester usage:**
 ```bash
 # New project setup
 pip install iris-devtester[all]
 
 # Create test file
 cat > test_my_app.py << 'EOF'
-from iris_devtools.testing import iris_db
+from iris_devtester.testing import iris_db
 
 def test_my_feature(iris_db):
     cursor = iris_db.cursor()
@@ -489,9 +489,9 @@ pytest
 **Priority:** ★★★★★ (Blocks all other work)
 
 **Extract:**
-1. `iris_connection_manager.py` → `iris_devtools/connections/manager.py`
-2. `iris_dbapi_connector.py` → `iris_devtools/connections/dbapi.py`
-3. `environment_manager.py` → `iris_devtools/utils/environment.py`
+1. `iris_connection_manager.py` → `iris_devtester/connections/manager.py`
+2. `iris_dbapi_connector.py` → `iris_devtester/connections/dbapi.py`
+3. `environment_manager.py` → `iris_devtester/utils/environment.py`
 
 **Modifications Needed:**
 - Remove rag-specific imports (`iris_rag.config`, etc.)
@@ -515,7 +515,7 @@ pytest
 **Priority:** ★★★★★ (Constitutional requirement #1)
 
 **Extract:**
-1. `tests/utils/iris_password_reset.py` → `iris_devtools/testing/password_reset.py`
+1. `tests/utils/iris_password_reset.py` → `iris_devtester/testing/password_reset.py`
 
 **Modifications Needed:**
 - Make container name configurable (default: auto-detect)
@@ -525,7 +525,7 @@ pytest
 
 **Integration:**
 - Hook into connection manager's exception handling
-- Provide standalone CLI tool: `iris-devtools reset-password`
+- Provide standalone CLI tool: `iris-devtester reset-password`
 
 **Testing:**
 - Test Docker exec password reset
@@ -543,13 +543,13 @@ pytest
 **Priority:** ★★★★☆ (High value, depends on Phase 1-2)
 
 **Extract:**
-1. `tests/fixtures/database_state.py` → `iris_devtools/testing/state.py`
-2. `tests/fixtures/database_cleanup.py` → `iris_devtools/testing/cleanup.py`
-3. `tests/utils/preflight_checks.py` → `iris_devtools/testing/preflight.py`
+1. `tests/fixtures/database_state.py` → `iris_devtester/testing/state.py`
+2. `tests/fixtures/database_cleanup.py` → `iris_devtester/testing/cleanup.py`
+3. `tests/utils/preflight_checks.py` → `iris_devtester/testing/preflight.py`
 
 **Create New:**
-- `iris_devtools/testing/fixtures.py` - pytest fixtures
-- `iris_devtools/testing/markers.py` - test markers
+- `iris_devtester/testing/fixtures.py` - pytest fixtures
+- `iris_devtester/testing/markers.py` - test markers
 
 **Modifications Needed:**
 - Generalize schema management (currently RAG-specific)
@@ -577,8 +577,8 @@ pytest
 2. `.env.example` template
 
 **Create New:**
-- `iris_devtools/config/discovery.py` - Auto-discovery
-- `iris_devtools/config/template.py` - .env generation
+- `iris_devtester/config/discovery.py` - Auto-discovery
+- `iris_devtester/config/template.py` - .env generation
 
 **Features:**
 - Auto-detect from multiple sources (env, .env, Docker, native IRIS)
@@ -593,7 +593,7 @@ pytest
 **Success Criteria:**
 - [ ] Zero-config works for Docker
 - [ ] Zero-config works for native IRIS
-- [ ] `iris-devtools init` generates .env
+- [ ] `iris-devtester init` generates .env
 - [ ] Clear error messages for missing config
 
 ### 6.5 Phase 5: Container Support (Future)
@@ -601,7 +601,7 @@ pytest
 **Priority:** ★★☆☆☆ (Future enhancement)
 
 **Create New:**
-- `iris_devtools/containers/testcontainers.py`
+- `iris_devtester/containers/testcontainers.py`
 - Wrapper around testcontainers-iris-python
 - Support for docker-compose integration
 
@@ -665,7 +665,7 @@ pytest
 ```python
 # rag-templates can use both
 from common.iris_connection_manager import get_iris_connection as old_get_conn
-from iris_devtools.connections import get_connection as new_get_conn
+from iris_devtester.connections import get_connection as new_get_conn
 
 # Tests validate equivalence
 def test_connection_equivalence():
@@ -682,11 +682,11 @@ import warnings
 def get_iris_connection(*args, **kwargs):
     warnings.warn(
         "common.iris_connection_manager is deprecated. "
-        "Use iris_devtools.connections.get_connection() instead.",
+        "Use iris_devtester.connections.get_connection() instead.",
         DeprecationWarning,
         stacklevel=2
     )
-    from iris_devtools.connections import get_connection
+    from iris_devtester.connections import get_connection
     return get_connection(*args, **kwargs)
 ```
 
@@ -698,7 +698,7 @@ rm common/iris_dbapi_connector.py
 rm common/environment_manager.py
 
 # Update all imports
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 ```
 
 ### 8.2 Benefits to rag-templates
@@ -707,13 +707,13 @@ from iris_devtools.connections import get_connection
 1. ✅ Reduced maintenance burden (~2,430 lines eliminated)
 2. ✅ Improved reliability (battle-tested across projects)
 3. ✅ Better error messages (constitutional compliance)
-4. ✅ Automatic updates (pip upgrade iris-devtools)
+4. ✅ Automatic updates (pip upgrade iris-devtester)
 
 **Long-term:**
 1. ✅ Focus on RAG features, not infrastructure
 2. ✅ Faster onboarding for new contributors
 3. ✅ Shared improvements across InterSystems community
-4. ✅ Professional support channel (iris-devtools issues)
+4. ✅ Professional support channel (iris-devtester issues)
 
 ---
 
@@ -721,7 +721,7 @@ from iris_devtools.connections import get_connection
 
 **Validating extraction against CONSTITUTION.md:**
 
-| Principle | rag-templates Status | iris-devtools Target |
+| Principle | rag-templates Status | iris-devtester Target |
 |-----------|---------------------|---------------------|
 | **#1: Automatic Remediation** | ✅ Password reset implemented (Feature 028) | ✅ Core feature |
 | **#2: DBAPI First** | ✅ DBAPI→JDBC fallback | ✅ Preserve pattern |
@@ -730,12 +730,12 @@ from iris_devtools.connections import get_connection
 | **#5: Fail Fast with Guidance** | ⚠️ Some errors lack remediation | ✅ Add all remediation steps |
 | **#6: Enterprise + Community** | ✅ Supports both | ✅ Maintain |
 | **#7: Medical-Grade Reliability** | ✅ 95%+ coverage | ✅ Maintain |
-| **#8: Document Blind Alleys** | ✅ Good docs/ learnings | ✅ Port to iris-devtools/docs |
+| **#8: Document Blind Alleys** | ✅ Good docs/ learnings | ✅ Port to iris-devtester/docs |
 
 **Extraction Improvements:**
 - ✅ #4: Better zero-config (auto port detection working)
 - ✅ #5: All errors will include remediation steps
-- ✅ #8: Port docs/learnings/ to iris-devtools
+- ✅ #8: Port docs/learnings/ to iris-devtester
 
 ---
 
@@ -764,7 +764,7 @@ from iris_devtools.connections import get_connection
 5. **🔵 FUTURE - Month 2+**
    - Container/testcontainers wrapper
    - Docker Compose integration
-   - CLI tools (iris-devtools init, etc.)
+   - CLI tools (iris-devtester init, etc.)
 
 ---
 
@@ -792,11 +792,11 @@ from iris_devtools.connections import get_connection
 └── .env.example (184 lines)                   ★★☆☆☆
 ```
 
-### Target Structure (iris-devtools)
+### Target Structure (iris-devtester)
 
 ```
-/Users/tdyar/ws/iris-devtools/
-├── iris_devtools/
+/Users/tdyar/ws/iris-devtester/
+├── iris_devtester/
 │   ├── connections/
 │   │   ├── manager.py          ← iris_connection_manager.py
 │   │   ├── dbapi.py            ← iris_dbapi_connector.py
@@ -827,9 +827,9 @@ from iris_devtools.connections import get_connection
 ### Immediate Actions (This Week)
 
 1. ✅ **Review this analysis** with project stakeholders
-2. ⬜ **Create iris-devtools Feature 001 spec** for connection management
-3. ⬜ **Set up iris-devtools CI/CD** (GitHub Actions + testcontainers)
-4. ⬜ **Copy iris_connection_manager.py** to iris-devtools (start extraction)
+2. ⬜ **Create iris-devtester Feature 001 spec** for connection management
+3. ⬜ **Set up iris-devtester CI/CD** (GitHub Actions + testcontainers)
+4. ⬜ **Copy iris_connection_manager.py** to iris-devtester (start extraction)
 
 ### Short-term (Weeks 1-2)
 
@@ -843,14 +843,14 @@ from iris_devtools.connections import get_connection
 1. ⬜ Extract test infrastructure (Phase 3)
 2. ⬜ Create pytest plugin for auto-fixture registration
 3. ⬜ Add configuration discovery (Phase 4)
-4. ⬜ Release iris-devtools 0.1.0
+4. ⬜ Release iris-devtester 0.1.0
 
 ### Long-term (Months 2-3)
 
-1. ⬜ Update rag-templates to use iris-devtools
+1. ⬜ Update rag-templates to use iris-devtester
 2. ⬜ Add container support (Phase 5)
-3. ⬜ Create iris-devtools CLI
-4. ⬜ Release iris-devtools 1.0.0
+3. ⬜ Create iris-devtester CLI
+4. ⬜ Release iris-devtester 1.0.0
 
 ---
 
@@ -865,7 +865,7 @@ from iris_devtools.connections import get_connection
 | **Documentation** | N/A | N/A | N/A | N/A |
 | **TOTAL** | **12** | **2,555** | **~2,400** | **~90%** |
 
-**Impact:** Extracting this code saves ~2,400 lines of infrastructure per project using iris-devtools.
+**Impact:** Extracting this code saves ~2,400 lines of infrastructure per project using iris-devtester.
 
 ---
 
@@ -966,4 +966,4 @@ Use this checklist when extracting each module:
 
 **End of Analysis**
 
-*This document represents a comprehensive analysis of extraction opportunities from rag-templates to iris-devtools. All file paths, line numbers, and code samples were verified against the live codebase as of 2025-10-06.*
+*This document represents a comprehensive analysis of extraction opportunities from rag-templates to iris-devtester. All file paths, line numbers, and code samples were verified against the live codebase as of 2025-10-06.*

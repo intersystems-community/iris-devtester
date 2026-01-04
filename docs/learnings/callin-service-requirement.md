@@ -46,7 +46,7 @@ docker exec -it iris_container_name \
   'Do ##class(Security.Services).Get("%Service_CallIn",.s) Set s.Enabled=1 Do ##class(Security.Services).Modify(s)'
 ```
 
-### Method 3: Enable in iris-devtools (AUTOMATIC)
+### Method 3: Enable in iris-devtester (AUTOMATIC)
 
 We handle this automatically in `IRISContainer`:
 
@@ -98,7 +98,7 @@ This is why our **DBAPI-first, JDBC fallback** strategy is critical:
 
 ## Best Practices
 
-### For iris-devtools
+### For iris-devtester
 
 ✅ **DO**:
 - Automatically enable CallIn on container start
@@ -171,11 +171,11 @@ def check_callin_enabled(container):
 - IRIS running, ports open, credentials correct
 - Worked with JDBC but not DBAPI
 - Finally found CallIn service was disabled
-- Now: **AUTOMATIC in iris-devtools**
+- Now: **AUTOMATIC in iris-devtester**
 
 ## Implementation Checklist
 
-For iris-devtools IRISContainer:
+For iris-devtester IRISContainer:
 
 - [ ] Enable CallIn on container start
 - [ ] Log CallIn enablement
@@ -193,4 +193,4 @@ For iris-devtools IRISContainer:
 
 ---
 
-**Lesson Learned**: Always enable CallIn for DBAPI connections in containers. This is now automatic in iris-devtools so developers never encounter this issue.
+**Lesson Learned**: Always enable CallIn for DBAPI connections in containers. This is now automatic in iris-devtester so developers never encounter this issue.

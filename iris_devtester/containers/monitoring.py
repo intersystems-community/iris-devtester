@@ -55,7 +55,7 @@ class MonitoringPolicy:
     - Validates ranges per constitutional constraints
 
     Attributes:
-        name: Policy name (default: "iris-devtools-default")
+        name: Policy name (default: "iris-devtester-default")
         description: Policy description
         interval_seconds: Collection interval 1-300s (default: 30)
         retention_seconds: Data retention 300-86400s (default: 3600)
@@ -66,7 +66,7 @@ class MonitoringPolicy:
         task_id: Task Manager task ID (populated after creation)
     """
 
-    name: str = "iris-devtools-default"
+    name: str = "iris-devtester-default"
     description: str = "Auto-configured performance monitoring"
 
     # Collection settings
@@ -187,7 +187,7 @@ class TaskSchedule:
 
     Attributes:
         task_id: IRIS task ID (populated after creation)
-        name: Task name (default: "iris-devtools-monitor")
+        name: Task name (default: "iris-devtester-monitor")
         description: Task description
         task_class: Task class to execute (default: "%SYS.Task.SystemPerformance")
         run_as_user: User to run as (default: "_SYSTEM" - required for permissions)
@@ -201,7 +201,7 @@ class TaskSchedule:
     """
 
     task_id: Optional[str] = None  # Populated after creation
-    name: str = "iris-devtools-monitor"
+    name: str = "iris-devtester-monitor"
     description: str = "Auto-configured performance monitoring"
     task_class: str = "%SYS.Task.SystemPerformance"
     run_as_user: str = "_SYSTEM"  # Required for monitoring permissions
@@ -476,7 +476,7 @@ def configure_monitoring(
         >>> with IRISContainer.community() as iris:
         ...     conn = iris.get_connection()
         ...     success, msg = configure_monitoring(conn)
-        ...     print(msg)  # "Monitoring configured: iris-devtools-default (task_id=1)"
+        ...     print(msg)  # "Monitoring configured: iris-devtester-default (task_id=1)"
         ...
         >>> # Custom policy
         >>> policy = MonitoringPolicy(
@@ -609,8 +609,8 @@ def get_monitoring_status(conn) -> Tuple[bool, dict]:
         status = {
             "enabled": 1,
             "tasks": tasks,
-            "policy_name": "iris-devtools-default",  # Default policy name
-            "profile_name": "iris-devtools-default",  # Alias for compatibility
+            "policy_name": "iris-devtester-default",  # Default policy name
+            "profile_name": "iris-devtester-default",  # Alias for compatibility
         }
 
         # Check if any task is not suspended
@@ -1142,7 +1142,7 @@ def delete_task(conn, task_id: str) -> bool:
 
 def list_monitoring_tasks(conn) -> list:
     """
-    List all iris-devtools monitoring tasks.
+    List all iris-devtester monitoring tasks.
 
     Finds tasks created by configure_monitoring() by looking for tasks
     using %SYS.Task.SystemPerformance class.

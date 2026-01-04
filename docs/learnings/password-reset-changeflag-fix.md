@@ -36,7 +36,7 @@ Write ##class(Security.Users).Modify("_SYSTEM", .props)
 
 ## Implementation
 
-Updated `iris_devtools/utils/password_reset.py`:
+Updated `iris_devtester/utils/password_reset.py`:
 
 ### Before (BROKEN)
 ```python
@@ -97,13 +97,13 @@ conn = dbapi.connect("localhost:1972/USER", "_SYSTEM", "SYS")  # ✅ SUCCESS!
 3. **ExternalPassword vs Password** - Use ExternalPassword for programmatic password changes
 4. **Modify() returns 1 on success** - Check return value in output
 
-## Impact on iris-devtools
+## Impact on iris-devtester
 
 ### Constitutional Principle #2 Preserved
 This fix means we can KEEP "DBAPI First, JDBC Fallback" as Constitutional Principle #2! The issue wasn't with DBAPI itself, but with the incomplete password reset logic.
 
 ### No Need to Rewrite Connection Manager
-The connection manager in `iris_devtools/connections/` does NOT need to be rewritten to use `iris.connect()`. DBAPI works fine once the ChangePassword flag is properly cleared.
+The connection manager in `iris_devtester/connections/` does NOT need to be rewritten to use `iris.connect()`. DBAPI works fine once the ChangePassword flag is properly cleared.
 
 ### Bug Report Status
 The bug report in `BUG_REPORT.md` should be updated to reflect:

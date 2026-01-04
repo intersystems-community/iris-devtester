@@ -53,7 +53,7 @@ class TestCreateTaskContract:
         """Test default TaskSchedule works."""
         # Verify TaskSchedule can be created with defaults
         schedule = TaskSchedule()
-        assert schedule.name == "iris-devtools-monitor"
+        assert schedule.name == "iris-devtester-monitor"
         assert schedule.daily_increment == 30
 
     def test_accepts_custom_task_schedule(self):
@@ -186,7 +186,7 @@ class TestTaskScheduleContract:
         schedule = TaskSchedule()
 
         # Default values from data model
-        assert schedule.name == "iris-devtools-monitor"
+        assert schedule.name == "iris-devtester-monitor"
         assert schedule.task_class == "%SYS.Task.SystemPerformance"
         assert schedule.run_as_user == "_SYSTEM"
         assert schedule.daily_increment == 30  # 30 seconds

@@ -27,7 +27,7 @@
 
 **Solution**: Moved import inside `discover_config()` function to break the cycle.
 
-**Files**: `iris_devtools/config/discovery.py:71`
+**Files**: `iris_devtester/config/discovery.py:71`
 
 ### 2. DBAPI Driver Module Name
 **Problem**: Code checked for `irisnative` module, but `intersystems-irispython` package installs as `iris.dbapi`.
@@ -37,7 +37,7 @@
 - `irisnative.createConnection()` → `iris.dbapi.connect()`
 
 **Files**:
-- `iris_devtools/connections/dbapi.py:24,54,95`
+- `iris_devtester/connections/dbapi.py:24,54,95`
 
 ### 3. Task Manager SQL Field Names
 **Problem**: Tried to INSERT fields that don't exist or fail validation:
@@ -52,15 +52,15 @@ INSERT INTO %SYS.Task
 VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:736-742`
+**Files**: `iris_devtester/containers/monitoring.py:736-742`
 
 ### 4. Test Fixture Connection Manager
 **Problem**: Test fixture used deprecated `irisnative.createConnection()` directly.
 
 **Solution**: Updated to use Feature 003's modern connection manager:
 ```python
-from iris_devtools.connections import get_connection
-from iris_devtools.config import IRISConfig
+from iris_devtester.connections import get_connection
+from iris_devtester.config import IRISConfig
 
 config = IRISConfig(host=host, port=port, namespace="USER", username="test", password="test")
 conn = get_connection(config, auto_retry=True, max_retries=3)
@@ -78,7 +78,7 @@ has_active_task = any(not task.get("suspended", True) for task in tasks)
 return (has_active_task, status)
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:576-596`
+**Files**: `iris_devtester/containers/monitoring.py:576-596`
 
 ### 6. Cursor fetchall() Pattern
 **Problem**: `cursor.execute(query).fetchall()` doesn't work with DBAPI (returns int, not cursor).
@@ -89,7 +89,7 @@ cursor.execute(query)
 results = cursor.fetchall()
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:1059-1060`
+**Files**: `iris_devtester/containers/monitoring.py:1059-1060`
 
 ### 7. Task Suspended Field Name
 **Problem**: Checked `task.get("Suspended", 1) == 0` (uppercase, integer) but dict has `'suspended': False` (lowercase, boolean).
@@ -99,7 +99,7 @@ results = cursor.fetchall()
 has_active_task = any(not task.get("suspended", True) for task in tasks)
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:594`
+**Files**: `iris_devtester/containers/monitoring.py:594`
 
 ### 8. Status Dict Field Names
 **Problem**: Test expected `profile_name` but status dict only had `policy_name`.
@@ -109,12 +109,12 @@ has_active_task = any(not task.get("suspended", True) for task in tasks)
 status = {
     "enabled": 1,
     "tasks": tasks,
-    "policy_name": "iris-devtools-default",
-    "profile_name": "iris-devtools-default",  # Alias
+    "policy_name": "iris-devtester-default",
+    "profile_name": "iris-devtester-default",  # Alias
 }
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:586-591`
+**Files**: `iris_devtester/containers/monitoring.py:586-591`
 
 ### 9. Disable/Enable Return Types
 **Problem**: Functions returned `Tuple[bool, str]` but tests expected `int`.
@@ -130,7 +130,7 @@ def enable_monitoring(conn) -> int:
     return enabled_count
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py`
+**Files**: `iris_devtester/containers/monitoring.py`
 
 ### 10. Suspend/Resume Tasks - SQL UPDATE
 **Problem**: `suspend_task()` and `resume_task()` used ObjectScript execution which isn't available with DBAPI.
@@ -146,7 +146,7 @@ def resume_task(conn, task_id: str) -> bool:
     conn.commit()
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:857-990`
+**Files**: `iris_devtester/containers/monitoring.py:857-990`
 
 ### 11. Get Task Status - Table-Valued Function
 **Problem**: Used non-existent table-valued function `%SYS.Task_GetOpenId()`.
@@ -160,7 +160,7 @@ cursor.execute("""
 """, (task_id,))
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:797-823`
+**Files**: `iris_devtester/containers/monitoring.py:797-823`
 
 ### 12. Delete Task - SQL DELETE
 **Problem**: `delete_task()` required ObjectScript execution.
@@ -173,7 +173,7 @@ if cursor.rowcount == 0:
     raise ValueError(f"Task not found: {task_id}")
 ```
 
-**Files**: `iris_devtools/containers/monitoring.py:993-1058`
+**Files**: `iris_devtester/containers/monitoring.py:993-1058`
 
 ### 13. Get Resource Metrics - ObjectScript Functions
 **Problem**: Used ObjectScript-specific functions like `$SYSTEM.Process.CPUTime()` and `^SYS()` that don't work in SQL.
@@ -194,7 +194,7 @@ metrics = PerformanceMetrics(
 
 **Note**: TODO for future enhancement with proper ObjectScript execution support.
 
-**Files**: `iris_devtools/containers/performance.py:115-138`
+**Files**: `iris_devtester/containers/performance.py:115-138`
 
 ## Key Learnings
 

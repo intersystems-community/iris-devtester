@@ -11,8 +11,8 @@
 - [ ] **Version** - Should be 0.1.0 for first release, not 1.0.0
 
 ### 2. Package Functionality
-- [ ] **Uncomment imports** in `iris_devtools/__init__.py`
-- [ ] **Add CLI entry point** for `iris-devtools` command
+- [ ] **Uncomment imports** in `iris_devtester/__init__.py`
+- [ ] **Add CLI entry point** for `iris-devtester` command
 - [ ] **Test actual imports** work
 
 ### 3. Documentation
@@ -32,21 +32,21 @@
 ### Test 1: Fresh Install (Zero-Knowledge Developer)
 ```bash
 # Create clean environment
-python -m venv /tmp/test-iris-devtools
-source /tmp/test-iris-devtools/bin/activate
+python -m venv /tmp/test-iris-devtester
+source /tmp/test-iris-devtester/bin/activate
 
 # Install from local build
-pip install dist/iris_devtools-*.whl
+pip install dist/iris_devtester-*.whl
 
 # Try imports
-python -c "from iris_devtools.fixtures import FixtureCreator; print('✓ imports work')"
+python -c "from iris_devtester.fixtures import FixtureCreator; print('✓ imports work')"
 
 # Try CLI
-iris-devtools --help
+iris-devtester --help
 
 # Deactivate
 deactivate
-rm -rf /tmp/test-iris-devtools
+rm -rf /tmp/test-iris-devtester
 ```
 
 ### Test 2: Fixture Workflow (With IRIS)
@@ -54,7 +54,7 @@ rm -rf /tmp/test-iris-devtools
 # Assumes IRIS running on localhost:1972
 
 # Create test namespace
-python -c "from iris_devtools.connections import get_connection; ..."
+python -c "from iris_devtester.connections import get_connection; ..."
 
 # Create fixture
 iris-devtester fixture create test-fixture USER ./test-fixture
@@ -74,7 +74,7 @@ rm -rf ./test-fixture
 
 ### Test 3: Connection Auto-Discovery
 ```python
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 # Should auto-discover IRIS on localhost
 conn = get_connection()
@@ -87,12 +87,12 @@ print(cursor.fetchone())
 ```python
 # test_example.py
 import pytest
-from iris_devtools.fixtures import DATFixtureLoader
+from iris_devtester.fixtures import DATFixtureLoader
 
 @pytest.mark.dat_fixture("./test-fixture")
 def test_with_fixture():
     # Fixture auto-loaded
-    from iris_devtools.connections import get_connection
+    from iris_devtester.connections import get_connection
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM YourTable")
@@ -116,9 +116,9 @@ def test_with_fixture():
 **Version 0.1.0** - DAT Fixture Management Only
 
 Include:
-- iris_devtools.fixtures (all classes)
-- iris_devtools.connections (basic)
-- iris_devtools.utils (password reset)
+- iris_devtester.fixtures (all classes)
+- iris_devtester.connections (basic)
+- iris_devtester.utils (password reset)
 - CLI: `iris-devtester fixture` commands
 - pytest plugin: @pytest.mark.dat_fixture
 

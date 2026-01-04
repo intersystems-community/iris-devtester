@@ -29,7 +29,7 @@
 - ✅ Mapped SQL-accessible monitoring infrastructure
 
 ### 2. Working Monitor Utilities ✅
-**File**: `iris_devtools/containers/monitor_utils.py` (180 lines)
+**File**: `iris_devtester/containers/monitor_utils.py` (180 lines)
 
 **Public APIs**:
 ```python
@@ -154,7 +154,7 @@ Original data model tests still valid (not affected by pivot)
 - ✅ Can create scheduled tasks via SQL
 - ✅ Clear documentation on what's available vs. what requires Enterprise Edition
 
-### For iris-devtools Package
+### For iris-devtester Package
 - ✅ Working utilities for %Monitor.System verification
 - ✅ SQL-based task management capability
 - ✅ No dependency on ObjectScript execution
@@ -214,7 +214,7 @@ Original data model tests still valid (not affected by pivot)
 
 ### New Files (+4)
 ```
-iris_devtools/containers/
+iris_devtester/containers/
   monitor_utils.py              # NEW - %Monitor.System utilities
 
 docs/learnings/
@@ -227,7 +227,7 @@ tests/integration/
 
 ### Modified Files (~2)
 ```
-iris_devtools/containers/
+iris_devtester/containers/
   monitoring.py                 # UPDATED - create_task() now uses SQL
 
 tests/
@@ -269,7 +269,7 @@ tests/
 
 - See `docs/learnings/iris-performance-monitoring-landscape.md` for monitoring system details
 - See `docs/learnings/feature-002-pivot-summary.md` for pivot rationale
-- See `iris_devtools/containers/monitor_utils.py` for working code
+- See `iris_devtester/containers/monitor_utils.py` for working code
 - Run `pytest tests/integration/test_monitor_utils_integration.py -v` to see it work
 
 ---

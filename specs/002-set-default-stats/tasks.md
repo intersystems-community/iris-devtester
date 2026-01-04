@@ -1,13 +1,13 @@
 # Tasks: IRIS Server-Side Performance Monitoring Configuration
 
 **Feature**: 002-set-default-stats
-**Input**: Design documents from `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/`
+**Input**: Design documents from `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/`
 **Prerequisites**: plan.md, research.md, data-model.md, contracts/
 **Date**: 2025-10-05
 
 ## Overview
 
-This task list implements automatic ^SystemPerformance monitoring configuration for iris-devtools containers. Following TDD principles, all contract tests are written BEFORE implementation, with tasks ordered by dependency and marked [P] for parallel execution where possible.
+This task list implements automatic ^SystemPerformance monitoring configuration for iris-devtester containers. Following TDD principles, all contract tests are written BEFORE implementation, with tasks ordered by dependency and marked [P] for parallel execution where possible.
 
 **Total Tasks**: 40
 **Estimated Duration**: 12-16 hours (with parallel execution)
@@ -18,7 +18,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T001: Create monitoring module structure
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: setup
 **Priority**: P1
 **Parallelizable**: No
@@ -35,7 +35,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 - Principle 8 (Document Blind Alleys): File header references research.md
 
 **Implementation Notes**:
-- Reference: `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/data-model.md`
+- Reference: `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/data-model.md`
 - This is the central module for monitoring configuration
 - Will contain: MonitoringPolicy, TaskSchedule, ResourceThresholds dataclasses
 
@@ -43,7 +43,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T002: Create performance metrics module
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py`
 **Type**: setup
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -68,7 +68,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T003: [P] Create health checks module
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/utils/health_checks.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/utils/health_checks.py`
 **Type**: setup
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -94,7 +94,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T004: [P] Implement MonitoringPolicy dataclass
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -120,7 +120,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T005: [P] Implement TaskSchedule dataclass
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -145,7 +145,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T006: [P] Implement ResourceThresholds dataclass
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -170,7 +170,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T007: [P] Implement CPFParameters dataclass
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -195,7 +195,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T008: [P] Implement PerformanceMetrics dataclass
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -222,7 +222,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T009: [P] Unit test MonitoringPolicy validation
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/unit/test_monitoring_policy.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/unit/test_monitoring_policy.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -249,7 +249,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T010: [P] Unit test ResourceThresholds validation
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/unit/test_resource_thresholds.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/unit/test_resource_thresholds.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -275,7 +275,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T011: [P] Unit test PerformanceMetrics parsing
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/unit/test_performance_metrics.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/unit/test_performance_metrics.py`
 **Type**: unit
 **Priority**: P1
 **Parallelizable**: Yes [P]
@@ -302,7 +302,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T012: [P] Contract test monitoring_config_api
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/contract/test_monitoring_config_api.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/contract/test_monitoring_config_api.py`
 **Type**: contract
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -330,7 +330,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T013: [P] Contract test task_manager_api
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/contract/test_task_manager_api.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/contract/test_task_manager_api.py`
 **Type**: contract
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -359,7 +359,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T014: [P] Contract test resource_monitoring_api
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/contract/test_resource_monitoring_api.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/contract/test_resource_monitoring_api.py`
 **Type**: contract
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -390,7 +390,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T015: Implement configure_monitoring()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: No
@@ -418,7 +418,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T016: Implement get_monitoring_status()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -445,7 +445,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T017: [P] Implement disable_monitoring() and enable_monitoring()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -472,7 +472,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T018: Implement Task Manager functions (create, status, suspend, resume, delete, list)
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: No
@@ -495,13 +495,13 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 - Reference: contracts/task_manager_api.md
 - Use ObjectScript patterns from research.md section 1
 - Parse TaskStatus from ObjectScript results
-- Filter tasks by "iris-devtools-" prefix for list operation
+- Filter tasks by "iris-devtester-" prefix for list operation
 
 ---
 
 ### T019: Implement get_resource_metrics()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -527,7 +527,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T020: [P] Implement check_resource_thresholds()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -553,7 +553,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T021: Implement start_resource_monitor() and stop_resource_monitor()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: No
@@ -582,7 +582,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T022: [P] Implement auto_disable_monitoring() and auto_enable_monitoring()
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py`
 **Type**: unit
 **Priority**: P2
 **Parallelizable**: Yes [P]
@@ -612,7 +612,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T023: Extend IRISContainer with monitoring configuration hook
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/iris_container.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/iris_container.py`
 **Type**: integration
 **Priority**: P3
 **Parallelizable**: No
@@ -640,7 +640,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T024: [P] Add environment variable handling for monitoring config
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/iris_container.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/iris_container.py`
 **Type**: integration
 **Priority**: P3
 **Parallelizable**: Yes [P]
@@ -666,7 +666,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T025: Integrate resource monitoring thread with container lifecycle
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/iris_container.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/iris_container.py`
 **Type**: integration
 **Priority**: P3
 **Parallelizable**: No
@@ -693,7 +693,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T026: [P] Integration test full monitoring lifecycle
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/integration/test_monitoring_lifecycle.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/integration/test_monitoring_lifecycle.py`
 **Type**: integration
 **Priority**: P3
 **Parallelizable**: Yes [P]
@@ -720,7 +720,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T027: [P] Integration test auto-disable under resource pressure
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/integration/test_auto_disable.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/integration/test_auto_disable.py`
 **Type**: integration
 **Priority**: P3
 **Parallelizable**: Yes [P]
@@ -747,7 +747,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T028: [P] Integration test environment variable configuration
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/integration/test_monitoring_env_vars.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/integration/test_monitoring_env_vars.py`
 **Type**: integration
 **Priority**: P3
 **Parallelizable**: Yes [P]
@@ -774,7 +774,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T029: E2E test container startup to teardown with monitoring
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/e2e/test_monitoring_e2e.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/e2e/test_monitoring_e2e.py`
 **Type**: e2e
 **Priority**: P4
 **Parallelizable**: No
@@ -804,7 +804,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T030: [P] Create Yaspe integration utilities (optional)
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/utils/yaspe_integration.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/utils/yaspe_integration.py`
 **Type**: unit
 **Priority**: P4
 **Parallelizable**: Yes [P]
@@ -824,14 +824,14 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 **Implementation Notes**:
 - Reference: research.md section 4 (Yaspe integration)
 - Add to pyproject.toml: `yaspe = ["yaspe>=1.0.0"]`
-- Document installation: `pip install 'iris-devtools[yaspe]'`
+- Document installation: `pip install 'iris-devtester[yaspe]'`
 - Test with yaspe installed and without
 
 ---
 
 ### T031: [P] Implement CPF configuration (optional)
 
-**File**: `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py`
+**File**: `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py`
 **Type**: unit
 **Priority**: P4
 **Parallelizable**: Yes [P]
@@ -857,7 +857,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T032: [P] Add performance benchmarking utilities
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/integration/test_monitoring_performance.py`
+**File**: `/Users/tdyar/ws/iris-devtester/tests/integration/test_monitoring_performance.py`
 **Type**: integration
 **Priority**: P4
 **Parallelizable**: Yes [P]
@@ -886,7 +886,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T033: [P] Update README.md with monitoring section
 
-**File**: `/Users/tdyar/ws/iris-devtools/README.md`
+**File**: `/Users/tdyar/ws/iris-devtester/README.md`
 **Type**: doc
 **Priority**: P5
 **Parallelizable**: Yes [P]
@@ -912,7 +912,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T034: [P] Create monitoring overhead learnings document
 
-**File**: `/Users/tdyar/ws/iris-devtools/docs/learnings/monitoring-overhead-benchmarks.md`
+**File**: `/Users/tdyar/ws/iris-devtester/docs/learnings/monitoring-overhead-benchmarks.md`
 **Type**: doc
 **Priority**: P5
 **Parallelizable**: Yes [P]
@@ -938,7 +938,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T035: [P] Add type hints and docstrings to all public APIs
 
-**File**: All `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py` and `performance.py`
+**File**: All `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py` and `performance.py`
 **Type**: unit
 **Priority**: P5
 **Parallelizable**: Yes [P]
@@ -955,7 +955,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 - Principle 7 (Medical-Grade): Type safety throughout
 
 **Implementation Notes**:
-- Follow existing iris_devtools style
+- Follow existing iris_devtester style
 - Document all parameters, returns, raises
 - Include usage examples in docstrings
 
@@ -980,7 +980,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 - Principle 7 (Medical-Grade): Code quality standards
 
 **Implementation Notes**:
-- Run: `black . && isort . && flake8 . && mypy iris_devtools/`
+- Run: `black . && isort . && flake8 . && mypy iris_devtester/`
 - Fix any warnings/errors
 - Ensure pyproject.toml config is followed
 
@@ -988,7 +988,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T037: Add pytest markers for test categorization
 
-**File**: `/Users/tdyar/ws/iris-devtools/tests/conftest.py` and test files
+**File**: `/Users/tdyar/ws/iris-devtester/tests/conftest.py` and test files
 **Type**: unit
 **Priority**: P5
 **Parallelizable**: No
@@ -1021,7 +1021,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 **Dependencies**: T009-T014, T026-T029
 
 **Acceptance Criteria**:
-- [ ] Run pytest with coverage: `pytest --cov=iris_devtools --cov-report=html`
+- [ ] Run pytest with coverage: `pytest --cov=iris_devtester --cov-report=html`
 - [ ] Overall coverage ≥95% (constitutional requirement)
 - [ ] monitoring.py coverage ≥95%
 - [ ] performance.py coverage ≥95%
@@ -1041,7 +1041,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T039: [P] Test quickstart.md examples manually
 
-**File**: `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/quickstart.md`
+**File**: `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/quickstart.md`
 **Type**: e2e
 **Priority**: P5
 **Parallelizable**: Yes [P]
@@ -1069,7 +1069,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 
 ### T040: [P] Create release checklist and version bump
 
-**File**: `/Users/tdyar/ws/iris-devtools/pyproject.toml` and `CHANGELOG.md`
+**File**: `/Users/tdyar/ws/iris-devtester/pyproject.toml` and `CHANGELOG.md`
 **Type**: doc
 **Priority**: P5
 **Parallelizable**: Yes [P]
@@ -1090,7 +1090,7 @@ This task list implements automatic ^SystemPerformance monitoring configuration 
 - Follow semantic versioning
 - Document breaking changes (if any)
 - Link to quickstart.md in CHANGELOG
-- Don't push to PyPI yet (pending full iris-devtools release)
+- Don't push to PyPI yet (pending full iris-devtester release)
 
 ---
 

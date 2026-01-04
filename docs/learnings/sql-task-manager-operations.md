@@ -364,7 +364,7 @@ All SQL operations have integration tests:
 - Feature 002: Performance Monitoring
 - Feature 003: Connection Manager
 - Constitutional Principle #2: DBAPI First, JDBC Fallback
-- `iris_devtools/containers/monitoring.py` - Full implementation
+- `iris_devtester/containers/monitoring.py` - Full implementation
 - `tests/integration/test_monitoring_integration.py` - Test suite
 
 ## Future Enhancements

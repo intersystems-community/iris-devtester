@@ -564,4 +564,4 @@ def test_my_feature(test_namespace):
 3. Fall back to iris.connect() if DBAPI fails
 4. Use docker exec only for container admin operations
 
-**This is the foundation of iris-devtools success.** Get this right, and everything else works. Get this wrong, and nothing works.
+**This is the foundation of iris-devtester success.** Get this right, and everything else works. Get this wrong, and nothing works.

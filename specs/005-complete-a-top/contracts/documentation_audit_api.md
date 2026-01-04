@@ -121,7 +121,7 @@ docs/
 
 **Link Format**:
 - All links MUST be absolute URLs
-- Format: `https://github.com/intersystems-community/iris-devtools/blob/main/{file}`
+- Format: `https://github.com/intersystems-community/iris-devtester/blob/main/{file}`
 - Not: `[file](file)` or `[file](./file)`
 
 **Code Example Requirements**:
@@ -135,7 +135,7 @@ docs/
 **[project] Section Validation**:
 ```toml
 [project]
-name = "iris-devtools"                        # Must match package directory
+name = "iris-devtester"                        # Must match package directory
 version = "X.Y.Z"                             # Must match README, __init__.py, CHANGELOG
 description = "..."                            # Must match README tagline exactly
 readme = "README.md"                          # Must exist and render
@@ -158,11 +158,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/intersystems-community/iris-devtools"
-Documentation = "https://github.com/intersystems-community/iris-devtools#readme"
-Repository = "https://github.com/intersystems-community/iris-devtools"
-Issues = "https://github.com/intersystems-community/iris-devtools/issues"
-Changelog = "https://github.com/intersystems-community/iris-devtools/blob/main/CHANGELOG.md"  # Add if missing
+Homepage = "https://github.com/intersystems-community/iris-devtester"
+Documentation = "https://github.com/intersystems-community/iris-devtester#readme"
+Repository = "https://github.com/intersystems-community/iris-devtester"
+Issues = "https://github.com/intersystems-community/iris-devtester/issues"
+Changelog = "https://github.com/intersystems-community/iris-devtester/blob/main/CHANGELOG.md"  # Add if missing
 ```
 
 **Validation Rules**:
@@ -186,7 +186,7 @@ Demonstrates:
 
 Prerequisites:
 - Docker Desktop running
-- pip install iris-devtools[<extras>]
+- pip install iris-devtester[<extras>]
 
 Expected Runtime: <X> minutes
 Expected Output:
@@ -197,7 +197,7 @@ Constitutional Principles:
 """
 
 # All imports explicit (FR-017)
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 def main():
     """<Intent explanation>"""
@@ -251,7 +251,7 @@ def function_name(param1: str, param2: int = 0) -> bool:
     Examples:
         Basic usage:
 
-        >>> from iris_devtools import function_name
+        >>> from iris_devtester import function_name
         >>> result = function_name("test")
         >>> print(result)
         True
@@ -290,8 +290,8 @@ https://github.com/{org}/{repo}/blob/{branch}/{path}
 **Examples**:
 ```markdown
 # ✅ Correct
-[CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtools/blob/main/CONTRIBUTING.md)
-[Constitution](https://github.com/intersystems-community/iris-devtools/blob/main/CONSTITUTION.md)
+[CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtester/blob/main/CONTRIBUTING.md)
+[Constitution](https://github.com/intersystems-community/iris-devtester/blob/main/CONSTITUTION.md)
 
 # ❌ Wrong
 [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -305,7 +305,7 @@ https://github.com/{org}/{repo}/blob/{branch}/{path}
 - All `https://` links return HTTP 200
 - No 404 errors
 - No redirects to unexpected domains
-- Badge URLs point to correct package (iris-devtools, not other packages)
+- Badge URLs point to correct package (iris-devtester, not other packages)
 
 ## Constitutional Compliance Contract
 
@@ -434,7 +434,7 @@ python -m build
 twine check dist/*
 
 # Docstring validation
-pydocstyle iris_devtools/
+pydocstyle iris_devtester/
 
 # Example testing
 pytest examples/  # If tests exist

@@ -8,8 +8,8 @@
 ## Clarifications
 
 ### Session 2025-10-05
-- Q: Which IRIS monitoring facilities should iris-devtools configure automatically when containers start? → A: ^SystemPerformance scheduled via IRIS Task Manager to run continuously (30s sampling, 1-hour profile duration), opt-out via environment variable override
-- Q: How should Yaspe/Yates integration be handled in iris-devtools? → A: Bundle Yaspe as optional dependency (install with `pip install 'iris-devtools[yaspe]'`)
+- Q: Which IRIS monitoring facilities should iris-devtester configure automatically when containers start? → A: ^SystemPerformance scheduled via IRIS Task Manager to run continuously (30s sampling, 1-hour profile duration), opt-out via environment variable override
+- Q: How should Yaspe/Yates integration be handled in iris-devtester? → A: Bundle Yaspe as optional dependency (install with `pip install 'iris-devtester[yaspe]'`)
 - Q: What are the safe minimum and maximum intervals for ^SystemPerformance sampling? → A: 1 second minimum, 300 seconds (5 minutes) maximum
 - Q: What are the safe minimum and maximum retention periods for performance data? → A: 5 minutes minimum, 24 hours maximum
 - Q: Should monitoring auto-disable under resource constraints, or always run regardless of system load? → A: Auto-disable when CPU >90% or memory >95% (self-protecting)
@@ -57,7 +57,7 @@
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
-As a developer using iris-devtools containers, when my IRIS instance crashes or experiences performance issues, I want ^SystemPerformance already running automatically (30-second intervals, 1-hour retention), so diagnostic data is immediately available for investigation without having to manually start monitoring or lose critical debugging information.
+As a developer using iris-devtester containers, when my IRIS instance crashes or experiences performance issues, I want ^SystemPerformance already running automatically (30-second intervals, 1-hour retention), so diagnostic data is immediately available for investigation without having to manually start monitoring or lose critical debugging information.
 
 ### Acceptance Scenarios
 
@@ -73,7 +73,7 @@ As a developer using iris-devtools containers, when my IRIS instance crashes or 
    **When** they connect to the IRIS instance to investigate
    **Then** the last hour of IRIS performance metrics (CPU, globals, SQL, cache stats) is already collected and immediately accessible
 
-4. **Given** an IRIS container is started with default iris-devtools configuration
+4. **Given** an IRIS container is started with default iris-devtester configuration
    **When** a developer accesses management portal or queries ^SystemPerformance
    **Then** they see monitoring actively running with 30-second intervals and 1-hour retention window, with data already collected since container start
 
@@ -125,7 +125,7 @@ As a developer using iris-devtools containers, when my IRIS instance crashes or 
 
 **Data Access & Integration**
 - **FR-012**: Monitoring data MUST be accessible via ^SystemPerformance utility and Management Portal
-- **FR-013**: System MUST provide Yaspe/Yates as optional dependency for visualization (install via `pip install 'iris-devtools[yaspe]'`)
+- **FR-013**: System MUST provide Yaspe/Yates as optional dependency for visualization (install via `pip install 'iris-devtester[yaspe]'`)
 - **FR-014**: System MUST provide helper utilities to invoke Yaspe visualization on ^SystemPerformance output data
 - **FR-015**: System MUST export monitoring data in standard ^SystemPerformance HTML report format compatible with Yaspe
 
@@ -147,7 +147,7 @@ As a developer using iris-devtools containers, when my IRIS instance crashes or 
 
 - **CPFParameters**: Specific iris.cpf configuration parameter file settings related to ^SystemPerformance monitoring (memory allocation, OS permissions, collection settings)
 
-- **IRISContainer**: Enhanced with automatic ^SystemPerformance policy configuration during container initialization (extends existing iris_devtools.containers.IRISContainer)
+- **IRISContainer**: Enhanced with automatic ^SystemPerformance policy configuration during container initialization (extends existing iris_devtester.containers.IRISContainer)
 
 - **PerformanceDataExport**: Mechanism for extracting ^SystemPerformance monitoring data in formats suitable for Yaspe/Yates or other analysis tools
 
@@ -178,7 +178,7 @@ As a developer using iris-devtools containers, when my IRIS instance crashes or 
 
 **Resolved via Clarification Session:**
 - ✅ Monitoring facility: ^SystemPerformance via Task Manager scheduling
-- ✅ Yaspe integration: Optional dependency (`pip install 'iris-devtools[yaspe]'`)
+- ✅ Yaspe integration: Optional dependency (`pip install 'iris-devtester[yaspe]'`)
 - ✅ Sampling interval limits: 1s min, 300s max
 - ✅ Retention period limits: 5 min, 24 hours max
 - ✅ Resource protection: Auto-disable at CPU >90% or memory >95%
@@ -261,4 +261,4 @@ The specification has been updated with first clarification:
 3. **Resource boundaries**: When to disable, how much overhead acceptable
 4. **Enterprise considerations**: Licensing or capability differences
 
-Once clarified, this will enable iris-devtools to provide "batteries-included" IRIS containers that are automatically debugging-ready with ^SystemPerformance, following InterSystems best practices.
+Once clarified, this will enable iris-devtester to provide "batteries-included" IRIS containers that are automatically debugging-ready with ^SystemPerformance, following InterSystems best practices.

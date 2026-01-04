@@ -135,16 +135,16 @@ for line in result.stdout.strip().split('\n'):
 
 ## Files Modified
 
-- `iris_devtools/fixtures/creator.py` - Added docker exec BACKUP pattern
-- `iris_devtools/fixtures/loader.py` - Added docker exec RESTORE pattern
-- `iris_devtools/fixtures/creator.py` - Fixed namespace connection in get_namespace_tables()
-- `iris_devtools/fixtures/loader.py` - Fixed namespace connection in table verification
+- `iris_devtester/fixtures/creator.py` - Added docker exec BACKUP pattern
+- `iris_devtester/fixtures/loader.py` - Added docker exec RESTORE pattern
+- `iris_devtester/fixtures/creator.py` - Fixed namespace connection in get_namespace_tables()
+- `iris_devtester/fixtures/loader.py` - Fixed namespace connection in table verification
 - `tests/integration/test_dat_fixtures_integration.py` - Fixed namespace switching in test
 
 ## References
 
 - Perplexity research on Config.Databases API
-- Working namespace creation code in `iris_devtools/containers/iris_container.py`
+- Working namespace creation code in `iris_devtester/containers/iris_container.py`
 - ObjectScript documentation on database operations
 
 ## Additional Fixes (Continuation Session)
@@ -152,12 +152,12 @@ for line in result.stdout.strip().split('\n'):
 ### Error 9: ChecksumMismatchError not raised
 - **Root cause**: `validator.validate_fixture()` was catching `ChecksumMismatchError` and adding it to errors list instead of re-raising
 - **Fix**: Re-raise `ChecksumMismatchError` directly (Constitutional Principle #5: Fail Fast with Guidance)
-- **Location**: `iris_devtools/fixtures/validator.py:218-221`
+- **Location**: `iris_devtester/fixtures/validator.py:218-221`
 
 ### Error 10: cleanup_fixture() using iris.execute()
 - **Root cause**: Tried to use `iris.execute()` for namespace deletion (same mistake as earlier!)
 - **Fix**: Replaced with docker exec pattern for ObjectScript deletion command
-- **Location**: `iris_devtools/fixtures/loader.py:369-421`
+- **Location**: `iris_devtester/fixtures/loader.py:369-421`
 
 ### Error 11: Test pollution / connection timeouts
 - **Root cause**: Two tests (`test_detect_corrupted_dat_file`, `test_cleanup_removes_namespace`) were creating unnecessary test data with `iris_connection`, causing "Communication timed out" errors when running after other tests

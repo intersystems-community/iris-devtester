@@ -1,6 +1,6 @@
-# iris-devtools Extraction Plan - Executive Summary
+# iris-devtester Extraction Plan - Executive Summary
 
-**Project:** iris-devtools
+**Project:** iris-devtester
 **Source:** rag-templates (production RAG framework)
 **Analysis Date:** 2025-10-06
 
@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-Extract **~2,400 lines** of battle-tested IRIS infrastructure from rag-templates into iris-devtools, saving **90% of boilerplate** for future IRIS Python projects.
+Extract **~2,400 lines** of battle-tested IRIS infrastructure from rag-templates into iris-devtester, saving **90% of boilerplate** for future IRIS Python projects.
 
 **Impact:** New projects go from 2-3 days setup to **1-2 hours**.
 
@@ -23,7 +23,7 @@ Extract **~2,400 lines** of battle-tested IRIS infrastructure from rag-templates
 - ✅ Environment auto-detection (UV, venv, system)
 - ✅ Retry logic with exponential backoff
 
-**Target:** `iris_devtools/connections/`
+**Target:** `iris_devtester/connections/`
 
 ### 🟠 Phase 2: Password Reset (Week 2) - HIGH PRIORITY
 **Files:** 1 file, 230 lines
@@ -32,7 +32,7 @@ Extract **~2,400 lines** of battle-tested IRIS infrastructure from rag-templates
 - ✅ Integration with connection manager
 - ✅ Constitutional requirement #1: "Automatic Remediation Over Manual Intervention"
 
-**Target:** `iris_devtools/testing/password_reset.py`
+**Target:** `iris_devtester/testing/password_reset.py`
 
 ### 🟡 Phase 3: Test Infrastructure (Week 3) - MEDIUM PRIORITY
 **Files:** 5 files, 1,232 lines
@@ -42,7 +42,7 @@ Extract **~2,400 lines** of battle-tested IRIS infrastructure from rag-templates
 - ✅ Schema management (reset/validate)
 - ✅ State tracking for debugging
 
-**Target:** `iris_devtools/testing/`
+**Target:** `iris_devtester/testing/`
 
 ### 🟢 Phase 4: Configuration Discovery (Week 4) - NICE TO HAVE
 **Files:** 2 files, 243 lines
@@ -50,7 +50,7 @@ Extract **~2,400 lines** of battle-tested IRIS infrastructure from rag-templates
 - ✅ Smart defaults
 - ✅ .env generation from running IRIS
 
-**Target:** `iris_devtools/config/`
+**Target:** `iris_devtester/config/`
 
 ---
 
@@ -121,10 +121,10 @@ from common.iris_connection_manager import get_iris_connection
 conn = get_iris_connection()
 ```
 
-**After (iris-devtools):**
+**After (iris-devtester):**
 ```python
 # pip install iris-devtester
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 conn = get_connection()  # Zero config for Docker
 ```
 
@@ -142,9 +142,9 @@ conn = get_connection()  # Zero config for Docker
 # Manual setup in conftest.py (~200 lines)
 ```
 
-**After (iris-devtools):**
+**After (iris-devtester):**
 ```python
-from iris_devtools.testing import iris_db
+from iris_devtester.testing import iris_db
 
 def test_my_feature(iris_db):
     # Auto password reset
@@ -160,7 +160,7 @@ def test_my_feature(iris_db):
 ## Effort Savings
 
 ### Development Time
-| Activity | Current | With iris-devtools | Savings |
+| Activity | Current | With iris-devtester | Savings |
 |----------|---------|-------------------|---------|
 | Initial setup | 2-4 hours | 15 minutes | **90%** |
 | Test infrastructure | 8-12 hours | 1 hour | **88%** |
@@ -168,7 +168,7 @@ def test_my_feature(iris_db):
 | Environment troubleshooting | 30-60 minutes | 0 (auto-detect) | **100%** |
 
 ### Code Maintenance
-| Metric | Current | With iris-devtools | Reduction |
+| Metric | Current | With iris-devtester | Reduction |
 |--------|---------|-------------------|-----------|
 | Connection code | ~960 lines | ~50 lines | **95%** |
 | Test infrastructure | ~1,230 lines | ~100 lines | **92%** |
@@ -213,10 +213,10 @@ All extracted code validates against `CONSTITUTION.md`:
         └── schema_reset.py (179 lines)        ← EXTRACT
 ```
 
-### Target (iris-devtools)
+### Target (iris-devtester)
 ```
-/Users/tdyar/ws/iris-devtools/
-└── iris_devtools/
+/Users/tdyar/ws/iris-devtester/
+└── iris_devtester/
     ├── connections/
     │   ├── manager.py          ← iris_connection_manager.py
     │   └── dbapi.py            ← iris_dbapi_connector.py
@@ -251,7 +251,7 @@ All extracted code validates against `CONSTITUTION.md`:
 ### Weeks 3-4
 1. ⬜ Extract test infrastructure
 2. ⬜ Create pytest plugin
-3. ⬜ Release iris-devtools 0.1.0
+3. ⬜ Release iris-devtester 0.1.0
 
 ---
 
@@ -282,13 +282,13 @@ All extracted code validates against `CONSTITUTION.md`:
 - [ ] 95%+ test coverage maintained
 
 ### Adoption Success
-- [ ] rag-templates migrated to use iris-devtools
-- [ ] 2+ other projects using iris-devtools
+- [ ] rag-templates migrated to use iris-devtester
+- [ ] 2+ other projects using iris-devtester
 - [ ] <5 GitHub issues per month (stable API)
 - [ ] Documentation covers 90%+ of use cases
 
 ### Community Success
-- [ ] Published to PyPI as `iris-devtools`
+- [ ] Published to PyPI as `iris-devtester`
 - [ ] README with quick start (<5 minutes)
 - [ ] Contributing guide
 - [ ] Linked from InterSystems docs
@@ -297,7 +297,7 @@ All extracted code validates against `CONSTITUTION.md`:
 
 ## Questions to Resolve
 
-1. **Package naming:** Confirm `iris-devtools` (vs `intersystems-devtools`, `iris-dev-toolkit`)
+1. **Package naming:** Confirm `iris-devtester` (vs `intersystems-devtools`, `iris-dev-toolkit`)
 2. **License:** MIT (matching rag-templates)?
 3. **Repository:** GitHub location (InterSystems org or personal?)
 4. **PyPI ownership:** Who publishes/maintains?
@@ -307,10 +307,10 @@ All extracted code validates against `CONSTITUTION.md`:
 
 ## Resources
 
-- **Detailed Analysis:** `/Users/tdyar/ws/iris-devtools/docs/RAG_TEMPLATES_ANALYSIS.md`
+- **Detailed Analysis:** `/Users/tdyar/ws/iris-devtester/docs/RAG_TEMPLATES_ANALYSIS.md`
 - **Source Project:** `/Users/tdyar/ws/rag-templates`
-- **Constitution:** `/Users/tdyar/ws/iris-devtools/CONSTITUTION.md`
-- **README:** `/Users/tdyar/ws/iris-devtools/README.md`
+- **Constitution:** `/Users/tdyar/ws/iris-devtester/CONSTITUTION.md`
+- **README:** `/Users/tdyar/ws/iris-devtester/README.md`
 
 ---
 

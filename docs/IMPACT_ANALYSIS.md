@@ -1,4 +1,4 @@
-# iris-devtools Impact Analysis
+# iris-devtester Impact Analysis
 ## How This Repository Can Assist iris-pgwire and rag-templates
 
 **Date**: 2025-10-06
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-iris-devtools can provide **immediate, high-value improvements** to both projects by:
+iris-devtester can provide **immediate, high-value improvements** to both projects by:
 
 1. **Reducing code duplication**: ~1,850 lines of infrastructure code → ~135 lines
 2. **Eliminating setup time**: 2-3 days → 1-2 hours for new developers
@@ -17,7 +17,7 @@ iris-devtools can provide **immediate, high-value improvements** to both project
 
 ### Quick Wins Summary
 
-| Project | Current Lines | After iris-devtools | Time Savings | Risk |
+| Project | Current Lines | After iris-devtester | Time Savings | Risk |
 |---------|--------------|---------------------|--------------|------|
 | **iris-pgwire** | ~1,350 lines | ~85 lines | 90% | Low |
 | **rag-templates** | ~2,430 lines | ~180 lines | 93% | Low |
@@ -78,9 +78,9 @@ class DBAPIConnectionPool:
             # ... manual health tracking
 ```
 
-**With iris-devtools**:
+**With iris-devtester**:
 ```python
-from iris_devtools.connections import get_connection, IRISConnection
+from iris_devtester.connections import get_connection, IRISConnection
 
 # Simple connection with retry
 conn = get_connection()  # Auto-discovers, auto-retries
@@ -95,7 +95,7 @@ with IRISConnection() as conn:
 **Impact**:
 - **Lines saved**: 420 → ~20 lines (95% reduction)
 - **Complexity**: Manual queue management → Built-in retry/health checks
-- **Maintenance**: Custom pool code → Maintained by iris-devtools
+- **Maintenance**: Custom pool code → Maintained by iris-devtester
 - **Features gained**: Auto-discovery, password reset, better error messages
 
 ---
@@ -151,10 +151,10 @@ def iris_clean_namespace(embedded_iris, iris_config):
         embedded_iris.sql.exec(f"DROP TABLE {table_name}")
 ```
 
-**With iris-devtools**:
+**With iris-devtester**:
 ```python
 # In conftest.py - ONE LINE
-from iris_devtools.testing import iris_db, iris_db_shared
+from iris_devtester.testing import iris_db, iris_db_shared
 
 # That's it! Tests can use iris_db fixture:
 def test_my_feature(iris_db):
@@ -189,14 +189,14 @@ environment:
   - IRIS_NAMESPACE=USER
 ```
 
-**With iris-devtools**:
+**With iris-devtester**:
 ```python
 # Just works - auto-discovers from Docker, env, .env
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 conn = get_connection()  # Finds IRIS automatically
 
 # Or explicit if needed
-from iris_devtools.config import IRISConfig
+from iris_devtester.config import IRISConfig
 config = IRISConfig()  # Loads from env/.env/Docker/defaults
 conn = get_connection(config)
 ```
@@ -233,9 +233,9 @@ IRIS_ACCESSDENIED: CallIn service not enabled
 # No suggestion on how to fix!
 ```
 
-**With iris-devtools** (future enhancement):
+**With iris-devtester** (future enhancement):
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Automatic CallIn service enablement
 with IRISContainer(enable_callin=True) as iris:
@@ -254,7 +254,7 @@ ConnectionError:
 
   How to fix it:
     1. Automatic (recommended):
-       from iris_devtools.utils import enable_callin_service
+       from iris_devtester.utils import enable_callin_service
        enable_callin_service(container_name="iris-server")
 
     2. Manual:
@@ -274,7 +274,7 @@ ConnectionError:
 
 ## Integration Points for iris-pgwire
 
-### Where to Use iris-devtools
+### Where to Use iris-devtester
 
 #### 1. **Connection Pool Replacement** (High Priority)
 
@@ -299,17 +299,17 @@ class DBAPIConnectionPool:
         # Manual timeout handling
 ```
 
-**After** (with iris-devtools):
+**After** (with iris-devtester):
 ```python
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 class DBAPIConnectionPool:
     def __init__(self, config):
         self.config = config
-        # iris-devtools handles retry, health, discovery
+        # iris-devtester handles retry, health, discovery
 
     async def acquire(self):
-        # Simple wrapper around iris-devtools
+        # Simple wrapper around iris-devtester
         conn = await asyncio.to_thread(get_connection, self.config)
         return conn
 ```
@@ -319,7 +319,7 @@ class DBAPIConnectionPool:
 - Automatic password reset handling
 - Auto-discovery from Docker/env
 - Clear error messages with remediation
-- Maintained by iris-devtools team
+- Maintained by iris-devtester team
 
 #### 2. **Test Fixture Simplification** (High Priority)
 
@@ -347,8 +347,8 @@ def iris_clean_namespace(embedded_iris, iris_config):
 
 **After**:
 ```python
-# ~10 lines using iris-devtools
-from iris_devtools.testing import iris_db, iris_db_shared
+# ~10 lines using iris-devtester
+from iris_devtester.testing import iris_db, iris_db_shared
 
 # Optional: Project-specific fixtures
 @pytest.fixture
@@ -386,13 +386,13 @@ config = {
 
 **After**:
 ```python
-from iris_devtools.config import discover_config
+from iris_devtester.config import discover_config
 
 # Auto-discovers from env, .env, Docker, native, defaults
 config = discover_config()
 
 # Or explicit overrides
-from iris_devtools.config import IRISConfig
+from iris_devtester.config import IRISConfig
 config = IRISConfig(host="custom-host")  # Other params auto-discovered
 ```
 
@@ -406,7 +406,7 @@ config = IRISConfig(host="custom-host")  # Other params auto-discovered
 
 ## Estimated Impact for iris-pgwire
 
-| Area | Current | After iris-devtools | Savings |
+| Area | Current | After iris-devtester | Savings |
 |------|---------|---------------------|---------|
 | **Connection pool** | 420 lines | 20 lines | **95%** |
 | **Test fixtures** | 672 lines | 50 lines | **93%** |
@@ -416,7 +416,7 @@ config = IRISConfig(host="custom-host")  # Other params auto-discovered
 
 ### Time Savings
 
-| Task | Current | With iris-devtools | Savings |
+| Task | Current | With iris-devtester | Savings |
 |------|---------|-------------------|---------|
 | **Initial setup** | 2-3 days | 2-4 hours | **90%** |
 | **Adding new test** | 30-60 min | 5-10 min | **83%** |
@@ -454,7 +454,7 @@ config = IRISConfig(host="custom-host")  # Other params auto-discovered
 
 ### Overview
 
-rag-templates has **independently discovered and implemented** many of the same patterns we're building in iris-devtools. This validates our approach!
+rag-templates has **independently discovered and implemented** many of the same patterns we're building in iris-devtester. This validates our approach!
 
 **Total infrastructure code**: ~2,430 lines across:
 - Connection management (736 lines)
@@ -512,15 +512,15 @@ def _get_dbapi_connection(self, config: Optional[Dict[str, Any]] = None) -> Any:
             # ... 50+ more lines
 ```
 
-**Key features** (already matches iris-devtools!):
+**Key features** (already matches iris-devtester!):
 - DBAPI-first approach ✅
 - Environment detection ✅
 - Password auto-remediation ✅
 - Clear error messages ✅
 
-**With iris-devtools**:
+**With iris-devtester**:
 ```python
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 # All 412 lines → this
 conn = get_connection()  # Auto-discovers, auto-retries, auto-remediates
@@ -583,11 +583,11 @@ def _detect_docker_iris_port(self) -> Optional[int]:
 - Docker port auto-detection (11972, 21972, 1972) ✅
 - Environment variable priority ✅
 - Sensible defaults ✅
-- **Already extracted to iris-devtools!** (our auto_discovery.py does this)
+- **Already extracted to iris-devtester!** (our auto_discovery.py does this)
 
-**With iris-devtools**:
+**With iris-devtester**:
 ```python
-from iris_devtools.config import discover_config
+from iris_devtester.config import discover_config
 
 # All 324 lines → this
 config = discover_config()  # Auto-detects from Docker, env, .env, native
@@ -625,7 +625,7 @@ def _detect_best_iris_environment() -> bool:
 - System Python fallback ✅
 - Environment variable export ✅
 
-**This is unique to rag-templates** - Could enhance iris-devtools!
+**This is unique to rag-templates** - Could enhance iris-devtester!
 
 ---
 
@@ -676,7 +676,7 @@ def reset_iris_password(
 - .env file update ✅
 - Constitutional principle #1 (automatic remediation) ✅
 
-**Good news**: iris-devtools already has this in `iris_devtools/utils/password_reset.py`!
+**Good news**: iris-devtester already has this in `iris_devtester/utils/password_reset.py`!
 
 **Migration**:
 ```python
@@ -684,8 +684,8 @@ def reset_iris_password(
 from tests.utils.iris_password_reset import reset_iris_password_if_needed
 reset_iris_password_if_needed(error)
 
-# After (iris-devtools)
-from iris_devtools.utils import reset_password_if_needed
+# After (iris-devtester)
+from iris_devtester.utils import reset_password_if_needed
 reset_password_if_needed(error)
 ```
 
@@ -721,9 +721,9 @@ class TestDatabaseState:
 
 **Key pattern**: Each test gets unique `test_run_id` for isolation
 
-**With iris-devtools** (future enhancement):
+**With iris-devtester** (future enhancement):
 ```python
-from iris_devtools.testing import iris_db
+from iris_devtester.testing import iris_db
 
 def test_my_feature(iris_db):
     # iris_db fixture provides:
@@ -758,7 +758,7 @@ class DatabaseCleanupHandler:
         # ... more cleanup logic
 ```
 
-**With iris-devtools**:
+**With iris-devtester**:
 ```python
 # Automatic - iris_db fixture handles cleanup
 def test_my_feature(iris_db):
@@ -794,9 +794,9 @@ class PreflightValidator:
         return PreflightResult(checks=checks, duration=duration)
 ```
 
-**With iris-devtools** (future enhancement):
+**With iris-devtester** (future enhancement):
 ```python
-from iris_devtools.testing import preflight_checks
+from iris_devtester.testing import preflight_checks
 
 # Automatic pre-flight validation
 @pytest.fixture(scope="session", autouse=True)
@@ -837,10 +837,10 @@ class SchemaResetter:
         return SchemaValidator().validate_schema().is_valid
 ```
 
-**Note**: This is RAG-specific, but the **pattern** could be generalized in iris-devtools:
+**Note**: This is RAG-specific, but the **pattern** could be generalized in iris-devtester:
 
 ```python
-from iris_devtools.schema import SchemaManager
+from iris_devtester.schema import SchemaManager
 
 schema_mgr = SchemaManager(conn, ddl_file="schema.sql")
 schema_mgr.reset_schema()  # Drop + recreate
@@ -860,8 +860,8 @@ schema_mgr.validate_schema()  # Verify structure
 
 **With**:
 ```python
-from iris_devtools.connections import get_connection
-from iris_devtools.config import discover_config
+from iris_devtester.connections import get_connection
+from iris_devtester.config import discover_config
 
 # That's it!
 conn = get_connection()
@@ -871,7 +871,7 @@ conn = get_connection()
 - **Lines saved**: 736 → 20 lines (97% reduction)
 - **Maintenance**: 3 files → 0 files
 - **Features**: Same + better error messages
-- **Risk**: Low (proven in iris-devtools tests)
+- **Risk**: Low (proven in iris-devtester tests)
 
 ---
 
@@ -882,16 +882,16 @@ conn = get_connection()
 
 **With**:
 ```python
-from iris_devtools.utils import reset_password_if_needed
+from iris_devtester.utils import reset_password_if_needed
 
-# Already exists in iris-devtools!
+# Already exists in iris-devtester!
 ```
 
 **Impact**:
 - **Lines saved**: 230 → 0 lines (100% reduction)
 - **Maintenance**: 1 file → 0 files
 - **Features**: Same functionality
-- **Risk**: None (iris-devtools has this)
+- **Risk**: None (iris-devtester has this)
 
 ---
 
@@ -904,7 +904,7 @@ from iris_devtools.utils import reset_password_if_needed
 
 **With**:
 ```python
-from iris_devtools.testing import iris_db
+from iris_devtester.testing import iris_db
 
 # RAG-specific fixtures can build on iris_db
 @pytest.fixture
@@ -934,7 +934,7 @@ def rag_schema(iris_db):
 
 **With**:
 ```python
-from iris_devtools.config import IRISConfig, discover_config
+from iris_devtester.config import IRISConfig, discover_config
 
 config = discover_config()  # Auto-discovers everything
 ```
@@ -948,7 +948,7 @@ config = discover_config()  # Auto-discovers everything
 
 ## Estimated Impact for rag-templates
 
-| Phase | Current Lines | After iris-devtools | Savings | Risk |
+| Phase | Current Lines | After iris-devtester | Savings | Risk |
 |-------|--------------|---------------------|---------|------|
 | **1. Connection** | 736 | 20 | **97%** | Low |
 | **2. Password** | 230 | 0 | **100%** | None |
@@ -959,7 +959,7 @@ config = discover_config()  # Auto-discovers everything
 
 ### Time Savings
 
-| Task | Current | With iris-devtools | Savings |
+| Task | Current | With iris-devtester | Savings |
 |------|---------|-------------------|---------|
 | **New project setup** | 2-3 days | 1-2 hours | **95%** |
 | **Password debugging** | 1-2 hours | 0 (automatic) | **100%** |
@@ -973,7 +973,7 @@ config = discover_config()  # Auto-discovers everything
 
 ## Summary Table
 
-| iris-devtools Module | iris-pgwire Usage | rag-templates Usage | Lines Saved |
+| iris-devtester Module | iris-pgwire Usage | rag-templates Usage | Lines Saved |
 |---------------------|------------------|-------------------|-------------|
 | **connections.get_connection()** | Replace connection pool (420) | Replace connection mgr (736) | **1,156** |
 | **connections.IRISConnection** | Context manager for queries | Context manager for queries | **100** |
@@ -1040,21 +1040,21 @@ class DBAPIConnectionPool:
     # ... 300+ more lines of pool management
 ```
 
-**After** (with iris-devtools):
+**After** (with iris-devtester):
 ```python
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 import asyncio
 
 class DBAPIConnectionPool:
-    """Simple connection pool using iris-devtools."""
+    """Simple connection pool using iris-devtester."""
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        # iris-devtools handles: retry, health, password reset, auto-discovery
+        # iris-devtester handles: retry, health, password reset, auto-discovery
 
     async def acquire(self, timeout: float = 30.0):
         """Acquire connection with automatic retry and health."""
-        # iris-devtools handles all the complexity
+        # iris-devtester handles all the complexity
         conn = await asyncio.to_thread(
             get_connection,
             self.config,
@@ -1156,9 +1156,9 @@ def isolated_namespace(database_with_clean_schema):
     )
 ```
 
-**After** (with iris-devtools):
+**After** (with iris-devtester):
 ```python
-from iris_devtools.testing import iris_db
+from iris_devtester.testing import iris_db
 
 # RAG-specific fixture builds on iris_db
 @pytest.fixture
@@ -1262,9 +1262,9 @@ def _get_connection_params(self) -> Dict[str, Any]:
     }
 ```
 
-**After** (with iris-devtools):
+**After** (with iris-devtester):
 ```python
-from iris_devtools.config import discover_config, IRISConfig
+from iris_devtester.config import discover_config, IRISConfig
 
 # Auto-discovers from:
 # 1. Explicit config (if provided)
@@ -1297,23 +1297,23 @@ config = IRISConfig(
 ### Phase 1: iris-pgwire (2-3 weeks)
 
 #### Week 1: Connection Pool Replacement
-**Goal**: Replace `dbapi_connection_pool.py` with iris-devtools
+**Goal**: Replace `dbapi_connection_pool.py` with iris-devtester
 
 **Steps**:
-1. Add iris-devtools dependency to `pyproject.toml`
+1. Add iris-devtester dependency to `pyproject.toml`
 2. Create wrapper class using `get_connection()`
 3. Update tests to use new pool
 4. Verify all 19 tests still pass
 5. Remove old `dbapi_connection_pool.py` (420 lines deleted)
 
-**Risk**: Low - iris-devtools proven in tests
+**Risk**: Low - iris-devtester proven in tests
 **Validation**: Run full test suite, benchmark performance
 
 #### Week 2: Test Fixtures
 **Goal**: Replace `tests/conftest.py` with iris-devtester fixtures
 
 **Steps**:
-1. Replace `iris_container` with `IRISContainer` from iris-devtools
+1. Replace `iris_container` with `IRISContainer` from iris-devtester
 2. Replace `iris_clean_namespace` with `iris_db` fixture
 3. Keep `pgwire_client` (PGWire-specific)
 4. Update all test files to use new fixtures
@@ -1343,7 +1343,7 @@ config = IRISConfig(
 **Goal**: Replace connection manager files
 
 **Steps**:
-1. Add iris-devtools dependency
+1. Add iris-devtester dependency
 2. Replace `iris_connection_manager.py` imports
 3. Replace `iris_dbapi_connector.py` imports
 4. Keep `environment_manager.py` UV detection (unique feature)
@@ -1353,15 +1353,15 @@ config = IRISConfig(
 **Validation**: Full test suite, production smoke tests
 
 #### Week 2: Password Reset
-**Goal**: Use iris-devtools password reset
+**Goal**: Use iris-devtester password reset
 
 **Steps**:
 1. Replace `tests/utils/iris_password_reset.py` imports
-2. Update error handling to use iris-devtools
+2. Update error handling to use iris-devtester
 3. Remove old file (230 lines deleted)
 4. Test password reset scenarios
 
-**Risk**: None - iris-devtools has this
+**Risk**: None - iris-devtester has this
 **Validation**: Test "Password change required" scenario
 
 #### Week 3: Test Infrastructure
@@ -1371,7 +1371,7 @@ config = IRISConfig(
 1. Replace `database_state.py` with iris_db fixture
 2. Replace `database_cleanup.py` with automatic cleanup
 3. Keep RAG-specific fixtures (`rag_db`, `rag_schema`)
-4. Update `preflight_checks.py` to use iris-devtools
+4. Update `preflight_checks.py` to use iris-devtester
 5. Run all tests
 
 **Risk**: Medium - Preserve RAG-specific patterns
@@ -1381,7 +1381,7 @@ config = IRISConfig(
 **Goal**: Generalize schema management, finalize migration
 
 **Steps**:
-1. Extract schema reset pattern to iris-devtools
+1. Extract schema reset pattern to iris-devtester
 2. Update RAG code to use generalized pattern
 3. Final cleanup of old files
 4. Documentation updates
@@ -1395,7 +1395,7 @@ config = IRISConfig(
 ### Phase 3: Both Projects (Ongoing)
 
 #### Continuous Improvements
-**Goal**: Feed learnings back to iris-devtools
+**Goal**: Feed learnings back to iris-devtester
 
 **Contributions**:
 1. **From iris-pgwire**:
@@ -1417,10 +1417,10 @@ config = IRISConfig(
 | Risk Factor | Likelihood | Impact | Mitigation |
 |------------|-----------|--------|------------|
 | **Breaking changes** | Low | High | Comprehensive test coverage, gradual rollout |
-| **Performance regression** | Very Low | Medium | Benchmark before/after, iris-devtools is proven fast |
+| **Performance regression** | Very Low | Medium | Benchmark before/after, iris-devtester is proven fast |
 | **Missing features** | Low | Medium | Extract proven patterns, not reimplementing |
 | **Integration issues** | Low | Low | Both projects already follow similar patterns |
-| **Maintenance burden** | Very Low | Low | Reduce maintenance by using iris-devtools |
+| **Maintenance burden** | Very Low | Low | Reduce maintenance by using iris-devtester |
 
 ### Validation Strategy
 
@@ -1479,7 +1479,7 @@ config = IRISConfig(
 - **2,430 lines** → **180 lines** (93% reduction)
 - Setup time: **2-3 days** → **1-2 hours** (90% reduction)
 - Proven patterns preserved and generalized
-- Feedback loop to enhance iris-devtools
+- Feedback loop to enhance iris-devtester
 
 **Combined**:
 - **3,780 lines** → **265 lines** (93% reduction)

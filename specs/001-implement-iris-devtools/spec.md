@@ -1,9 +1,9 @@
 # Feature Specification: IRIS DevTools Package Implementation
 
-**Feature Branch**: `001-implement-iris-devtools`
+**Feature Branch**: `001-implement-iris-devtester`
 **Created**: 2025-10-05
 **Status**: Draft
-**Input**: User description: "Implement iris-devtools following the feature request in .specify/feature-request.md"
+**Input**: User description: "Implement iris-devtester following the feature request in .specify/feature-request.md"
 
 ## Execution Flow (main)
 ```
@@ -49,7 +49,7 @@ The developer should be able to:
 
 ### Acceptance Scenarios
 
-1. **Given** a fresh Python environment, **When** developer runs `pip install iris-devtools && pytest`, **Then** all infrastructure is configured automatically and tests run successfully without manual intervention
+1. **Given** a fresh Python environment, **When** developer runs `pip install iris-devtester && pytest`, **Then** all infrastructure is configured automatically and tests run successfully without manual intervention
 
 2. **Given** an IRIS container with expired credentials, **When** developer attempts to connect, **Then** the system automatically detects and resets the password, updating environment variables transparently
 

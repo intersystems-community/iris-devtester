@@ -14,8 +14,8 @@ Defines the contract for configuring ^SystemPerformance monitoring policies in I
 ### Signature
 
 ```python
-from iris_devtools.containers.monitoring import MonitoringPolicy, configure_monitoring
-from iris_devtools.connections import Connection
+from iris_devtester.containers.monitoring import MonitoringPolicy, configure_monitoring
+from iris_devtester.connections import Connection
 
 def configure_monitoring(
     conn: Connection,
@@ -47,7 +47,7 @@ def configure_monitoring(
 
 ```python
 # Zero-config usage (Constitutional Principle 4)
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
@@ -67,7 +67,7 @@ with IRISContainer.community() as iris:
 ### Custom Configuration (FR-021, FR-022)
 
 ```python
-from iris_devtools.containers.monitoring import MonitoringPolicy
+from iris_devtester.containers.monitoring import MonitoringPolicy
 
 # Custom policy
 policy = MonitoringPolicy(
@@ -104,7 +104,7 @@ with IRISContainer.community() as iris:
 ### Signature
 
 ```python
-from iris_devtools.containers.monitoring import MonitoringStatus
+from iris_devtester.containers.monitoring import MonitoringStatus
 
 def get_monitoring_status(conn: Connection) -> MonitoringStatus:
     """
@@ -138,7 +138,7 @@ class MonitoringStatus:
 status = get_monitoring_status(conn)
 
 assert status.enabled is True
-assert status.policy_name == "iris-devtools-default"
+assert status.policy_name == "iris-devtester-default"
 assert status.data_points_available > 0
 ```
 
@@ -229,7 +229,7 @@ def test_configure_monitoring_defaults(iris_connection):
 
     status = get_monitoring_status(iris_connection)
     assert status.enabled is True
-    assert status.policy_name == "iris-devtools-default"
+    assert status.policy_name == "iris-devtester-default"
 ```
 
 ### Test: Custom Policy Validation

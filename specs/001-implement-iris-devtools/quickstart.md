@@ -1,15 +1,15 @@
 # Quickstart: IRIS DevTools Validation
 
-**Feature**: 001-implement-iris-devtools
+**Feature**: 001-implement-iris-devtester
 **Date**: 2025-10-05
 **Purpose**: Step-by-step validation of primary user story (zero-config workflow)
 
 ## Overview
 
-This quickstart validates the core user story: **A developer can install iris-devtools and run pytest without any manual configuration**.
+This quickstart validates the core user story: **A developer can install iris-devtester and run pytest without any manual configuration**.
 
 Success means:
-1. ✅ `pip install iris-devtools` works
+1. ✅ `pip install iris-devtester` works
 2. ✅ Test file with `iris_db` fixture works
 3. ✅ `pytest` runs without configuration
 4. ✅ Automatic connection, isolation, and cleanup work
@@ -27,7 +27,7 @@ docker --version  # Should be installed
 docker ps         # Should connect successfully
 ```
 
-## Step 1: Install iris-devtools
+## Step 1: Install iris-devtester
 
 ```bash
 # Clean environment (optional but recommended)
@@ -35,15 +35,15 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install package
-pip install iris-devtools
+pip install iris-devtester
 
 # Verify installation
-python -c "import iris_devtools; print(iris_devtools.__version__)"
+python -c "import iris_devtester; print(iris_devtester.__version__)"
 ```
 
 **Expected Output**:
 ```
-Successfully installed iris-devtools-1.0.0
+Successfully installed iris-devtester-1.0.0
 1.0.0
 ```
 
@@ -57,7 +57,7 @@ Create `test_quickstart.py`:
 
 ```python
 """
-Quickstart test for iris-devtools
+Quickstart test for iris-devtester
 
 This test validates:
 1. iris_db fixture is automatically available
@@ -213,7 +213,7 @@ def test_driver_selection(iris_db):
 
 **Expected Log**:
 ```
-INFO:iris_devtools:Using DBAPI connection (3x faster than JDBC)
+INFO:iris_devtester:Using DBAPI connection (3x faster than JDBC)
 ```
 
 **Validation**: ✅ DBAPI driver selected automatically
@@ -283,8 +283,8 @@ Verify no configuration files needed:
 ```bash
 # Check for config files
 ls .env         # Should not exist
-ls pytest.ini   # Should not exist (or has no iris-devtools config)
-ls conftest.py  # Should not exist (or has no iris-devtools code)
+ls pytest.ini   # Should not exist (or has no iris-devtester config)
+ls conftest.py  # Should not exist (or has no iris-devtester code)
 
 # Verify environment variables not required
 env | grep IRIS
@@ -300,7 +300,7 @@ env | grep IRIS
 ### 6.1 Explicit Configuration (Optional)
 
 ```python
-from iris_devtools import get_iris_connection, IRISConfig
+from iris_devtester import get_iris_connection, IRISConfig
 
 def test_explicit_config():
     """Test with explicit configuration"""
@@ -323,7 +323,7 @@ def test_explicit_config():
 ### 6.2 Schema Validation
 
 ```python
-from iris_devtools.testing import validate_schema, SchemaDefinition, TableDefinition, ColumnDefinition
+from iris_devtester.testing import validate_schema, SchemaDefinition, TableDefinition, ColumnDefinition
 
 def test_schema_validation(iris_db):
     """Test schema validation"""
@@ -442,7 +442,7 @@ docker stop <container_id>
 
 **Warning**:
 ```
-WARNING:iris_devtools:DBAPI connection failed, falling back to JDBC
+WARNING:iris_devtester:DBAPI connection failed, falling back to JDBC
 ```
 
 **Solution**:
@@ -476,7 +476,7 @@ After quickstart validation:
 **Performance**: Within targets (<30s per test)
 **Zero-Config**: ✅ Verified
 
-This quickstart validates that iris-devtools delivers on its core promise: **automatic, reliable IRIS infrastructure for Python development**.
+This quickstart validates that iris-devtester delivers on its core promise: **automatic, reliable IRIS infrastructure for Python development**.
 
 ---
 

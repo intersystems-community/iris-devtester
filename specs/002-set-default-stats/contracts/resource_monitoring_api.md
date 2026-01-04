@@ -14,8 +14,8 @@ Defines the contract for monitoring IRIS resource usage and automatically disabl
 ### Signature
 
 ```python
-from iris_devtools.containers.monitoring import PerformanceMetrics, get_resource_metrics
-from iris_devtools.connections import Connection
+from iris_devtester.containers.monitoring import PerformanceMetrics, get_resource_metrics
+from iris_devtester.connections import Connection
 
 def get_resource_metrics(conn: Connection) -> PerformanceMetrics:
     """
@@ -53,7 +53,7 @@ print(f"CPU: {metrics.cpu_percent}%, Memory: {metrics.memory_percent}%")
 ### Signature
 
 ```python
-from iris_devtools.containers.monitoring import ResourceThresholds
+from iris_devtester.containers.monitoring import ResourceThresholds
 from enum import Enum
 
 class ThresholdAction(Enum):
@@ -81,7 +81,7 @@ def check_resource_thresholds(
 ### Usage
 
 ```python
-from iris_devtools.containers.monitoring import ResourceThresholds
+from iris_devtester.containers.monitoring import ResourceThresholds
 
 thresholds = ResourceThresholds(
     cpu_disable_percent=90.0,

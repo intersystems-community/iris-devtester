@@ -282,7 +282,7 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             click.echo("     pip install iris-devtester[all]")
             click.echo("  4. Check firewall/network access to port")
             click.echo("\nDocumentation:")
-            click.echo("  https://github.com/intersystems-community/iris-devtools#connection-issues")
+            click.echo("  https://github.com/intersystems-community/iris-devtester#connection-issues")
             click.echo("="*60)
             ctx.exit(1)
 

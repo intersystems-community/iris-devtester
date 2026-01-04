@@ -73,7 +73,7 @@ iris_obj = iris.createIRIS(conn)
 iris_obj.execute("Set sc = ##class(Config.Namespaces).Create('TEST')")
 
 # Actual tests use DBAPI
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 conn = get_connection()  # Returns DBAPI
 ```
 

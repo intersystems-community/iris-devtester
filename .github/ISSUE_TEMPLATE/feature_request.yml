@@ -72,7 +72,7 @@ body:
       description: If applicable, show what the API or usage would look like
       placeholder: |
         ```python
-        from iris_devtools import NewFeature
+        from iris_devtester import NewFeature
 
         feature = NewFeature(config=...)
         feature.do_something()

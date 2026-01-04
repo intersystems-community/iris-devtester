@@ -22,30 +22,30 @@ Created a modern, DBAPI-only connection manager that extracts proven patterns fr
 
 ### Core Modules
 
-1. **iris_devtools/connections/connection.py** (152 lines)
+1. **iris_devtester/connections/connection.py** (152 lines)
    - Modern, simplified connection API
    - `get_connection(config=None, auto_retry=True, max_retries=3)`
    - `IRISConnection` context manager
    - DBAPI-only with clear error messages
 
-2. **iris_devtools/connections/auto_discovery.py** (134 lines)
+2. **iris_devtester/connections/auto_discovery.py** (134 lines)
    - Auto-detects IRIS port from Docker containers (`docker ps`)
    - Falls back to native instances (`iris list`)
    - Handles both standard (1972) and custom port mappings
    - Returns (host, port) tuple
 
-3. **iris_devtools/connections/retry.py** (104 lines)
+3. **iris_devtester/connections/retry.py** (104 lines)
    - Exponential backoff with configurable parameters
    - Matches rag-templates pattern (0.5s, 1s, 2s delays)
    - Max delay cap to prevent excessive waits
    - Clear logging of retry attempts
 
-4. **iris_devtools/config/discovery.py** (enhanced)
+4. **iris_devtester/config/discovery.py** (enhanced)
    - Integrated auto-discovery into config discovery
    - Priority: Explicit config → Env vars → .env file → Docker/native → Defaults
    - Already had .env support, added auto-discovery layer
 
-5. **iris_devtools/connections/__init__.py** (updated)
+5. **iris_devtester/connections/__init__.py** (updated)
    - Modern API (recommended): `get_connection`, `IRISConnection`
    - Legacy API (compatibility): `get_connection_legacy`, JDBC support
    - All utilities exported
@@ -103,7 +103,7 @@ $ pytest tests/integration/test_connection_integration.py -v
 ### 1. Zero-Config Operation
 
 ```python
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 # Just works - auto-discovers everything
 conn = get_connection()
@@ -153,8 +153,8 @@ ConnectionError:
     1. Install the DBAPI driver:
        pip install intersystems-irispython
 
-    2. Or install iris-devtools with DBAPI support:
-       pip install 'iris-devtools[dbapi]'
+    2. Or install iris-devtester with DBAPI support:
+       pip install 'iris-devtester[dbapi]'
 ```
 
 ---
@@ -217,7 +217,7 @@ def auto_detect_iris_port():
     # Parse "SuperServers: 1972"
 ```
 
-**Enhanced in iris-devtools**:
+**Enhanced in iris-devtester**:
 - Better regex handling (handles custom ports like 51773->1972)
 - More robust error handling
 - Clearer logging
@@ -237,7 +237,7 @@ for attempt in range(3):
         time.sleep(0.5 * (2 ** attempt))  # 0.5s, 1s, 2s
 ```
 
-**Enhanced in iris-devtools**:
+**Enhanced in iris-devtester**:
 - Configurable retry count
 - Configurable backoff factor
 - Max delay cap
@@ -249,8 +249,8 @@ for attempt in range(3):
 
 **From**: `~/ws/rag-templates/tests/utils/iris_password_reset.py`
 
-**Already exists in iris-devtools**:
-- `iris_devtools/utils/password_reset.py`
+**Already exists in iris-devtester**:
+- `iris_devtester/utils/password_reset.py`
 - Auto-detects "Password change required" error
 - Uses Docker exec or Management Portal
 - Integrated with error messages
@@ -262,7 +262,7 @@ for attempt in range(3):
 ### Basic Usage
 
 ```python
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 # Zero-config (auto-discovers everything)
 conn = get_connection()
@@ -275,7 +275,7 @@ conn.close()
 ### With Context Manager
 
 ```python
-from iris_devtools.connections import IRISConnection
+from iris_devtester.connections import IRISConnection
 
 with IRISConnection() as conn:
     cursor = conn.cursor()
@@ -287,8 +287,8 @@ with IRISConnection() as conn:
 ### With Explicit Config
 
 ```python
-from iris_devtools.config import IRISConfig
-from iris_devtools.connections import get_connection
+from iris_devtester.config import IRISConfig
+from iris_devtester.connections import get_connection
 
 config = IRISConfig(
     host="localhost",
@@ -324,7 +324,7 @@ conn = get_connection(auto_retry=False)
 
 Legacy manager still available for compatibility:
 ```python
-from iris_devtools.connections import get_connection_legacy, get_connection_with_info
+from iris_devtester.connections import get_connection_legacy, get_connection_with_info
 ```
 
 ---
@@ -332,16 +332,16 @@ from iris_devtools.connections import get_connection_legacy, get_connection_with
 ## File Summary
 
 **Created** (5 files, 872 lines):
-- iris_devtools/connections/connection.py (152 lines)
-- iris_devtools/connections/auto_discovery.py (134 lines)
-- iris_devtools/connections/retry.py (104 lines)
+- iris_devtester/connections/connection.py (152 lines)
+- iris_devtester/connections/auto_discovery.py (134 lines)
+- iris_devtester/connections/retry.py (104 lines)
 - tests/unit/test_auto_discovery.py (257 lines)
 - tests/unit/test_retry.py (243 lines)
 - tests/integration/test_connection_integration.py (241 lines)
 
 **Modified** (2 files):
-- iris_devtools/config/discovery.py (added auto-discovery integration)
-- iris_devtools/connections/__init__.py (updated exports)
+- iris_devtester/config/discovery.py (added auto-discovery integration)
+- iris_devtester/connections/__init__.py (updated exports)
 
 **Total**: 7 files, ~872 new lines
 

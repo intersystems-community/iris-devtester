@@ -38,7 +38,7 @@ All code MUST follow the 8 principles in `CONSTITUTION.md`:
 
 ```bash
 # Already done:
-cd ~/ws/iris-devtools
+cd ~/ws/iris-devtester
 git init
 git checkout -b main
 
@@ -52,7 +52,7 @@ pytest
 ### Code Organization
 
 ```
-iris_devtools/
+iris_devtester/
 ├── connections/    # Connection management (DBAPI/JDBC)
 ├── containers/     # Testcontainers wrapper
 ├── fixtures/       # DAT fixture management (Feature 004)
@@ -122,10 +122,10 @@ Look at `~/ws/rag-templates/` for:
 
 ```bash
 # Create module file
-touch iris_devtools/new_module/module_name.py
+touch iris_devtester/new_module/module_name.py
 
 # Add __init__.py
-cat > iris_devtools/new_module/__init__.py << 'EOF'
+cat > iris_devtester/new_module/__init__.py << 'EOF'
 """New module description."""
 from .module_name import MainClass
 
@@ -149,7 +149,7 @@ pytest tests/integration/
 pytest tests/e2e/
 
 # With coverage
-pytest --cov=iris_devtools --cov-report=html
+pytest --cov=iris_devtester --cov-report=html
 
 # Fast (skip slow tests)
 pytest -m "not slow"
@@ -163,13 +163,13 @@ black .
 isort .
 
 # Type check
-mypy iris_devtools/
+mypy iris_devtester/
 
 # Lint
-flake8 iris_devtools/
+flake8 iris_devtester/
 
 # All checks
-black . && isort . && flake8 . && mypy iris_devtools/ && pytest
+black . && isort . && flake8 . && mypy iris_devtester/ && pytest
 ```
 
 ## Important Patterns
@@ -192,7 +192,7 @@ raise ConnectionError(
     "  2. Wait 30 seconds for startup\n"
     "  3. Verify: docker logs iris_db\n"
     "\n"
-    "Documentation: https://iris-devtools.readthedocs.io/troubleshooting/\n"
+    "Documentation: https://iris-devtester.readthedocs.io/troubleshooting/\n"
 )
 ```
 
@@ -366,7 +366,7 @@ Provides fast, reproducible test fixtures by exporting IRIS tables to .DAT files
 ### Module Structure
 
 ```
-iris_devtools/fixtures/
+iris_devtester/fixtures/
 ├── __init__.py           # Public API: DATFixtureLoader, FixtureCreator
 ├── loader.py             # DATFixtureLoader class (loads .DAT files)
 ├── creator.py            # FixtureCreator class (exports to .DAT)
@@ -397,7 +397,7 @@ iris-devtester fixture info --fixture ./fixtures/test-100
 ### Python API
 
 ```python
-from iris_devtools.fixtures import DATFixtureLoader, FixtureCreator
+from iris_devtester.fixtures import DATFixtureLoader, FixtureCreator
 
 # Create fixture from namespace
 creator = FixtureCreator(container=iris_container)

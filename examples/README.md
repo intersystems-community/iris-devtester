@@ -1,10 +1,10 @@
 # IRIS DevTools Examples
 
-This directory contains practical examples demonstrating common use cases for iris-devtools.
+This directory contains practical examples demonstrating common use cases for iris-devtester.
 
 ## Learning Path
 
-**New to iris-devtools?** Follow this recommended order:
+**New to iris-devtester?** Follow this recommended order:
 
 1. **Start Here**: `01_quickstart.py` - Basic container usage (~2 min)
 2. **Connections**: `02_connection_management.py` - DBAPI vs JDBC (~5 min)
@@ -38,7 +38,7 @@ This directory contains practical examples demonstrating common use cases for ir
 Each example is standalone and can be run directly:
 
 ```bash
-# Install iris-devtools with all features
+# Install iris-devtester with all features
 pip install iris-devtester[all]
 
 # Run an example
@@ -51,7 +51,7 @@ Before running examples, ensure you have:
 
 - ✅ **Python 3.9+** installed (`python --version`)
 - ✅ **Docker running** (`docker ps` should work)
-- ✅ **iris-devtools installed** (`pip install iris-devtester[all]`)
+- ✅ **iris-devtester installed** (`pip install iris-devtester[all]`)
 
 ### Expected Outputs
 
@@ -60,7 +60,7 @@ Each example includes comments showing expected output. Look for:
 - `# ✅ Success:` - Successful operation
 - `# ⚠️ Note:` - Important information
 
-If your output differs significantly, check the [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtools/blob/main/docs/TROUBLESHOOTING.md).
+If your output differs significantly, check the [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtester/blob/main/docs/TROUBLESHOOTING.md).
 
 ## Constitutional Principles in Action
 
@@ -78,6 +78,6 @@ All examples follow the [8 core principles](../CONSTITUTION.md):
 ## Help
 
 If you run into issues:
-1. Check [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtools/blob/main/docs/TROUBLESHOOTING.md)
-2. Review [Codified Learnings](https://github.com/intersystems-community/iris-devtools/blob/main/docs/learnings/)
-3. Open an [issue](https://github.com/intersystems-community/iris-devtools/issues)
+1. Check [Troubleshooting Guide](https://github.com/intersystems-community/iris-devtester/blob/main/docs/TROUBLESHOOTING.md)
+2. Review [Codified Learnings](https://github.com/intersystems-community/iris-devtester/blob/main/docs/learnings/)
+3. Open an [issue](https://github.com/intersystems-community/iris-devtester/issues)

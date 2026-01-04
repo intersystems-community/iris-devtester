@@ -9,9 +9,9 @@
 
 ## Executive Summary
 
-Add utilities to iris-devtools for configuring and deploying WSGI/ASGI applications (Flask, FastAPI, Django) to run **inside** IRIS embedded Python, served by the IRIS web server.
+Add utilities to iris-devtester for configuring and deploying WSGI/ASGI applications (Flask, FastAPI, Django) to run **inside** IRIS embedded Python, served by the IRIS web server.
 
-**Key Value**: Enable Python web frameworks to run in IRIS with zero-latency database access, while providing iris-devtools testing infrastructure.
+**Key Value**: Enable Python web frameworks to run in IRIS with zero-latency database access, while providing iris-devtester testing infrastructure.
 
 ---
 
@@ -27,7 +27,7 @@ From iris-pgwire research and embedded Python documentation, we discovered that 
 
 ### Current Gap
 
-While iris-devtools focuses on **external** Python (DBAPI/JDBC), there's no tooling to:
+While iris-devtester focuses on **external** Python (DBAPI/JDBC), there's no tooling to:
 - Deploy WSGI/ASGI apps to IRIS
 - Configure IRIS web server to host Python apps
 - Test WSGI apps running in IRIS
@@ -51,14 +51,14 @@ def get_users():
     return {'users': rs.fetchall()}
 ```
 
-**Testing**: Use iris-devtools for test setup
+**Testing**: Use iris-devtester for test setup
 ```python
 # test_app.py - Runs OUTSIDE IRIS
-from iris_devtools import get_connection
+from iris_devtester import get_connection
 import requests
 
 def test_get_users(iris_db):
-    # Use iris-devtools to set up test data
+    # Use iris-devtester to set up test data
     iris_db.cursor().execute("INSERT INTO Users ...")
 
     # Test the WSGI app running in IRIS
@@ -66,21 +66,21 @@ def test_get_users(iris_db):
     assert response.status_code == 200
 ```
 
-**iris-devtools enables both workflows!**
+**iris-devtester enables both workflows!**
 
 ---
 
 ## Proposal
 
-Add three new modules to iris-devtools:
+Add three new modules to iris-devtester:
 
-### 1. `iris_devtools.wsgi` - WSGI/ASGI Application Deployment
+### 1. `iris_devtester.wsgi` - WSGI/ASGI Application Deployment
 
 **Purpose**: Deploy and configure Python web apps in IRIS
 
 **API**:
 ```python
-from iris_devtools.wsgi import WSGIDeployment, ASGIDeployment
+from iris_devtester.wsgi import WSGIDeployment, ASGIDeployment
 
 # Deploy Flask app to IRIS
 deployment = WSGIDeployment(
@@ -99,13 +99,13 @@ deployment = ASGIDeployment(
 deployment.deploy()
 ```
 
-### 2. `iris_devtools.containers.wsgi` - Testing Support
+### 2. `iris_devtester.containers.wsgi` - Testing Support
 
 **Purpose**: Launch IRIS containers with WSGI apps pre-deployed
 
 **API**:
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Container with Flask app deployed
 with IRISContainer.with_wsgi_app(
@@ -117,13 +117,13 @@ with IRISContainer.with_wsgi_app(
     response = requests.get(f"http://localhost:52773/api/users")
 ```
 
-### 3. `iris_devtools.testing.wsgi` - Test Fixtures
+### 3. `iris_devtester.testing.wsgi` - Test Fixtures
 
 **Purpose**: pytest fixtures for WSGI app testing
 
 **API**:
 ```python
-from iris_devtools.testing.wsgi import wsgi_app_server
+from iris_devtester.testing.wsgi import wsgi_app_server
 
 def test_my_endpoint(wsgi_app_server):
     """Test Flask/FastAPI app running in IRIS."""
@@ -223,19 +223,19 @@ Class MyApp.Installer Extends %RegisteredObject
 
 **Embedded Python vs External Python**:
 
-| Aspect | External Python (iris-devtools) | Embedded Python (WSGI in IRIS) |
+| Aspect | External Python (iris-devtester) | Embedded Python (WSGI in IRIS) |
 |--------|--------------------------------|-------------------------------|
 | **Database Access** | Via DBAPI (network) | Via `import iris` (in-process) |
 | **Latency** | ~2-3ms per query | <0.1ms (zero network overhead) |
 | **Deployment** | pip install, run externally | Deploy to IRIS, runs in-process |
-| **Testing** | iris-devtester fixtures | iris-devtools for test data! |
+| **Testing** | iris-devtester fixtures | iris-devtester for test data! |
 | **Package Install** | pip (external env) | irispip (embedded env) |
 | **Use Case** | External apps, microservices | High-performance APIs in IRIS |
 
 **Why Both Matter**:
 - **Development**: Prototype with external Python (fast iteration)
 - **Production**: Deploy to IRIS embedded (zero-latency DB access)
-- **Testing**: Use iris-devtools for both!
+- **Testing**: Use iris-devtester for both!
 
 ---
 
@@ -243,7 +243,7 @@ Class MyApp.Installer Extends %RegisteredObject
 
 ### Phase 1: Core Deployment (2 weeks)
 
-**Module**: `iris_devtools/wsgi/deployment.py`
+**Module**: `iris_devtester/wsgi/deployment.py`
 
 **Features**:
 1. Generate IPM module.xml from Python app
@@ -341,7 +341,7 @@ def generate_module_xml(
 
 ### Phase 2: Container Integration (1 week)
 
-**Module**: `iris_devtools/containers/wsgi.py`
+**Module**: `iris_devtester/containers/wsgi.py`
 
 **Features**:
 1. IRISContainer enhancement for WSGI apps
@@ -397,14 +397,14 @@ COPY requirements.txt /app/
 COPY merge.cpf /app/merge.cpf
 RUN iris merge IRIS /app/merge.cpf
 
-# Deploy app (done by iris-devtools via API)
+# Deploy app (done by iris-devtester via API)
 ```
 
 ---
 
 ### Phase 3: Testing Fixtures (1 week)
 
-**Module**: `iris_devtools/testing/wsgi.py`
+**Module**: `iris_devtester/testing/wsgi.py`
 
 **Features**:
 1. pytest fixtures for WSGI app testing
@@ -480,7 +480,7 @@ WSGI_APP_CONFIG = {
 def test_get_users_endpoint(wsgi_app_server):
     """Test users endpoint with real database."""
 
-    # Setup test data using iris-devtools connection
+    # Setup test data using iris-devtester connection
     cursor = wsgi_app_server.db.cursor()
     cursor.execute("""
         INSERT INTO Users (id, name, email)
@@ -510,7 +510,7 @@ def test_create_user_endpoint(wsgi_app_server):
     assert response.status_code == 201
     user_id = response.json()['id']
 
-    # Verify in database using iris-devtools connection
+    # Verify in database using iris-devtester connection
     cursor = wsgi_app_server.db.cursor()
     cursor.execute("SELECT name, email FROM Users WHERE id = ?", (user_id,))
     row = cursor.fetchone()
@@ -531,7 +531,7 @@ def test_create_user_endpoint(wsgi_app_server):
 ```python
 # app.py - External FastAPI
 from fastapi import FastAPI
-from iris_devtools import get_connection
+from iris_devtester import get_connection
 
 app = FastAPI()
 
@@ -559,9 +559,9 @@ def get_patient(id: int):
     # Total: <1ms
 ```
 
-**Deployment with iris-devtools**:
+**Deployment with iris-devtester**:
 ```python
-from iris_devtools.wsgi import ASGIDeployment
+from iris_devtester.wsgi import ASGIDeployment
 
 deployment = ASGIDeployment(
     app_module="app:app",
@@ -574,7 +574,7 @@ print(f"API deployed at: {deployment.get_url()}")
 # http://localhost:52773/api/v1
 ```
 
-**Testing with iris-devtools**:
+**Testing with iris-devtester**:
 ```python
 def test_patient_endpoint(wsgi_app_server):
     # Setup test data
@@ -613,7 +613,7 @@ def dashboard():
 
 **Deployment**:
 ```bash
-$ python -m iris_devtools.wsgi deploy \
+$ python -m iris_devtester.wsgi deploy \
     --app admin:app \
     --path ./admin \
     --url-prefix /admin
@@ -661,7 +661,7 @@ DATABASES = {
 
 **Deployment**:
 ```python
-from iris_devtools.wsgi import WSGIDeployment
+from iris_devtester.wsgi import WSGIDeployment
 
 deployment = WSGIDeployment(
     app_module="myproject.wsgi:application",
@@ -676,7 +676,7 @@ deployment.deploy()
 
 ## Benefits
 
-### For iris-devtools Users
+### For iris-devtester Users
 
 1. **Complete IRIS Python Story**: External + embedded Python support
 2. **Zero-Latency APIs**: Deploy high-performance APIs to IRIS
@@ -752,7 +752,7 @@ deployment.deploy()
 - ❌ Duplicates testing infrastructure
 - ❌ Less discoverability
 
-**Decision**: Include in iris-devtools (optional feature)
+**Decision**: Include in iris-devtester (optional feature)
 
 ---
 
@@ -860,7 +860,7 @@ deployment.deploy()
 
 ## Conclusion
 
-Adding WSGI/ASGI server setup to iris-devtools:
+Adding WSGI/ASGI server setup to iris-devtester:
 
 **Completes the Python Story**: External Python (current) + Embedded Python (new) = Complete toolkit
 

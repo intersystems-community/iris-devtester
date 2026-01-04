@@ -1,12 +1,12 @@
 # Data Model: IRIS DevTools
 
-**Feature**: 001-implement-iris-devtools
+**Feature**: 001-implement-iris-devtester
 **Date**: 2025-10-05
 **Purpose**: Define core entities, relationships, and data structures
 
 ## Overview
 
-This document defines the data model for iris-devtools, extracted from feature spec entities and enhanced with type information from research phase. All entities use Python 3.9+ type hints and dataclasses.
+This document defines the data model for iris-devtester, extracted from feature spec entities and enhanced with type information from research phase. All entities use Python 3.9+ type hints and dataclasses.
 
 ## Core Entities
 

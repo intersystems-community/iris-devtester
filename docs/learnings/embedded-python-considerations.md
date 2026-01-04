@@ -12,7 +12,7 @@ InterSystems IRIS supports **three** Python connection methods:
 2. **External Python + JDBC** (`jaydebeapi`) - Current fallback
 3. **Embedded Python** (runs inside IRIS process) - **NEW consideration**
 
-This document analyzes embedded Python and explains why iris-devtools focuses on external Python.
+This document analyzes embedded Python and explains why iris-devtester focuses on external Python.
 
 ## What is Embedded Python?
 
@@ -90,15 +90,15 @@ def get_users():
 **Why this matters**:
 - App code runs **inside** IRIS (embedded Python)
 - No external connection needed (already in-process)
-- **iris-devtools would NOT be used** for database access
-- But **iris-devtools COULD be used** for testing the app externally!
+- **iris-devtester would NOT be used** for database access
+- But **iris-devtester COULD be used** for testing the app externally!
 
-### When External Python Makes Sense (iris-devtools focus)
+### When External Python Makes Sense (iris-devtester focus)
 
 **Scenario 1: Python Applications** (TARGET)
 ```python
 # Running OUTSIDE IRIS (FastAPI, Django, Flask apps)
-from iris_devtools import get_iris_connection
+from iris_devtester import get_iris_connection
 
 conn = get_iris_connection()
 cursor = conn.cursor()
@@ -119,7 +119,7 @@ def test_my_feature(iris_db):
 ```python
 # Running OUTSIDE IRIS (Jupyter notebooks)
 import pandas as pd
-from iris_devtools import get_iris_connection
+from iris_devtester import get_iris_connection
 
 conn = get_iris_connection()
 df = pd.read_sql("SELECT * FROM SalesData", conn)
@@ -129,7 +129,7 @@ df = pd.read_sql("SELECT * FROM SalesData", conn)
 **Scenario 4: ETL & Data Integration** (TARGET)
 ```python
 # Running OUTSIDE IRIS (Airflow, Luigi pipelines)
-from iris_devtools import get_iris_connection
+from iris_devtester import get_iris_connection
 
 # Extract from source
 # Transform data
@@ -140,11 +140,11 @@ from iris_devtools import get_iris_connection
 
 ### Decision
 
-**iris-devtools will focus exclusively on external Python connectivity** (DBAPI/JDBC).
+**iris-devtester will focus exclusively on external Python connectivity** (DBAPI/JDBC).
 
 ### Rationale
 
-1. **Different use cases**: Embedded Python is for IRIS-internal code; iris-devtools is for external applications
+1. **Different use cases**: Embedded Python is for IRIS-internal code; iris-devtester is for external applications
 2. **PyPI distribution**: External package can be `pip install`ed; embedded code cannot
 3. **Testing focus**: Testing utilities need external connections (testcontainers)
 4. **Broader applicability**: Most Python developers use external connections
@@ -152,14 +152,14 @@ from iris_devtools import get_iris_connection
 
 ### Implications
 
-**What iris-devtools DOES**:
+**What iris-devtester DOES**:
 - ✅ Connect to IRIS from external Python processes
 - ✅ Support DBAPI (fast) and JDBC (fallback) drivers
 - ✅ Provide pytest fixtures for testing against IRIS
 - ✅ Manage IRIS containers for development/testing
 - ✅ Support Python 3.9+ external runtimes
 
-**What iris-devtools DOES NOT**:
+**What iris-devtester DOES NOT**:
 - ❌ Run code inside IRIS embedded Python
 - ❌ Provide embedded Python utilities
 - ❌ Support IRIS-internal testing
@@ -179,16 +179,16 @@ For embedded Python use cases, developers should use:
 | **Speed** | Fast (3x vs JDBC) | Slower | Fastest (no network) |
 | **Network Required** | Yes | Yes | No (in-process) |
 | **Use Case** | External apps | External apps (Java) | IRIS-internal code, WSGI apps |
-| **Testing with iris-devtools** | ✅ Full support | ✅ Full support | ✅ **For test data setup!** |
+| **Testing with iris-devtester** | ✅ Full support | ✅ Full support | ✅ **For test data setup!** |
 | **Production Use** | ✅ External apps | ✅ External apps | ✅ WSGI in IRIS |
 | **PyPI Package** | ✅ Yes | ✅ Yes | ❌ No |
-| **iris-devtools Primary Support** | ✅ Yes | ✅ Fallback | ⚠️ Testing only |
+| **iris-devtester Primary Support** | ✅ Yes | ✅ Fallback | ⚠️ Testing only |
 | **CallIn Required** | ✅ Yes | ❌ No | ❌ No |
 | **Installation** | pip install | pip install | Built-in to IRIS |
 | **WSGI App Database Access** | ✅ Yes (external) | ✅ Yes (external) | ✅ Yes (embedded - fastest) |
-| **WSGI App Testing Setup** | ✅ iris-devtools | ✅ iris-devtools | ✅ **iris-devtools!** |
+| **WSGI App Testing Setup** | ✅ iris-devtester | ✅ iris-devtester | ✅ **iris-devtester!** |
 
-## Connection Priority (iris-devtools)
+## Connection Priority (iris-devtester)
 
 ```
 1. DBAPI (intersystems-irispython)
@@ -205,11 +205,11 @@ For embedded Python use cases, developers should use:
 
 ## Example: External vs Embedded
 
-### External Python (iris-devtools use case)
+### External Python (iris-devtester use case)
 
 ```python
 # app.py - Running on your laptop/server
-from iris_devtools import get_iris_connection
+from iris_devtester import get_iris_connection
 
 # Connect to IRIS database (network connection)
 conn = get_iris_connection()
@@ -230,7 +230,7 @@ python app.py
 # Connects to IRIS over network
 ```
 
-### Embedded Python (NOT iris-devtools use case)
+### Embedded Python (NOT iris-devtester use case)
 
 ```objectscript
 // MyApp.BusinessLogic.cls - Deployed to IRIS
@@ -263,11 +263,11 @@ Write "Total users: ", count
 
 ## FAQ
 
-### Q: Why doesn't iris-devtools support embedded Python?
+### Q: Why doesn't iris-devtester support embedded Python?
 
-**A**: Different use case. Embedded Python is for code running **inside** IRIS (stored procedures, business logic). iris-devtools is for external Python applications connecting **to** IRIS (web apps, tests, data pipelines).
+**A**: Different use case. Embedded Python is for code running **inside** IRIS (stored procedures, business logic). iris-devtester is for external Python applications connecting **to** IRIS (web apps, tests, data pipelines).
 
-### Q: Can I use iris-devtools from embedded Python?
+### Q: Can I use iris-devtester from embedded Python?
 
 **A**: No, and you don't need to. Embedded Python already has direct IRIS access via the `iris` module. You don't need external connections when you're already inside the database.
 
@@ -277,7 +277,7 @@ Write "Total users: ", count
 1. Deploy to test IRIS instance
 2. Call via ObjectScript or REST API
 3. Use IRIS unit testing framework
-4. Or extract business logic to external Python and test with iris-devtools
+4. Or extract business logic to external Python and test with iris-devtester
 
 ### Q: Performance: Embedded vs DBAPI vs JDBC?
 
@@ -286,13 +286,13 @@ Write "Total users: ", count
 - JDBC: ~7ms per query
 - Embedded: N/A (can't use from external apps)
 
-### Q: Can iris-devtools call embedded Python functions?
+### Q: Can iris-devtester call embedded Python functions?
 
 **A**: Yes, indirectly via SQL or REST:
 
 ```python
-# External Python using iris-devtools
-from iris_devtools import get_iris_connection
+# External Python using iris-devtester
+from iris_devtester import get_iris_connection
 
 conn = get_iris_connection()
 cursor = conn.cursor()
@@ -314,7 +314,7 @@ Or via REST API if exposed.
 - Need zero-latency IRIS internals access
 - Code is part of IRIS application
 
-**Use External Python (iris-devtools) when**:
+**Use External Python (iris-devtester) when**:
 - Building web applications (FastAPI, Django, Flask)
 - Writing tests with pytest
 - Data science / analytics (Jupyter, pandas)
@@ -322,7 +322,7 @@ Or via REST API if exposed.
 - Microservices architecture
 - Need PyPI packages
 
-Most Python developers use **external Python** → **iris-devtools is for you**
+Most Python developers use **external Python** → **iris-devtester is for you**
 
 ## Future Considerations
 
@@ -333,8 +333,8 @@ Most Python developers use **external Python** → **iris-devtools is for you**
 Some applications might use **both**:
 
 ```python
-# External app (uses iris-devtools)
-from iris_devtools import get_iris_connection
+# External app (uses iris-devtester)
+from iris_devtester import get_iris_connection
 
 conn = get_iris_connection()
 cursor = conn.cursor()
@@ -344,7 +344,7 @@ cursor.execute("CALL MyApp.ComplexCalculation(?)", (data,))
 result = cursor.fetchone()
 ```
 
-This is **already supported** by iris-devtools - you just call the stored procedure via SQL.
+This is **already supported** by iris-devtester - you just call the stored procedure via SQL.
 
 ### Hybrid 2: Testing WSGI Apps Hosted in IRIS ⚠️ KEY USE CASE
 
@@ -364,15 +364,15 @@ def get_users():
     return {'users': [dict(row) for row in rs.fetchall()]}
 ```
 
-**Testing Strategy** - Use iris-devtools for test data setup:
+**Testing Strategy** - Use iris-devtester for test data setup:
 
 ```python
 # test_app.py - Runs OUTSIDE IRIS (pytest)
 import requests
-from iris_devtools import get_iris_connection
+from iris_devtester import get_iris_connection
 
 def test_get_users_endpoint(iris_db):
-    # Use iris-devtools to set up test data
+    # Use iris-devtester to set up test data
     cursor = iris_db.cursor()
     cursor.execute("INSERT INTO Users (id, name) VALUES (1, 'Alice')")
     iris_db.commit()
@@ -387,22 +387,22 @@ def test_get_users_endpoint(iris_db):
     # Cleanup handled by iris_db fixture
 ```
 
-**Why iris-devtools is valuable here**:
-- ✅ **Test data setup**: Use iris-devtools to create test data
+**Why iris-devtester is valuable here**:
+- ✅ **Test data setup**: Use iris-devtester to create test data
 - ✅ **Test isolation**: Each test gets clean database via fixtures
 - ✅ **Cleanup**: Automatic cleanup after tests
 - ✅ **CI/CD**: Can run tests in isolated containers
 - ✅ **Schema validation**: Ensure schema matches expectations
 
-**The app uses embedded Python, but the tests use iris-devtools!**
+**The app uses embedded Python, but the tests use iris-devtester!**
 
 ### Hybrid 3: Development Workflow for Embedded Apps
 
-Even if your app runs in embedded Python, iris-devtools helps during development:
+Even if your app runs in embedded Python, iris-devtester helps during development:
 
 ```python
-# Development: Prototype queries externally with iris-devtools
-from iris_devtools import get_iris_connection
+# Development: Prototype queries externally with iris-devtester
+from iris_devtester import get_iris_connection
 
 conn = get_iris_connection()
 cursor = conn.cursor()
@@ -432,14 +432,14 @@ Future enhancement: Detect if IRIS has embedded Python enabled, log informationa
 # Future feature
 logger.info("IRIS embedded Python detected: version X.Y.Z")
 logger.info("Embedded Python is for IRIS-internal code")
-logger.info("iris-devtools provides external connectivity")
+logger.info("iris-devtester provides external connectivity")
 ```
 
 ## Conclusion
 
 ### Core Scope
 
-**iris-devtools scope**: External Python connectivity (DBAPI/JDBC)
+**iris-devtester scope**: External Python connectivity (DBAPI/JDBC)
 
 **Primary focus**:
 - Python apps running **outside** IRIS
@@ -453,7 +453,7 @@ logger.info("iris-devtools provides external connectivity")
 
 ### The WSGI App Reality
 
-**Key insight**: Even if your **production** app runs in IRIS embedded Python (WSGI), you **still benefit from iris-devtools**:
+**Key insight**: Even if your **production** app runs in IRIS embedded Python (WSGI), you **still benefit from iris-devtester**:
 
 1. **Testing**: Set up test data, validate schemas, ensure isolation
 2. **Development**: Prototype queries interactively before deploying to IRIS
@@ -463,7 +463,7 @@ logger.info("iris-devtools provides external connectivity")
 **Example workflow**:
 ```
 Development:
-  - Use iris-devtools to prototype queries ✅
+  - Use iris-devtester to prototype queries ✅
   - Test queries in Jupyter/REPL ✅
 
 Production:
@@ -471,27 +471,27 @@ Production:
   - App uses `import iris` for database access
 
 Testing:
-  - Use iris-devtools to set up test data ✅
+  - Use iris-devtester to set up test data ✅
   - Test WSGI app endpoints via HTTP ✅
   - Automatic cleanup via iris-devtester fixtures ✅
 ```
 
 ### Decision Summary
 
-**iris-devtools provides**:
+**iris-devtester provides**:
 - ✅ External connectivity (DBAPI/JDBC)
 - ✅ Testing infrastructure (fixtures, isolation, cleanup)
 - ✅ Development tools (prototyping, exploration)
 - ✅ **Valuable even for embedded Python apps** (testing!)
 
-**iris-devtools does NOT provide**:
+**iris-devtester does NOT provide**:
 - ❌ Embedded Python runtime support
 - ❌ `import iris` module functionality
 - ❌ WSGI app internal database access
 
 **Complementary relationship**:
 - Production app: May use embedded Python
-- Testing/development: Uses iris-devtools
+- Testing/development: Uses iris-devtester
 - Both can coexist and complement each other
 
 **Decision final**: Focus on external connectivity for maximum utility across all IRIS development scenarios

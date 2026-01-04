@@ -66,7 +66,7 @@ pytest tests/unit/
 pytest tests/integration/
 
 # With coverage report
-pytest --cov=iris_devtools --cov-report=html
+pytest --cov=iris_devtester --cov-report=html
 ```
 
 ### Code Style
@@ -81,8 +81,8 @@ Run all checks:
 ```bash
 black .
 isort .
-mypy iris_devtools/
-flake8 iris_devtools/
+mypy iris_devtester/
+flake8 iris_devtester/
 pytest
 ```
 
@@ -91,7 +91,7 @@ Pre-commit hooks will run these automatically.
 ## Project Structure
 
 ```
-iris_devtools/
+iris_devtester/
 ├── connections/    # DBAPI/JDBC connection management
 ├── containers/     # Testcontainers wrapper with auto-remediation
 ├── testing/        # pytest fixtures and utilities

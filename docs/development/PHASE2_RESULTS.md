@@ -85,7 +85,7 @@ Phase 2 (Complete Missing Features) is now **complete**. All planned features ha
    - Resolves TypeError on super().__init__()
 
 2. **Config module exports**
-   - Added `IRISConfig` to `iris_devtools/config/__init__.py`
+   - Added `IRISConfig` to `iris_devtester/config/__init__.py`
    - Added `discover_config` to exports
    - Fixes ImportError in connection modules
 
@@ -139,7 +139,7 @@ Created comprehensive roadmap with:
 ### 2. Production Patterns Integration ✅
 **Problem**: Need battle-tested patterns from rag-templates  
 **Solution**: Mined 7 production patterns, documented & implemented  
-**Impact**: iris-devtools now "facile with database container ops"
+**Impact**: iris-devtester now "facile with database container ops"
 
 ### 3. Zero-Config Detection ✅
 **Problem**: Manual configuration required  
@@ -181,10 +181,10 @@ Created comprehensive roadmap with:
 ## Files Modified
 
 ### Core Code
-- `iris_devtools/containers/iris_container.py` (+250 lines)
-- `iris_devtools/config/auto_discovery.py` (new, 350 lines)
-- `iris_devtools/testing/schema_reset.py` (new, 400 lines)
-- `iris_devtools/config/__init__.py` (exports fixed)
+- `iris_devtester/containers/iris_container.py` (+250 lines)
+- `iris_devtester/config/auto_discovery.py` (new, 350 lines)
+- `iris_devtester/testing/schema_reset.py` (new, 400 lines)
+- `iris_devtester/config/__init__.py` (exports fixed)
 
 ### Tests
 - `tests/integration/conftest.py` (new, 104 lines)

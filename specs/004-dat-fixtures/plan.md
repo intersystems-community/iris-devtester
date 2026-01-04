@@ -1,7 +1,7 @@
 # Implementation Plan: IRIS .DAT Fixture Management
 
 **Branch**: `004-dat-fixtures` | **Date**: 2025-10-07 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/Users/tdyar/ws/iris-devtools/specs/004-dat-fixtures/spec.md`
+**Input**: Feature specification from `/Users/tdyar/ws/iris-devtester/specs/004-dat-fixtures/spec.md`
 
 ## Execution Flow (/plan command scope)
 ```
@@ -28,7 +28,7 @@
 
 ## Summary
 
-Feature 004 adds .DAT fixture management to iris-devtools, enabling developers to export IRIS database tables to version-controlled .DAT files and load them instantly (<10s for 10K rows) in test environments. This replaces slow programmatic test data generation (minutes) with fast fixture loading (seconds), provides reproducible test states with SHA256 checksum validation, and supports both CLI workflows and pytest integration with decorators.
+Feature 004 adds .DAT fixture management to iris-devtester, enabling developers to export IRIS database tables to version-controlled .DAT files and load them instantly (<10s for 10K rows) in test environments. This replaces slow programmatic test data generation (minutes) with fast fixture loading (seconds), provides reproducible test states with SHA256 checksum validation, and supports both CLI workflows and pytest integration with decorators.
 
 **Technical Approach**: Build on Feature 003 (Connection Manager) to create three core components: (1) FixtureCreator exports tables to .DAT format using IRIS APIs, (2) DATFixtureLoader validates checksums and performs atomic loading with rollback, (3) pytest plugin provides `@pytest.mark.dat_fixture` decorator for declarative fixture use. All operations follow Constitutional Principle #2 (DBAPI First) and support both Community and Enterprise editions.
 
@@ -37,7 +37,7 @@ Feature 004 adds .DAT fixture management to iris-devtools, enabling developers t
 **Language/Version**: Python 3.9+
 **Primary Dependencies**:
 - `intersystems-irispython` (IRIS Python SDK for .DAT operations)
-- `click` (CLI framework - already used in iris-devtools)
+- `click` (CLI framework - already used in iris-devtester)
 - `pydantic` or Python dataclasses (manifest validation)
 - `pytest` (testing and fixture integration)
 
@@ -57,7 +57,7 @@ Feature 004 adds .DAT fixture management to iris-devtools, enabling developers t
 - Must support both DBAPI and JDBC connections (inherit from Feature 003)
 - Must be atomic (all tables loaded or none)
 - Must be thread-safe for parallel pytest execution
-- Must preserve backward compatibility with existing iris-devtools APIs
+- Must preserve backward compatibility with existing iris-devtester APIs
 
 **Scale/Scope**:
 - Support fixtures from 10 rows to 100K+ rows
@@ -90,7 +90,7 @@ Feature 004 adds .DAT fixture management to iris-devtools, enabling developers t
 
 ### Principle #4: Zero Configuration Viable
 **Status**: ✅ COMPLIANT
-- CLI commands work without config: `iris-devtools fixture load --fixture ./my-fixture`
+- CLI commands work without config: `iris-devtester fixture load --fixture ./my-fixture`
 - Auto-discovers IRIS connection via Feature 003
 - Sensible defaults: namespace=USER, checksum validation=enabled
 - Optional explicit configuration always available
@@ -144,7 +144,7 @@ specs/004-dat-fixtures/
 
 ### Source Code (repository root)
 ```
-iris_devtools/
+iris_devtester/
 ├── fixtures/
 │   ├── __init__.py           # Public API: DATFixtureLoader, FixtureCreator
 │   ├── loader.py             # DATFixtureLoader class (loads .DAT files)
@@ -176,7 +176,7 @@ fixtures/
 └── [example fixtures]        # Example .DAT fixtures for testing/docs
 ```
 
-**Structure Decision**: Single project structure selected (iris-devtools is a Python library). The fixtures/ module is added under iris_devtools/ following the existing pattern established by connections/, containers/, config/, utils/, and testing/. CLI commands extend the existing CLI framework. Tests follow the established contract/integration/unit separation.
+**Structure Decision**: Single project structure selected (iris-devtester is a Python library). The fixtures/ module is added under iris_devtester/ following the existing pattern established by connections/, containers/, config/, utils/, and testing/. CLI commands extend the existing CLI framework. Tests follow the established contract/integration/unit separation.
 
 ## Phase 0: Outline & Research
 
@@ -266,14 +266,14 @@ fixtures/
 ### 3. Quickstart (`quickstart.md`)
 
 **End-to-end workflow**:
-1. Install iris-devtools: `pip install iris-devtools[fixtures]`
+1. Install iris-devtester: `pip install iris-devtester[fixtures]`
 2. Start IRIS container: `docker run -d -p 1972:1972 intersystems/iris-community`
 3. Create test data programmatically
-4. Export to fixture: `iris-devtools fixture create --name test-100 --tables MyTable --output ./fixtures/test-100`
-5. Validate fixture: `iris-devtools fixture validate --fixture ./fixtures/test-100`
+4. Export to fixture: `iris-devtester fixture create --name test-100 --tables MyTable --output ./fixtures/test-100`
+5. Validate fixture: `iris-devtester fixture validate --fixture ./fixtures/test-100`
 6. Load in test:
    ```python
-   from iris_devtools.fixtures import DATFixtureLoader
+   from iris_devtester.fixtures import DATFixtureLoader
    loader = DATFixtureLoader(connection_config)
    manifest = loader.load_fixture("./fixtures/test-100")
    # Test operations...

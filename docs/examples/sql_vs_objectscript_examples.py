@@ -372,7 +372,7 @@ def what_tool_should_i_use(operation: str) -> str:
 
 if __name__ == "__main__":
     print("=" * 80)
-    print("SQL vs ObjectScript Examples - iris-devtools")
+    print("SQL vs ObjectScript Examples - iris-devtester")
     print("=" * 80)
     print()
 

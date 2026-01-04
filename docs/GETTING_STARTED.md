@@ -41,10 +41,10 @@ Extract all the working solutions from `rag-templates` into a reusable package t
 ## File Structure
 
 ```
-~/ws/iris-devtools/
+~/ws/iris-devtester/
 ├── .specify/
 │   └── feature-request.md       # Complete implementation spec
-├── iris_devtools/               # Package code (EMPTY - ready to fill)
+├── iris_devtester/               # Package code (EMPTY - ready to fill)
 │   ├── __init__.py             # Entry point
 │   ├── connections/            # To extract from rag-templates
 │   ├── containers/             # To build
@@ -102,26 +102,26 @@ Before coding, read these **in order**:
 
 1. **Start with Connection Manager** (most critical)
    - Extract from: `~/ws/rag-templates/common/iris_connection_manager.py`
-   - Place in: `iris_devtools/connections/manager.py`
+   - Place in: `iris_devtester/connections/manager.py`
    - Add: DBAPI-first, JDBC fallback, auto-recovery
 
 2. **Add Password Reset** (enables auto-remediation)
    - Extract from: `~/ws/rag-templates/tests/utils/iris_password_reset.py`
-   - Place in: `iris_devtools/connections/recovery.py`
+   - Place in: `iris_devtester/connections/recovery.py`
    - Add: Automatic detection, Docker exec reset
 
 3. **Build Container Wrapper** (testcontainers integration)
    - Extend: `testcontainers.iris.IRISContainer`
-   - Place in: `iris_devtools/containers/iris_container.py`
+   - Place in: `iris_devtester/containers/iris_container.py`
    - Add: Auto password reset, CallIn enablement, better wait strategies
 
 4. **Extract Testing Utilities** (pytest fixtures)
    - Extract from: `~/ws/rag-templates/tests/` (Feature 028)
-   - Place in: `iris_devtools/testing/`
+   - Place in: `iris_devtester/testing/`
    - Add: fixtures.py, schema_manager.py, cleanup.py, state.py
 
 5. **Add Configuration** (auto-discovery)
-   - Build: `iris_devtools/config/discovery.py`
+   - Build: `iris_devtester/config/discovery.py`
    - Add: Environment detection, .env support, sensible defaults
 
 6. **Write Tests** (95% coverage required)
@@ -134,11 +134,11 @@ Before coding, read these **in order**:
 When ready to implement, run:
 
 ```bash
-cd ~/ws/iris-devtools
+cd ~/ws/iris-devtester
 # Start new Claude Code session here
 
 # Then use /specify
-/specify "Implement iris-devtools following the feature request in .specify/feature-request.md"
+/specify "Implement iris-devtester following the feature request in .specify/feature-request.md"
 ```
 
 The `/specify` workflow will:
@@ -180,7 +180,7 @@ pip install -e ".[dev,test,all]"
 pytest
 
 # With coverage
-pytest --cov=iris_devtools --cov-report=html
+pytest --cov=iris_devtester --cov-report=html
 
 # Format code
 black . && isort .
@@ -210,7 +210,7 @@ Before submitting code:
 
 ✅ **Package works**:
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
     # Just works - no configuration needed!
@@ -242,7 +242,7 @@ pip install iris-devtester
 
 Open a new terminal:
 ```bash
-cd ~/ws/iris-devtools
+cd ~/ws/iris-devtester
 # Start Claude Code here
-# Use: /specify "Implement iris-devtools following .specify/feature-request.md"
+# Use: /specify "Implement iris-devtester following .specify/feature-request.md"
 ```

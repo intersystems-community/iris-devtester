@@ -18,16 +18,16 @@ Automatically configures IRIS ^SystemPerformance monitoring in containers so dia
 
 ## Quick Start (5 minutes)
 
-### 1. Install iris-devtools
+### 1. Install iris-devtester
 
 ```bash
-pip install iris-devtools
+pip install iris-devtester
 ```
 
 ### 2. Start an IRIS Container
 
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Monitoring is automatically configured!
 with IRISContainer.community() as iris:
@@ -44,8 +44,8 @@ That's it! ^SystemPerformance is now collecting data every 30 seconds.
 ## Verify Monitoring is Running
 
 ```python
-from iris_devtools.containers import IRISContainer
-from iris_devtools.containers.monitoring import get_monitoring_status
+from iris_devtester.containers import IRISContainer
+from iris_devtester.containers.monitoring import get_monitoring_status
 
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
@@ -62,7 +62,7 @@ with IRISContainer.community() as iris:
 **Expected Output**:
 ```
 Monitoring enabled: True
-Policy: iris-devtools-default
+Policy: iris-devtester-default
 Data points available: 15
 Last collection: 2025-10-05 14:23:45
 ```
@@ -76,7 +76,7 @@ Last collection: 2025-10-05 14:23:45
 **Scenario**: Your IRIS instance crashed. You need to see what happened.
 
 ```python
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Start container (monitoring was already running when it crashed)
 with IRISContainer.community() as iris:
@@ -96,12 +96,12 @@ The monitoring data from the hour before the crash is available immediately.
 
 ```bash
 # Install with Yaspe support
-pip install 'iris-devtools[yaspe]'
+pip install 'iris-devtester[yaspe]'
 ```
 
 ```python
-from iris_devtools.containers import IRISContainer
-from iris_devtools.utils.yaspe_integration import export_and_visualize
+from iris_devtester.containers import IRISContainer
+from iris_devtester.utils.yaspe_integration import export_and_visualize
 
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
@@ -120,8 +120,8 @@ with IRISContainer.community() as iris:
 **Scenario**: You need higher-frequency monitoring for debugging.
 
 ```python
-from iris_devtools.containers import IRISContainer
-from iris_devtools.containers.monitoring import MonitoringPolicy, configure_monitoring
+from iris_devtester.containers import IRISContainer
+from iris_devtester.containers.monitoring import MonitoringPolicy, configure_monitoring
 
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
@@ -148,7 +148,7 @@ with IRISContainer.community() as iris:
 
 ```python
 import os
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 
 # Disable automatic monitoring
 os.environ['IRIS_DISABLE_MONITORING'] = 'true'
@@ -166,8 +166,8 @@ with IRISContainer.community() as iris:
 **Scenario**: You want to see current IRIS resource usage.
 
 ```python
-from iris_devtools.containers import IRISContainer
-from iris_devtools.containers.monitoring import get_resource_metrics
+from iris_devtester.containers import IRISContainer
+from iris_devtester.containers.monitoring import get_resource_metrics
 
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
@@ -198,8 +198,8 @@ Disk reads: 4523
 **Scenario**: You want different auto-disable thresholds.
 
 ```python
-from iris_devtools.containers import IRISContainer
-from iris_devtools.containers.monitoring import (
+from iris_devtester.containers import IRISContainer
+from iris_devtester.containers.monitoring import (
     configure_monitoring,
     ResourceThresholds
 )
@@ -225,8 +225,8 @@ with IRISContainer.community() as iris:
 **Scenario**: You want to manually start/stop monitoring.
 
 ```python
-from iris_devtools.containers import IRISContainer
-from iris_devtools.containers.monitoring import (
+from iris_devtester.containers import IRISContainer
+from iris_devtester.containers.monitoring import (
     configure_monitoring,
     disable_monitoring,
     enable_monitoring,
@@ -259,7 +259,7 @@ with IRISContainer.community() as iris:
 ```python
 # conftest.py
 import pytest
-from iris_devtools.testing import iris_test_fixture
+from iris_devtester.testing import iris_test_fixture
 
 @pytest.fixture(scope="module")
 def iris_with_monitoring():
@@ -302,7 +302,7 @@ def test_my_feature(iris_with_monitoring):
 3. Check IRIS logs for Task Manager errors
 
 ```python
-from iris_devtools.containers.monitoring import get_monitoring_status
+from iris_devtester.containers.monitoring import get_monitoring_status
 
 status = get_monitoring_status(conn)
 
@@ -358,7 +358,7 @@ if not status.enabled:
 
 2. Check actual resource usage:
    ```python
-   from iris_devtools.containers.monitoring import get_resource_metrics
+   from iris_devtester.containers.monitoring import get_resource_metrics
 
    metrics = get_resource_metrics(conn)
    print(f"Actual CPU: {metrics.cpu_percent}%")
@@ -424,9 +424,9 @@ if not status.enabled:
 
 ### Get Help
 - GitHub Issues: Report bugs or request features
-- Stack Overflow: Tag `intersystems-iris` + `iris-devtools`
+- Stack Overflow: Tag `intersystems-iris` + `iris-devtester`
 - Community Forum: InterSystems Developer Community
 
 ---
 
-**Status**: ✅ READY TO USE - Automatically configured in all iris-devtools containers!
+**Status**: ✅ READY TO USE - Automatically configured in all iris-devtester containers!

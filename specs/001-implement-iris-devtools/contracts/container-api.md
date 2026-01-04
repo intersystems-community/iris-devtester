@@ -1,7 +1,7 @@
 # Contract: Container Management API
 
-**Feature**: 001-implement-iris-devtools
-**Module**: `iris_devtools.containers`
+**Feature**: 001-implement-iris-devtester
+**Module**: `iris_devtester.containers`
 **Date**: 2025-10-05
 
 ## Overview
@@ -453,7 +453,7 @@ How to fix:
   2. Check container logs: docker logs <container_id>
   3. Verify system resources (disk space, memory)
 
-Documentation: https://iris-devtools.readthedocs.io/troubleshooting/container-timeout
+Documentation: https://iris-devtester.readthedocs.io/troubleshooting/container-timeout
 ```
 
 ---
@@ -479,8 +479,8 @@ from testcontainers.iris import IRISContainer
 container = IRISContainer()
 container.start()
 
-# New (iris-devtools, extends base class)
-from iris_devtools.containers import IRISContainer
+# New (iris-devtester, extends base class)
+from iris_devtester.containers import IRISContainer
 container = IRISContainer.community()  # Enhanced!
 container.start()
 

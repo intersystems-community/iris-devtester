@@ -53,7 +53,7 @@ The issue was NOT with DBAPI itself, but with incomplete password reset logic!
 ### Test Case (DBAPI - FAILS)
 ```python
 import intersystems_iris.dbapi._DBAPI as dbapi
-from iris_devtools.utils.password_reset import reset_password
+from iris_devtester.utils.password_reset import reset_password
 
 # First connection fails
 try:
@@ -77,7 +77,7 @@ except Exception as e:
 ### Test Case (iris.connect - WORKS)
 ```python
 import iris
-from iris_devtools.utils.password_reset import reset_password
+from iris_devtester.utils.password_reset import reset_password
 
 # First connection fails
 try:
@@ -148,7 +148,7 @@ docker exec -it <container_name> iris terminal IRIS
 
 ## The Fix (IMPLEMENTED ✅)
 
-### Updated `iris_devtools/utils/password_reset.py`
+### Updated `iris_devtester/utils/password_reset.py`
 
 **Before (BROKEN)**:
 ```python
@@ -195,7 +195,7 @@ The issue was not with DBAPI, but with incomplete password reset. With the fix a
 ## Action Items
 
 - [x] ✅ Identify root cause (ChangePassword flag not disabled)
-- [x] ✅ Fix `iris_devtools/utils/password_reset.py`
+- [x] ✅ Fix `iris_devtester/utils/password_reset.py`
 - [x] ✅ Create test script (`test_password_reset_fix.py`)
 - [x] ✅ Document fix (`docs/learnings/password-reset-changeflag-fix.md`)
 - [x] ✅ Update bug report (this file)
@@ -207,8 +207,8 @@ The issue was not with DBAPI, but with incomplete password reset. With the fix a
 ## Files Affected
 
 - `CONSTITUTION.md` - Principle #2 update
-- `iris_devtools/connections/manager.py` - Connection implementation
-- `iris_devtools/utils/password_reset.py` - Add warnings
+- `iris_devtester/connections/manager.py` - Connection implementation
+- `iris_devtester/utils/password_reset.py` - Add warnings
 - `README.md` - Update examples
 - `docs/` - All connection examples
 - All integration tests - Verify with new connection method
@@ -230,9 +230,9 @@ This explains why:
 
 ## Additional Context
 
-See `/Users/tdyar/ws/iris-devtools/docs/learnings/dbapi-password-reset-limitation.md` for complete technical analysis.
+See `/Users/tdyar/ws/iris-devtester/docs/learnings/dbapi-password-reset-limitation.md` for complete technical analysis.
 
-Original bug report: `/Users/tdyar/ws/arno/benchmarks/iris_comparison/BUG_REPORT_iris-devtools.md`
+Original bug report: `/Users/tdyar/ws/arno/benchmarks/iris_comparison/BUG_REPORT_iris-devtester.md`
 
 ## Conclusion
 

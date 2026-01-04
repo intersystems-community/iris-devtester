@@ -1,1 +1,1 @@
-"""Test suite for iris-devtools."""
+"""Test suite for iris-devtester."""

@@ -1,7 +1,7 @@
 """
 Example 4: pytest Integration - Using IRIS in tests.
 
-This example shows how to use iris-devtools with pytest for
+This example shows how to use iris-devtester with pytest for
 integration testing with proper isolation.
 
 Constitutional Principles:

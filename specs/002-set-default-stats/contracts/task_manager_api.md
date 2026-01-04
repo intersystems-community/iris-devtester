@@ -14,8 +14,8 @@ Defines the contract for creating, managing, and querying IRIS Task Manager task
 ### Signature
 
 ```python
-from iris_devtools.containers.monitoring import TaskSchedule, create_task
-from iris_devtools.connections import Connection
+from iris_devtester.containers.monitoring import TaskSchedule, create_task
+from iris_devtester.connections import Connection
 
 def create_task(
     conn: Connection,
@@ -42,11 +42,11 @@ def create_task(
 ### Default Usage
 
 ```python
-from iris_devtools.containers.monitoring import TaskSchedule
+from iris_devtester.containers.monitoring import TaskSchedule
 
 # Create task with defaults (30-second intervals)
 schedule = TaskSchedule(
-    name="iris-devtools-monitor",
+    name="iris-devtester-monitor",
     daily_increment=30  # Every 30 seconds
 )
 
@@ -230,9 +230,9 @@ from typing import List
 
 def list_monitoring_tasks(conn: Connection) -> List[TaskStatus]:
     """
-    List all iris-devtools monitoring tasks.
+    List all iris-devtester monitoring tasks.
 
-    Filters to tasks created by iris-devtools (name prefix "iris-devtools-").
+    Filters to tasks created by iris-devtester (name prefix "iris-devtester-").
 
     Args:
         conn: Active IRIS connection
@@ -249,14 +249,14 @@ def list_monitoring_tasks(conn: Connection) -> List[TaskStatus]:
 
 ```python
 # Create multiple tasks
-task1 = create_task(conn, TaskSchedule(name="iris-devtools-monitor-1"))
-task2 = create_task(conn, TaskSchedule(name="iris-devtools-monitor-2"))
+task1 = create_task(conn, TaskSchedule(name="iris-devtester-monitor-1"))
+task2 = create_task(conn, TaskSchedule(name="iris-devtester-monitor-2"))
 
 # List all monitoring tasks
 tasks = list_monitoring_tasks(conn)
 
 assert len(tasks) >= 2
-assert all(t.name.startswith("iris-devtools-") for t in tasks)
+assert all(t.name.startswith("iris-devtester-") for t in tasks)
 ```
 
 ---
@@ -377,23 +377,23 @@ def test_delete_task(iris_connection):
 ```python
 def test_list_monitoring_tasks(iris_connection):
     """
-    GIVEN multiple iris-devtools monitoring tasks
+    GIVEN multiple iris-devtester monitoring tasks
     WHEN list_monitoring_tasks() called
-    THEN all iris-devtools tasks are returned
-    AND only iris-devtools tasks are returned (filtered by name prefix)
+    THEN all iris-devtester tasks are returned
+    AND only iris-devtester tasks are returned (filtered by name prefix)
     """
     # Create test tasks
-    task1 = create_task(iris_connection, TaskSchedule(name="iris-devtools-test-1"))
-    task2 = create_task(iris_connection, TaskSchedule(name="iris-devtools-test-2"))
+    task1 = create_task(iris_connection, TaskSchedule(name="iris-devtester-test-1"))
+    task2 = create_task(iris_connection, TaskSchedule(name="iris-devtester-test-2"))
 
     # List tasks
     tasks = list_monitoring_tasks(iris_connection)
 
     assert len(tasks) >= 2
 
-    # Verify all returned tasks are iris-devtools tasks
+    # Verify all returned tasks are iris-devtester tasks
     for task in tasks:
-        assert task.name.startswith("iris-devtools-")
+        assert task.name.startswith("iris-devtester-")
 
     # Verify our tasks are included
     task_ids = [t.task_id for t in tasks]

@@ -1,5 +1,5 @@
 """
-IRIS DevTools - Battle-tested InterSystems IRIS infrastructure utilities.
+IRIS DevTester - Battle-tested InterSystems IRIS infrastructure utilities.
 
 This package provides automatic, reliable infrastructure for IRIS development:
 - Testcontainers integration with auto-remediation
@@ -26,7 +26,7 @@ LangChain Integration:
     ...     # Build your RAG app...
 """
 
-__version__ = "1.7.0"
+__version__ = "1.7.1"
 __author__ = "InterSystems Community"
 __license__ = "MIT"
 

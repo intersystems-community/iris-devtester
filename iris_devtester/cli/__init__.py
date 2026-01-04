@@ -1,4 +1,4 @@
-"""CLI commands for iris-devtools."""
+"""CLI commands for iris-devtester."""
 
 import click
 from iris_devtester import __version__

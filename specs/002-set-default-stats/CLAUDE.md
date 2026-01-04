@@ -6,7 +6,7 @@
 
 ## Quick Context
 
-You are implementing automatic ^SystemPerformance monitoring configuration for iris-devtools containers. This feature ensures diagnostic data is always available when debugging IRIS issues.
+You are implementing automatic ^SystemPerformance monitoring configuration for iris-devtester containers. This feature ensures diagnostic data is always available when debugging IRIS issues.
 
 **Core Requirement**: Auto-configure monitoring on container start (30s intervals, 1-hour retention) with auto-disable protection under resource pressure.
 
@@ -15,11 +15,11 @@ You are implementing automatic ^SystemPerformance monitoring configuration for i
 ## Before You Start
 
 ### MUST READ (in order):
-1. `/Users/tdyar/ws/iris-devtools/CONSTITUTION.md` - 8 non-negotiable principles
-2. `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/spec.md` - Feature requirements
-3. `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/research.md` - Technical decisions
-4. `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/data-model.md` - Entity definitions
-5. `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/contracts/` - API contracts
+1. `/Users/tdyar/ws/iris-devtester/CONSTITUTION.md` - 8 non-negotiable principles
+2. `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/spec.md` - Feature requirements
+3. `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/research.md` - Technical decisions
+4. `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/data-model.md` - Entity definitions
+5. `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/contracts/` - API contracts
 
 **DO NOT** start coding until you've read these files.
 
@@ -34,7 +34,7 @@ You are implementing automatic ^SystemPerformance monitoring configuration for i
 - ❌ NEVER require manual intervention for monitoring setup
 
 ### Principle 2: DBAPI First, JDBC Fallback
-- ✅ Use existing `iris_devtools.connections` for ObjectScript execution
+- ✅ Use existing `iris_devtester.connections` for ObjectScript execution
 - ✅ Leverage DBAPI connection when available
 - ❌ DO NOT create new connection logic
 
@@ -76,19 +76,19 @@ You are implementing automatic ^SystemPerformance monitoring configuration for i
 
 ### Phase 1: Core Monitoring Configuration (Priority 1)
 
-- [ ] Create `iris_devtools/containers/monitoring.py`:
+- [ ] Create `iris_devtester/containers/monitoring.py`:
   - [ ] `MonitoringPolicy` dataclass with validation
   - [ ] `configure_monitoring()` function
   - [ ] `get_monitoring_status()` function
   - [ ] `disable_monitoring()` function
   - [ ] `enable_monitoring()` function
 
-- [ ] Create `iris_devtools/containers/performance.py`:
+- [ ] Create `iris_devtester/containers/performance.py`:
   - [ ] `PerformanceMetrics` dataclass
   - [ ] `get_resource_metrics()` function
   - [ ] ObjectScript wrapper for `$SYSTEM.Process.GetSystemPerformance()`
 
-- [ ] Extend `iris_devtools/containers/iris_container.py`:
+- [ ] Extend `iris_devtester/containers/iris_container.py`:
   - [ ] Add `_configure_monitoring()` to container startup
   - [ ] Check `IRIS_DISABLE_MONITORING` environment variable
   - [ ] Log monitoring configuration status
@@ -125,9 +125,9 @@ You are implementing automatic ^SystemPerformance monitoring configuration for i
 ### Phase 5: Yaspe Integration (Priority 4 - Optional)
 
 - [ ] Add `yaspe` to `pyproject.toml` optional dependencies
-- [ ] Create `iris_devtools/utils/yaspe_integration.py`
+- [ ] Create `iris_devtester/utils/yaspe_integration.py`
 - [ ] Implement `export_and_visualize()` helper
-- [ ] Document installation: `pip install 'iris-devtools[yaspe]'`
+- [ ] Document installation: `pip install 'iris-devtester[yaspe]'`
 
 ### Phase 6: Testing (REQUIRED for all phases)
 
@@ -156,7 +156,7 @@ You are implementing automatic ^SystemPerformance monitoring configuration for i
 ### Pattern 1: Create Monitoring Policy
 ```objectscript
 set policy = ##class(%SYS.PTools.StatsSQL).%New()
-set policy.Name = "iris-devtools-default"
+set policy.Name = "iris-devtester-default"
 set policy.Interval = 30
 set policy.Duration = 3600
 set policy.RunTime = "continuous"
@@ -168,7 +168,7 @@ do ##class(%SYS.PTools.StatsSQL).Start(policy.Name)
 ### Pattern 2: Create Task Manager Task
 ```objectscript
 set task = ##class(%SYS.Task).%New()
-set task.Name = "iris-devtools-monitor"
+set task.Name = "iris-devtester-monitor"
 set task.TaskClass = "%SYS.Task.SystemPerformance"
 set task.RunAsUser = "_SYSTEM"
 set task.DailyIncrement = 30
@@ -203,29 +203,29 @@ result = cursor.execute("""
 ## File Locations (ABSOLUTE PATHS)
 
 ### Implementation Files
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/monitoring.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/performance.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/containers/iris_container.py` - EXTEND
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/utils/yaspe_integration.py` - NEW (optional)
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/utils/health_checks.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/monitoring.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/performance.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/iris_container.py` - EXTEND
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/utils/yaspe_integration.py` - NEW (optional)
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/utils/health_checks.py` - NEW
 
 ### Test Files
-- `/Users/tdyar/ws/iris-devtools/tests/unit/test_monitoring_policy.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/unit/test_resource_thresholds.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/unit/test_performance_wrapper.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/contract/test_monitoring_config_api.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/contract/test_task_manager_api.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/contract/test_resource_monitoring_api.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/integration/test_monitoring_lifecycle.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/integration/test_auto_disable.py` - NEW
-- `/Users/tdyar/ws/iris-devtools/tests/e2e/test_monitoring_e2e.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/unit/test_monitoring_policy.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/unit/test_resource_thresholds.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/unit/test_performance_wrapper.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/contract/test_monitoring_config_api.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/contract/test_task_manager_api.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/contract/test_resource_monitoring_api.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/integration/test_monitoring_lifecycle.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/integration/test_auto_disable.py` - NEW
+- `/Users/tdyar/ws/iris-devtester/tests/e2e/test_monitoring_e2e.py` - NEW
 
 ### Documentation Files
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/spec.md` - Feature spec
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/research.md` - Research
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/data-model.md` - Data models
-- `/Users/tdyar/ws/iris-devtools/specs/002-set-default-stats/quickstart.md` - User guide
-- `/Users/tdyar/ws/iris-devtools/docs/learnings/monitoring-overhead-benchmarks.md` - NEW (add after benchmarking)
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/spec.md` - Feature spec
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/research.md` - Research
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/data-model.md` - Data models
+- `/Users/tdyar/ws/iris-devtester/specs/002-set-default-stats/quickstart.md` - User guide
+- `/Users/tdyar/ws/iris-devtester/docs/learnings/monitoring-overhead-benchmarks.md` - NEW (add after benchmarking)
 
 ---
 
@@ -233,7 +233,7 @@ result = cursor.execute("""
 
 ### ❌ DON'T: Create new connection management code
 **Why**: Constitutional Principle 2 - Use existing DBAPI/JDBC connections
-**Instead**: Use `iris_devtools.connections.get_connection()`
+**Instead**: Use `iris_devtester.connections.get_connection()`
 
 ### ❌ DON'T: Hardcode monitoring intervals
 **Why**: Constitutional Principle 4 - Must be configurable
@@ -310,13 +310,13 @@ result = cursor.execute("""
 ```python
 import logging
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('iris_devtools.containers.monitoring')
+logger = logging.getLogger('iris_devtester.containers.monitoring')
 logger.setLevel(logging.DEBUG)
 ```
 
 ### Check Task Manager in Management Portal
 1. Navigate to System Operations → Task Manager
-2. Look for tasks with prefix "iris-devtools-"
+2. Look for tasks with prefix "iris-devtester-"
 3. Check Last Run, Next Run, Status
 
 ### Query ^SystemPerformance Directly
@@ -325,7 +325,7 @@ cursor = conn.cursor()
 result = cursor.execute("""
     do ##class(%SYS.PTools.StatsSQL).ListProfiles()
 """).fetchall()
-print(result)  # Should show "iris-devtools-default" profile
+print(result)  # Should show "iris-devtester-default" profile
 ```
 
 ### Verify CPF Settings
@@ -358,7 +358,7 @@ schedule = TaskSchedule(run_as_user="_SYSTEM")
 ```python
 # Always check policy exists before starting
 try:
-    do ##class(%SYS.PTools.StatsSQL).Start("iris-devtools-default")
+    do ##class(%SYS.PTools.StatsSQL).Start("iris-devtester-default")
 except:
     # Re-create policy if missing
     configure_monitoring(conn)
@@ -413,10 +413,10 @@ Before marking this feature complete:
    → See "Critical ObjectScript Patterns" section above
 
 2. **What's the difference between DBAPI and JDBC?**
-   → Read `/Users/tdyar/ws/iris-devtools/CONSTITUTION.md` Principle 2
+   → Read `/Users/tdyar/ws/iris-devtester/CONSTITUTION.md` Principle 2
 
 3. **How do I test with real IRIS containers?**
-   → See existing tests in `/Users/tdyar/ws/iris-devtools/tests/integration/`
+   → See existing tests in `/Users/tdyar/ws/iris-devtester/tests/integration/`
 
 4. **Where do I put new code?**
    → See "File Locations" section above (use absolute paths)

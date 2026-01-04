@@ -2,7 +2,7 @@
 Contract tests for Connection Management API.
 
 These tests validate the public API interface defined in:
-specs/001-implement-iris-devtools/contracts/connection-api.md
+specs/001-implement-iris-devtester/contracts/connection-api.md
 
 These tests MUST FAIL until implementation is complete.
 """

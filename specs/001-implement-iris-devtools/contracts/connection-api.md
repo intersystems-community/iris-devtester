@@ -1,7 +1,7 @@
 # Contract: Connection Management API
 
-**Feature**: 001-implement-iris-devtools
-**Module**: `iris_devtools.connections`
+**Feature**: 001-implement-iris-devtester
+**Module**: `iris_devtester.connections`
 **Date**: 2025-10-05
 
 ## Overview
@@ -228,11 +228,11 @@ How to fix it:
   4. Check port: nc -zv localhost 1972
 
 Alternative: Use testcontainers for automatic IRIS management:
-  from iris_devtools.containers import IRISContainer
+  from iris_devtester.containers import IRISContainer
   with IRISContainer.community() as iris:
       conn = iris.get_connection()
 
-Documentation: https://iris-devtools.readthedocs.io/troubleshooting/connection-errors
+Documentation: https://iris-devtester.readthedocs.io/troubleshooting/connection-errors
 ```
 
 **Example PasswordResetError**:
@@ -250,7 +250,7 @@ How to fix it manually:
   3. Update environment:
      export IRIS_PASSWORD=<new_password>
 
-Documentation: https://iris-devtools.readthedocs.io/troubleshooting/password-reset
+Documentation: https://iris-devtester.readthedocs.io/troubleshooting/password-reset
 ```
 
 ## Logging
@@ -294,13 +294,13 @@ from common.iris_connection_manager import IRISConnectionManager
 manager = IRISConnectionManager()
 conn = manager.get_connection()
 
-# New (iris-devtools, backwards compatible)
-from iris_devtools.connections import IRISConnectionManager  # Same class!
+# New (iris-devtester, backwards compatible)
+from iris_devtester.connections import IRISConnectionManager  # Same class!
 manager = IRISConnectionManager()
 conn = manager.get_connection()  # Same method!
 
-# New (iris-devtools, preferred)
-from iris_devtools import get_iris_connection
+# New (iris-devtester, preferred)
+from iris_devtester import get_iris_connection
 conn = get_iris_connection()  # Simpler!
 ```
 

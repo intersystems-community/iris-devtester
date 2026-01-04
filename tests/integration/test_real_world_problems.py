@@ -1,12 +1,12 @@
 """
-Integration tests for REAL WORLD PROBLEMS that iris-devtools solves.
+Integration tests for REAL WORLD PROBLEMS that iris-devtester solves.
 
 These tests demonstrate the actual issues encountered in:
 - iris-pgwire: Config discovery issues
 - iris-vector-graph: CallIn service ACCESS_DENIED
 - iris-pgwire benchmarks: Password expiration
 
-These are the "humdingers" that prove iris-devtools works in production!
+These are the "humdingers" that prove iris-devtester works in production!
 """
 
 import os
@@ -278,14 +278,14 @@ class TestPgwireBenchmarkPasswordExpiration:
         """
         Test the COMPLETE benchmark setup automation.
 
-        Before iris-devtools:
+        Before iris-devtester:
         1. docker compose up -d
         2. Wait for containers
         3. docker exec iris-4way ... (unexpire passwords)
         4. docker exec iris-4way-embedded ... (unexpire passwords)
         5. Run benchmark
 
-        After iris-devtools:
+        After iris-devtester:
         1. docker compose up -d
         2. unexpire_passwords_for_containers([...])  # ONE LINE!
         3. Run benchmark

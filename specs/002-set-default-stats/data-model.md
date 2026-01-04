@@ -39,7 +39,7 @@ class MonitoringPolicy:
     - All fields have sensible defaults
     - Validates ranges per constitutional constraints
     """
-    name: str = "iris-devtools-default"
+    name: str = "iris-devtester-default"
     description: str = "Auto-configured performance monitoring"
 
     # Collection settings
@@ -184,7 +184,7 @@ class TaskSchedule:
     Maps to %SYS.Task class in ObjectScript.
     """
     task_id: Optional[str] = None        # IRIS task ID (populated after creation)
-    name: str = "iris-devtools-monitor"
+    name: str = "iris-devtester-monitor"
     description: str = "Auto-configured performance monitoring"
     task_class: str = "%SYS.Task.SystemPerformance"
     run_as_user: str = "_SYSTEM"        # Required for monitoring permissions

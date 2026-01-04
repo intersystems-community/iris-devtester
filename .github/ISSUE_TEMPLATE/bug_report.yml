@@ -12,7 +12,7 @@ body:
     id: version
     attributes:
       label: IRIS DevTools Version
-      description: Which version of iris-devtools are you using?
+      description: Which version of iris-devtester are you using?
       placeholder: "e.g., 1.0.0"
     validations:
       required: true
@@ -76,10 +76,10 @@ body:
       label: Steps to Reproduce
       description: How can we reproduce this bug?
       placeholder: |
-        1. Install iris-devtools with `pip install iris-devtools`
+        1. Install iris-devtester with `pip install iris-devtester`
         2. Run the following code:
            ```python
-           from iris_devtools import ...
+           from iris_devtester import ...
            ```
         3. Observe the error...
     validations:
@@ -131,7 +131,7 @@ body:
       options:
         - label: I have searched existing issues to ensure this is not a duplicate
           required: true
-        - label: I have included the iris-devtools version I'm using
+        - label: I have included the iris-devtester version I'm using
           required: true
         - label: I have included steps to reproduce the issue
           required: true

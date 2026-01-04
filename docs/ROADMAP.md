@@ -55,7 +55,7 @@
 
 **Proposed Solution**:
 
-Create `iris_devtools.schema.introspection` module with:
+Create `iris_devtester.schema.introspection` module with:
 
 1. **Audit Trail DDL Parser**
    - Query IRIS audit trail for DDL commands
@@ -79,7 +79,7 @@ Create `iris_devtools.schema.introspection` module with:
 
 ```python
 # Example API:
-from iris_devtools.schema import get_true_schema
+from iris_devtester.schema import get_true_schema
 
 # Get schema with real VECTOR types (not VARCHAR)
 schema = get_true_schema(conn, table="Embeddings")
@@ -94,7 +94,7 @@ schema = get_true_schema(conn, table="Embeddings")
 # }
 
 # SQLAlchemy integration:
-from iris_devtools.schema import IRISIntrospector
+from iris_devtester.schema import IRISIntrospector
 from sqlalchemy import create_engine
 
 engine = create_engine("iris://localhost:1972/USER")
@@ -235,8 +235,8 @@ columns = inspector.get_columns("Embeddings")
 ## User Feedback Integration
 
 **Submit Feedback**:
-- GitHub Issues: https://github.com/anthropics/iris-devtools/issues
-- Discussions: https://github.com/anthropics/iris-devtools/discussions
+- GitHub Issues: https://github.com/anthropics/iris-devtester/issues
+- Discussions: https://github.com/anthropics/iris-devtester/discussions
 
 **Priority Process**:
 1. User reports pain point

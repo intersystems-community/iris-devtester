@@ -57,7 +57,7 @@ Seven CLI commands for complete IRIS container lifecycle management:
 - ✅ Principle #6: Enterprise Ready, Community Friendly
 
 ### Bug Fixes
-- Fixed CLI prog_name inconsistency (iris-devtools → iris-devtester)
+- Fixed CLI prog_name inconsistency (iris-devtester → iris-devtester)
 
 ---
 
@@ -132,8 +132,8 @@ iris-devtester v1.0.0 is built, validated, and ready for PyPI release.
 ### Package Details
 
 **Built Distributions**:
-- `iris_devtools-1.0.0-py3-none-any.whl` (78KB)
-- `iris_devtools-1.0.0.tar.gz` (64KB)
+- `iris_devtester-1.0.0-py3-none-any.whl` (78KB)
+- `iris_devtester-1.0.0.tar.gz` (64KB)
 
 **Validation**: ✅ Both packages PASSED `twine check`
 
@@ -170,7 +170,7 @@ iris-devtester v1.0.0 is built, validated, and ready for PyPI release.
 - ✅ Updated README.md (badges, URLs)
 - ✅ Created CHANGELOG.md (v1.0.0 release notes)
 - ✅ Added examples directory (3 examples)
-- ✅ CLI entry point (`iris-devtools` command)
+- ✅ CLI entry point (`iris-devtester` command)
 
 ### Phase 4: Build & Validation (Oct 18)
 - ✅ Import tests passed
@@ -207,7 +207,7 @@ All 8 principles followed:
 
 ## Features Summary
 
-### Container Management (`iris_devtools.containers`)
+### Container Management (`iris_devtester.containers`)
 - `IRISContainer` with automatic connection management
 - `community()` - Zero-config Community Edition
 - `enterprise()` - Enterprise with license support
@@ -217,41 +217,41 @@ All 8 principles followed:
 - Automatic password reset
 - Wait strategies for readiness
 
-### Connection Management (`iris_devtools.connections`)
+### Connection Management (`iris_devtester.connections`)
 - `get_connection()` - Zero-config with auto-discovery
 - DBAPI-first (3x faster than JDBC)
 - Automatic JDBC fallback
 - Retry logic with exponential backoff
 - Environment variable support
 
-### Testing Utilities (`iris_devtools.testing`)
+### Testing Utilities (`iris_devtester.testing`)
 - pytest fixtures (iris_container, test_namespace, iris_connection)
 - Schema reset utilities (6 functions)
 - Auto-discovery (Docker, native, multi-port)
 - Test isolation with namespaces
 
-### .DAT Fixture Management (`iris_devtools.fixtures`)
+### .DAT Fixture Management (`iris_devtester.fixtures`)
 - `FixtureCreator` - Create from namespaces
 - `DATFixtureLoader` - Load via RESTORE
 - `FixtureValidator` - SHA256 checksums
 - CLI commands (create, load, validate, list, info)
 - pytest plugin (`@pytest.mark.dat_fixture`)
 
-### Performance Monitoring (`iris_devtools.containers`)
+### Performance Monitoring (`iris_devtester.containers`)
 - `configure_monitoring()` - Zero-config setup
 - `get_monitoring_status()` - Query state
 - Task Manager integration (14 functions)
 - Resource monitoring with auto-disable/enable
 - `ResourceThresholds` - Configurable with hysteresis
 
-### Configuration (`iris_devtools.config`)
+### Configuration (`iris_devtester.config`)
 - `IRISConfig` - Database configuration
 - `auto_discover_iris()` - Find existing instances
 - Environment variable support
 - Docker container detection
 - Multi-port scanning
 
-### CLI (`iris-devtools`)
+### CLI (`iris-devtester`)
 - `fixture create` - Create .DAT fixtures
 - `fixture load` - Load fixtures
 - `fixture validate` - Verify integrity
@@ -297,7 +297,7 @@ From rag-templates production system:
 - Phase 3: 2 commits (package prep)
 - Phase 4: 1 commit (build)
 
-**GitHub**: https://github.com/intersystems-community/iris-devtools  
+**GitHub**: https://github.com/intersystems-community/iris-devtester  
 **Branch**: `main`  
 **All changes pushed**: ✅
 
@@ -323,7 +323,7 @@ git tag -a v1.0.0 -m "Release v1.0.0: Battle-tested IRIS infrastructure utilitie
 git push github v1.0.0
 
 # Create release on GitHub
-# Go to: https://github.com/intersystems-community/iris-devtools/releases/new
+# Go to: https://github.com/intersystems-community/iris-devtester/releases/new
 # Tag: v1.0.0
 # Title: iris-devtester v1.0.0 - Battle-Tested IRIS Infrastructure
 # Description: Use CHANGELOG.md content
@@ -345,7 +345,7 @@ git push github v1.0.0
 # After upload, test installation
 pip install iris-devtester
 iris-devtester --version
-python -c "from iris_devtools.containers import IRISContainer; print('✓')"
+python -c "from iris_devtester.containers import IRISContainer; print('✓')"
 ```
 
 ### Monitor
@@ -559,7 +559,7 @@ Previous work from January 4, 2025 achieved 55/90 passing (61%). Today we confir
 **RIGHT Pattern**:
 ```python
 import dataclasses
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 config = iris_container.get_config()
 namespace_config = dataclasses.replace(config, namespace="TARGET_NS")
@@ -580,8 +580,8 @@ conn = get_connection(namespace_config)
 
 ### Files Modified
 
-1. `iris_devtools/fixtures/validator.py` - ChecksumMismatchError handling
-2. `iris_devtools/fixtures/loader.py` - cleanup_fixture() docker exec pattern
+1. `iris_devtester/fixtures/validator.py` - ChecksumMismatchError handling
+2. `iris_devtester/fixtures/loader.py` - cleanup_fixture() docker exec pattern
 3. `tests/integration/test_dat_fixtures_integration.py` - Remove unnecessary test data
 4. `tests/integration/conftest.py` - Fresh connections per test
 5. `tests/integration/test_fixture_performance.py` - All 3 performance tests fixed
@@ -623,4 +623,4 @@ This was the critical feature for v1.0.0. The performance test pollution is a te
 
 ---
 
-🎊 Congratulations on completing iris-devtools v1.0.0! 🎊
+🎊 Congratulations on completing iris-devtester v1.0.0! 🎊

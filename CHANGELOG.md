@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed to `$Select(sc=1:1,1:0)` for interactive ObjectScript compatibility
   - Affects: `export_classes()`, `import_classes()`, `export_global()`, `import_global()`, `export_package()`
 
-- **Unit Test Fixes** - Fixed `iris_devtools` → `iris_devtester` in 10+ test files
+- **Unit Test Fixes** - Fixed `iris_devtester` → `iris_devtester` in 10+ test files
 
 ### Added
 
@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Root cause analysis of IRIS container startup bottlenecks
   - Optimization strategies: namespace isolation, container reuse, pre-baked images
   - Quick wins for faster development cycles
+
+## [1.7.1] - 2026-01-04 - Documentation & Metadata Fixes
+
+### Fixed
+
+- **Broken Documentation Links**: Fixed all references to the old `iris-devtools` name across README and documentation files.
+- **PyPI Meta Data**: Corrected repository and documentation URLs in `pyproject.toml`.
+- **Concise README**: Shortened the README for better visibility on PyPI, moving detailed guides to the `docs/` directory.
+- **Metadata Consistency**: Re-synchronized `__init__.py` and `pyproject.toml` version strings.
 
 ## [1.7.0] - 2026-01-02 - Feature 021: Hierarchical Agent Skills
 
@@ -769,7 +778,7 @@ No breaking changes - all fixes are backwards compatible:
 
 ### 🎉 Initial Release
 
-First stable release of iris-devtools, a battle-tested Python package for InterSystems IRIS infrastructure.
+First stable release of iris-devtester, a battle-tested Python package for InterSystems IRIS infrastructure.
 
 ### Added
 

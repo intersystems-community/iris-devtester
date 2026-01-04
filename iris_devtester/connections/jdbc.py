@@ -122,8 +122,8 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
             "  1. Install the package:\n"
             "     pip install jaydebeapi\n"
             "\n"
-            "  2. Or install iris-devtools with JDBC support:\n"
-            "     pip install 'iris-devtools[jdbc]'\n"
+            "  2. Or install iris-devtester with JDBC support:\n"
+            "     pip install 'iris-devtester[jdbc]'\n"
             "\n"
             f"Original error: {e}\n"
         ) from e
@@ -157,7 +157,7 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
             f"     - {Path.home() / JDBC_JAR_NAME} (home directory)\n"
             "\n"
             "  3. Or use DBAPI instead (3x faster):\n"
-            "     pip install 'iris-devtools[dbapi]'\n"
+            "     pip install 'iris-devtester[dbapi]'\n"
         )
 
     # Build JDBC URL
@@ -238,7 +238,7 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
             "  3. Verify credentials are valid\n"
             "\n"
             "  4. Try DBAPI instead (3x faster):\n"
-            "     pip install 'iris-devtools[dbapi]'\n"
+            "     pip install 'iris-devtester[dbapi]'\n"
             "\n"
             f"Original error: {e}\n"
         ) from e

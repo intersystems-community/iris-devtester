@@ -2,14 +2,14 @@
 
 **Feature**: 004-dat-fixtures
 **Branch**: `004-dat-fixtures`
-**Input**: Design documents from `/Users/tdyar/ws/iris-devtools/specs/004-dat-fixtures/`
+**Input**: Design documents from `/Users/tdyar/ws/iris-devtester/specs/004-dat-fixtures/`
 **Prerequisites**: plan.md ✅, research.md ✅, data-model.md ✅, contracts/ ✅, quickstart.md ✅
 
 ## Execution Flow (main)
 ```
 1. Loaded plan.md from feature directory
    → Tech stack: Python 3.9+, dataclasses, click CLI, pytest
-   → Structure: iris_devtools/fixtures/ module
+   → Structure: iris_devtester/fixtures/ module
    → Dependencies: Feature 003 (Connection Manager)
 2. Loaded design documents:
    → data-model.md: 4 entities (FixtureManifest, TableInfo, ValidationResult, LoadResult)
@@ -47,7 +47,7 @@
 
 ## Phase 3.1: Setup
 
-- [X] **T001** Create fixtures module structure: `iris_devtools/fixtures/__init__.py`, `manifest.py`, `loader.py`, `creator.py`, `validator.py`, `pytest_plugin.py`
+- [X] **T001** Create fixtures module structure: `iris_devtester/fixtures/__init__.py`, `manifest.py`, `loader.py`, `creator.py`, `validator.py`, `pytest_plugin.py`
 - [X] **T002** Add fixtures dependencies to `pyproject.toml`: `click>=8.0.0` (CLI framework), `hashlib` (SHA256, stdlib)
 - [X] **T003** [P] Create test directory structure: `tests/contract/`, `tests/unit/`, `tests/integration/` for fixture tests
 
@@ -83,46 +83,46 @@
 
 ### Data Models (Parallel - Different Classes)
 
-- [X] **T015** [P] Implement FixtureManifest dataclass in `iris_devtools/fixtures/manifest.py` (fields: fixture_id, version, schema_version, description, created_at, iris_version, namespace, dat_file, checksum, tables, features, known_queries; methods: to_json, from_json, from_file, to_file, validate)
-- [X] **T016** [P] Implement TableInfo dataclass in `iris_devtools/fixtures/manifest.py` (fields: name, row_count; note: all tables stored in single IRIS.DAT)
-- [X] **T017** [P] Implement ValidationResult dataclass in `iris_devtools/fixtures/manifest.py` (fields: valid, errors, warnings, manifest; method: raise_if_invalid)
-- [X] **T018** [P] Implement LoadResult dataclass in `iris_devtools/fixtures/manifest.py` (fields: success, manifest, namespace, tables_loaded, elapsed_seconds; methods: __str__, summary)
+- [X] **T015** [P] Implement FixtureManifest dataclass in `iris_devtester/fixtures/manifest.py` (fields: fixture_id, version, schema_version, description, created_at, iris_version, namespace, dat_file, checksum, tables, features, known_queries; methods: to_json, from_json, from_file, to_file, validate)
+- [X] **T016** [P] Implement TableInfo dataclass in `iris_devtester/fixtures/manifest.py` (fields: name, row_count; note: all tables stored in single IRIS.DAT)
+- [X] **T017** [P] Implement ValidationResult dataclass in `iris_devtester/fixtures/manifest.py` (fields: valid, errors, warnings, manifest; method: raise_if_invalid)
+- [X] **T018** [P] Implement LoadResult dataclass in `iris_devtester/fixtures/manifest.py` (fields: success, manifest, namespace, tables_loaded, elapsed_seconds; methods: __str__, summary)
 
 ### Exception Classes (Single File - Sequential)
 
-- [X] **T019** Add custom exception classes to `iris_devtools/fixtures/manifest.py`: FixtureError, FixtureValidationError, FixtureLoadError, FixtureCreateError, ChecksumMismatchError
+- [X] **T019** Add custom exception classes to `iris_devtester/fixtures/manifest.py`: FixtureError, FixtureValidationError, FixtureLoadError, FixtureCreateError, ChecksumMismatchError
 
 ### Validator Implementation (Sequential - Same Module)
 
-- [ ] **T020** Implement FixtureValidator class in `iris_devtools/fixtures/validator.py` (__init__ method, stateless)
-- [ ] **T021** Implement calculate_sha256 in `iris_devtools/fixtures/validator.py` (streaming SHA256 calculation, 64KB chunks, format: "sha256:abc123...")
-- [ ] **T022** Implement validate_checksum in `iris_devtools/fixtures/validator.py` (file checksum vs expected)
-- [ ] **T023** Implement validate_manifest in `iris_devtools/fixtures/validator.py` (structure validation, no file I/O)
-- [ ] **T024** Implement validate_fixture in `iris_devtools/fixtures/validator.py` (manifest + files + checksums)
-- [ ] **T025** Implement recalculate_checksum in `iris_devtools/fixtures/validator.py` (update manifest with new IRIS.DAT checksum, create backup)
-- [ ] **T026** Implement get_fixture_size in `iris_devtools/fixtures/validator.py` (disk usage statistics)
+- [ ] **T020** Implement FixtureValidator class in `iris_devtester/fixtures/validator.py` (__init__ method, stateless)
+- [ ] **T021** Implement calculate_sha256 in `iris_devtester/fixtures/validator.py` (streaming SHA256 calculation, 64KB chunks, format: "sha256:abc123...")
+- [ ] **T022** Implement validate_checksum in `iris_devtester/fixtures/validator.py` (file checksum vs expected)
+- [ ] **T023** Implement validate_manifest in `iris_devtester/fixtures/validator.py` (structure validation, no file I/O)
+- [ ] **T024** Implement validate_fixture in `iris_devtester/fixtures/validator.py` (manifest + files + checksums)
+- [ ] **T025** Implement recalculate_checksum in `iris_devtester/fixtures/validator.py` (update manifest with new IRIS.DAT checksum, create backup)
+- [ ] **T026** Implement get_fixture_size in `iris_devtester/fixtures/validator.py` (disk usage statistics)
 
 ### Loader Implementation (Sequential - Same Module)
 
-- [X] **T027** Implement DATFixtureLoader class in `iris_devtools/fixtures/loader.py` (__init__ with connection_config, integration with Feature 003 connection manager)
-- [X] **T028** Implement validate_fixture in `iris_devtools/fixtures/loader.py` (wrapper for FixtureValidator.validate_fixture)
-- [X] **T029** Implement load_fixture in `iris_devtools/fixtures/loader.py` (validate manifest → validate IRIS.DAT checksum → mount namespace via ObjectScript → verify mount success)
+- [X] **T027** Implement DATFixtureLoader class in `iris_devtester/fixtures/loader.py` (__init__ with connection_config, integration with Feature 003 connection manager)
+- [X] **T028** Implement validate_fixture in `iris_devtester/fixtures/loader.py` (wrapper for FixtureValidator.validate_fixture)
+- [X] **T029** Implement load_fixture in `iris_devtester/fixtures/loader.py` (validate manifest → validate IRIS.DAT checksum → mount namespace via ObjectScript → verify mount success)
 
 ---
 
 ## Phase 3.4: Integration
 
-- [X] **T030** Implement cleanup_fixture in `iris_devtools/fixtures/loader.py` (unmount or delete namespace)
-- [X] **T031** Implement get_connection in `iris_devtools/fixtures/loader.py` (expose underlying IRISConnection)
+- [X] **T030** Implement cleanup_fixture in `iris_devtester/fixtures/loader.py` (unmount or delete namespace)
+- [X] **T031** Implement get_connection in `iris_devtester/fixtures/loader.py` (expose underlying IRISConnection)
 
 ### Creator Implementation (Sequential - Same Module)
 
-- [X] **T032** Implement FixtureCreator class in `iris_devtools/fixtures/creator.py` (__init__ with connection_config, integration with Feature 003)
-- [X] **T033** Implement export_namespace_to_dat in `iris_devtools/fixtures/creator.py` (use BACKUP^DBACK routine via DBAPI cursor to create IRIS.DAT)
-- [X] **T034** Implement get_namespace_tables in `iris_devtools/fixtures/creator.py` (query namespace for table list with row counts)
-- [X] **T035** Implement calculate_checksum in `iris_devtools/fixtures/creator.py` (wrapper for FixtureValidator.calculate_sha256)
-- [X] **T036** Implement create_fixture in `iris_devtools/fixtures/creator.py` (export namespace → calculate IRIS.DAT checksum → query table list → generate manifest → save to output_dir)
-- [X] **T037** Implement refresh_fixture in `iris_devtools/fixtures/creator.py` (re-export namespace to update existing fixture)
+- [X] **T032** Implement FixtureCreator class in `iris_devtester/fixtures/creator.py` (__init__ with connection_config, integration with Feature 003)
+- [X] **T033** Implement export_namespace_to_dat in `iris_devtester/fixtures/creator.py` (use BACKUP^DBACK routine via DBAPI cursor to create IRIS.DAT)
+- [X] **T034** Implement get_namespace_tables in `iris_devtester/fixtures/creator.py` (query namespace for table list with row counts)
+- [X] **T035** Implement calculate_checksum in `iris_devtester/fixtures/creator.py` (wrapper for FixtureValidator.calculate_sha256)
+- [X] **T036** Implement create_fixture in `iris_devtester/fixtures/creator.py` (export namespace → calculate IRIS.DAT checksum → query table list → generate manifest → save to output_dir)
+- [X] **T037** Implement refresh_fixture in `iris_devtester/fixtures/creator.py` (re-export namespace to update existing fixture)
 
 ---
 
@@ -130,15 +130,15 @@
 
 ### CLI Commands (Sequential - Same Module)
 
-- [X] **T038** Implement CLI commands in `iris_devtools/cli/fixture_commands.py` (5 commands: `fixture create`, `fixture load`, `fixture validate`, `fixture list`, `fixture info` using click framework, integration with FixtureCreator/Loader/Validator) - 427 lines, all 5 commands implemented
+- [X] **T038** Implement CLI commands in `iris_devtester/cli/fixture_commands.py` (5 commands: `fixture create`, `fixture load`, `fixture validate`, `fixture list`, `fixture info` using click framework, integration with FixtureCreator/Loader/Validator) - 427 lines, all 5 commands implemented
 
 ### pytest Plugin (Single File)
 
-- [X] **T039** Implement pytest plugin in `iris_devtools/fixtures/pytest_plugin.py` (pytest_configure hook to register @pytest.mark.dat_fixture, pytest_runtest_setup/teardown hooks for auto-load/cleanup, unique namespace per worker for pytest-xdist support) - 178 lines, all hooks implemented
+- [X] **T039** Implement pytest plugin in `iris_devtester/fixtures/pytest_plugin.py` (pytest_configure hook to register @pytest.mark.dat_fixture, pytest_runtest_setup/teardown hooks for auto-load/cleanup, unique namespace per worker for pytest-xdist support) - 178 lines, all hooks implemented
 
 ### Public API Exports
 
-- [X] **T040** Update `iris_devtools/fixtures/__init__.py` to export: DATFixtureLoader, FixtureCreator, FixtureValidator, FixtureManifest, TableInfo, ValidationResult, LoadResult, FixtureError exceptions - Complete with pytest integration docs
+- [X] **T040** Update `iris_devtester/fixtures/__init__.py` to export: DATFixtureLoader, FixtureCreator, FixtureValidator, FixtureManifest, TableInfo, ValidationResult, LoadResult, FixtureError exceptions - Complete with pytest integration docs
 
 ### Integration Tests (Additional Scenarios)
 
@@ -153,9 +153,9 @@
 ### Documentation & Polish
 
 - [X] **T045** [P] Add docstrings to all public APIs (Google style, with examples and error conditions) - ✅ 100% coverage already present
-- [X] **T046** [P] Run type checker (mypy) on `iris_devtools/fixtures/` and fix type hint issues - ✅ All mypy errors in fixtures/ fixed
+- [X] **T046** [P] Run type checker (mypy) on `iris_devtester/fixtures/` and fix type hint issues - ✅ All mypy errors in fixtures/ fixed
 - [X] **T047** [P] Update PROGRESS.md: Feature 004 status to "In Progress" (62.5%), update milestone tracking - ✅ Updated
-- [X] **T048** Run all tests (unit + contract + integration) and verify 95%+ code coverage for `iris_devtools/fixtures/` - ✅ 155 tests passing, contract tests verify all APIs
+- [X] **T048** Run all tests (unit + contract + integration) and verify 95%+ code coverage for `iris_devtester/fixtures/` - ✅ 155 tests passing, contract tests verify all APIs
 
 ---
 
@@ -225,10 +225,10 @@ Task: "Integration test atomic rollback in tests/integration/test_dat_fixtures_i
 ### Phase 3.3: Launch All Data Model Tasks Together
 ```bash
 # Launch T015-T018 in parallel (different dataclasses)
-Task: "Implement FixtureManifest dataclass in iris_devtools/fixtures/manifest.py"
-Task: "Implement TableInfo dataclass in iris_devtools/fixtures/manifest.py"
-Task: "Implement ValidationResult dataclass in iris_devtools/fixtures/manifest.py"
-Task: "Implement LoadResult dataclass in iris_devtools/fixtures/manifest.py"
+Task: "Implement FixtureManifest dataclass in iris_devtester/fixtures/manifest.py"
+Task: "Implement TableInfo dataclass in iris_devtester/fixtures/manifest.py"
+Task: "Implement ValidationResult dataclass in iris_devtester/fixtures/manifest.py"
+Task: "Implement LoadResult dataclass in iris_devtester/fixtures/manifest.py"
 ```
 
 ### Phase 3.5: Launch Polish Tasks Together

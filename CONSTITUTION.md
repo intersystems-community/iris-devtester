@@ -262,11 +262,11 @@ raise ConnectionError(
     "  3. Verify: docker logs iris_db_rag_templates\n"
     "\n"
     "Alternative: Use testcontainers for automatic IRIS management:\n"
-    "  from iris_devtools.containers import IRISContainer\n"
+    "  from iris_devtester.containers import IRISContainer\n"
     "  with IRISContainer.community() as iris:\n"
     "      conn = iris.get_connection()\n"
     "\n"
-    "Documentation: https://iris-devtools.readthedocs.io/troubleshooting/\n"
+    "Documentation: https://iris-devtester.readthedocs.io/troubleshooting/\n"
 )
 ```
 

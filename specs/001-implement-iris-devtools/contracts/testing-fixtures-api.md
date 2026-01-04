@@ -1,7 +1,7 @@
 # Contract: Testing Fixtures API
 
-**Feature**: 001-implement-iris-devtools
-**Module**: `iris_devtools.testing`
+**Feature**: 001-implement-iris-devtester
+**Module**: `iris_devtester.testing`
 **Date**: 2025-10-05
 
 ## Overview
@@ -319,18 +319,18 @@ def test_mirror_failover(iris_db):
 **Example conftest.py**:
 ```python
 import pytest
-from iris_devtools.testing import *
+from iris_devtester.testing import *
 
 # Enable all fixtures
-pytest_plugins = ["iris_devtools.testing.fixtures"]
+pytest_plugins = ["iris_devtester.testing.fixtures"]
 
 def pytest_configure(config):
-    """Configure iris-devtools for pytest"""
+    """Configure iris-devtester for pytest"""
     config.addinivalue_line("markers", "iris: Tests requiring IRIS database")
     config.addinivalue_line("markers", "slow: Slow tests (container startup)")
 ```
 
-**Auto-discovery**: If `iris_devtools` installed, fixtures automatically available
+**Auto-discovery**: If `iris_devtester` installed, fixtures automatically available
 
 ---
 
@@ -427,12 +427,12 @@ Mismatches found:
 How to fix:
   1. Review schema definition
   2. Run reset_schema() to apply definition:
-     from iris_devtools.testing import reset_schema
+     from iris_devtester.testing import reset_schema
      reset_schema(conn, schema_definition)
   3. Or enable auto_reset:
      validate_schema(conn, schema, auto_reset=True)
 
-Documentation: https://iris-devtools.readthedocs.io/testing/schema-validation
+Documentation: https://iris-devtester.readthedocs.io/testing/schema-validation
 ```
 
 ---

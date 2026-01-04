@@ -143,8 +143,8 @@ chmod 660 /usr/irissys/mgr/db_namespace/IRIS.DAT
 
 ## Files Involved
 
-- `iris_devtools/fixtures/loader.py:246-279` - RESTORE implementation
-- `iris_devtools/fixtures/pytest_plugin.py:68-77` - Auto-container creation
+- `iris_devtester/fixtures/loader.py:246-279` - RESTORE implementation
+- `iris_devtester/fixtures/pytest_plugin.py:68-77` - Auto-container creation
 - `tests/integration/test_pytest_integration.py` - Failing tests
 - `/tmp/test_auto_restore.py` - Minimal reproduction
 

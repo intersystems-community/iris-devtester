@@ -48,7 +48,7 @@ cursor.execute("set policy = ##class(%SYS.PTools.StatsSQL).%New()")
 
 Feature 002 integration tests **CANNOT RUN** until we implement ObjectScript execution capability.
 
-**Affected Functions** (all in `iris_devtools/containers/monitoring.py`):
+**Affected Functions** (all in `iris_devtester/containers/monitoring.py`):
 - `configure_monitoring()` - Lines 500-535
 - `create_task()` - Lines 721-764
 - `get_task_status()` - Lines 767+
@@ -144,7 +144,7 @@ def iris_conn_with_objectscript(iris_container):
 - `SESSION-SUMMARY.md` (this file)
 
 ### Modified
-- `iris_devtools/containers/monitoring.py`:
+- `iris_devtester/containers/monitoring.py`:
   - Attempted to fix ObjectScript execution (doesn't work with DBAPI)
   - Fixed `get_monitoring_status()` to use SQL directly (✅ works)
 
@@ -188,8 +188,8 @@ Before starting Feature 003:
 - [ ] Review Constitutional Principle #2 (DBAPI First, JDBC Fallback)
 
 Start Feature 003 with:
-- [ ] T001: Create `iris_devtools/connections/dbapi.py`
-- [ ] T002: Create `iris_devtools/connections/jdbc.py`
+- [ ] T001: Create `iris_devtester/connections/dbapi.py`
+- [ ] T002: Create `iris_devtester/connections/jdbc.py`
 - [ ] T003: Implement ObjectScript execution via JDBC
 
 ---

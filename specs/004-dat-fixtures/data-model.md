@@ -279,7 +279,7 @@ class ValidationResult:
                 "How to fix it:\n"
                 "  1. Check manifest.json for syntax errors\n"
                 "  2. Verify all .DAT files exist\n"
-                "  3. Recalculate checksums: iris-devtools fixture validate --recalc\n"
+                "  3. Recalculate checksums: iris-devtester fixture validate --recalc\n"
             )
 
             raise FixtureValidationError(error_msg)
@@ -426,7 +426,7 @@ ManifestPath: TypeAlias = str  # Path to manifest.json
 Checksum: TypeAlias = str  # Format: "sha256:abc123..."
 
 # Connection type (from Feature 003)
-IRISConnection: TypeAlias = Any  # iris_devtools.connections.IRISConnection
+IRISConnection: TypeAlias = Any  # iris_devtester.connections.IRISConnection
 ```
 
 ---
@@ -670,7 +670,7 @@ class ChecksumMismatchError(FixtureValidationError):
 
 ## Implementation Checklist
 
-- [ ] Create `iris_devtools/fixtures/manifest.py` with dataclasses
+- [ ] Create `iris_devtester/fixtures/manifest.py` with dataclasses
 - [ ] Add `__init__.py` exports
 - [ ] Write unit tests for serialization/deserialization
 - [ ] Write unit tests for validation logic

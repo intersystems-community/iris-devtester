@@ -1,12 +1,12 @@
 # Tasks: IRIS DevTools Package Implementation
 
-**Input**: Design documents from `/specs/001-implement-iris-devtools/`
+**Input**: Design documents from `/specs/001-implement-iris-devtester/`
 **Prerequisites**: plan.md, research.md, data-model.md, contracts/, quickstart.md
 **Source Code**: `~/ws/rag-templates/` (extraction project)
 
 ## Execution Summary
 
-This is an **extraction and enhancement** project (~1000 lines from rag-templates → ~1700 lines iris-devtools):
+This is an **extraction and enhancement** project (~1000 lines from rag-templates → ~1700 lines iris-devtester):
 - Extract proven code from rag-templates production
 - Add testcontainers integration
 - Enhance with Python 3.9+ type hints
@@ -23,14 +23,14 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
 ## Format: `[ID] [P?] Description`
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **Source paths**: `~/ws/rag-templates/` (extraction source)
-- **Target paths**: `iris_devtools/` (new package)
+- **Target paths**: `iris_devtester/` (new package)
 
 ---
 
 ## Phase 3.1: Project Setup
 
 - [x] **T001** Create package structure with all directories
-  - Create: `iris_devtools/`, `iris_devtools/connections/`, `iris_devtools/containers/`, `iris_devtools/testing/`, `iris_devtools/config/`, `iris_devtools/utils/`
+  - Create: `iris_devtester/`, `iris_devtester/connections/`, `iris_devtester/containers/`, `iris_devtester/testing/`, `iris_devtester/config/`, `iris_devtester/utils/`
   - Create: `tests/`, `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/contract/`
   - Create: `docs/`, `docs/learnings/`, `examples/`
   - All directories need `__init__.py` files
@@ -46,7 +46,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Already configured in pyproject.toml (black line-length 100, isort compatible)
   - Verify configuration matches plan.md standards
 
-- [x] **T004** [P] Create initial package exports in iris_devtools/__init__.py
+- [x] **T004** [P] Create initial package exports in iris_devtester/__init__.py
   - Export main convenience functions: `get_iris_connection`, `IRISConfig`, `IRISContainer`
   - Set `__version__ = "1.0.0"`
   - Keep minimal for now, expand as modules are built
@@ -63,7 +63,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test `test_connection()` interface
   - Test `IRISConnectionManager` class interface
   - All tests should FAIL (not implemented yet)
-  - Reference: `specs/001-implement-iris-devtools/contracts/connection-api.md`
+  - Reference: `specs/001-implement-iris-devtester/contracts/connection-api.md`
 
 - [x] **T006** [P] Contract test for Testing Fixtures API in tests/contract/test_testing_fixtures_api.py
   - Test `iris_db` fixture interface
@@ -72,7 +72,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test `validate_schema()` function signature
   - Test `reset_schema()` function signature
   - All tests should FAIL (not implemented yet)
-  - Reference: `specs/001-implement-iris-devtools/contracts/testing-fixtures-api.md`
+  - Reference: `specs/001-implement-iris-devtester/contracts/testing-fixtures-api.md`
 
 - [x] **T007** [P] Contract test for Container Management API in tests/contract/test_container_api.py
   - Test `IRISContainer.community()` class method
@@ -81,7 +81,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test `wait_for_ready()` method
   - Test `reset_password()` method
   - All tests should FAIL (not implemented yet)
-  - Reference: `specs/001-implement-iris-devtools/contracts/container-api.md`
+  - Reference: `specs/001-implement-iris-devtester/contracts/container-api.md`
 
 - [x] **T008** [P] Unit test for IRISConfig model in tests/unit/test_iris_config.py
   - Test default values
@@ -110,25 +110,25 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
 
 ## Phase 3.3: Core Models (ONLY after tests are failing)
 
-- [x] **T012** [P] Create IRISConfig dataclass in iris_devtools/config/models.py
+- [x] **T012** [P] Create IRISConfig dataclass in iris_devtester/config/models.py
   - Extract from: N/A (new, but based on rag-templates config patterns)
   - Implement with Python 3.9+ dataclass and type hints
   - Add `__post_init__` validation
   - Make T008 pass
 
-- [x] **T013** [P] Create ConnectionInfo dataclass in iris_devtools/connections/models.py
+- [x] **T013** [P] Create ConnectionInfo dataclass in iris_devtester/connections/models.py
   - Extract from: N/A (new metadata class)
   - Implement with dataclass, datetime handling
   - Make T009 pass
 
-- [x] **T014** [P] Create schema model classes in iris_devtools/testing/models.py
+- [x] **T014** [P] Create schema model classes in iris_devtester/testing/models.py
   - Extract from: `~/ws/rag-templates/tests/utils/schema_models.py` (~120 lines)
   - Port SchemaDefinition, TableDefinition, ColumnDefinition, IndexDefinition
   - Port SchemaValidationResult, SchemaMismatch
   - Add type hints, enhance with dataclasses
   - Make T010 pass
 
-- [x] **T015** [P] Create validation and state models in iris_devtools/testing/models.py (same file as T014)
+- [x] **T015** [P] Create validation and state models in iris_devtester/testing/models.py (same file as T014)
   - Extract PasswordResetResult pattern from rag-templates
   - Create TestState, CleanupAction, ContainerConfig classes
   - Add type hints and validation
@@ -146,20 +146,20 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test priority hierarchy (explicit > env > .env > docker > defaults)
   - Should FAIL (discovery not implemented)
 
-- [x] **T017** Create configuration discovery in iris_devtools/config/discovery.py
+- [x] **T017** Create configuration discovery in iris_devtester/config/discovery.py
   - Extract patterns from: `~/ws/rag-templates/common/iris_connection_manager.py` (config logic)
   - New functionality: consolidate scattered env var handling
   - Implement auto-discovery from environment, .env, Docker
   - Make T016 pass
 
-- [x] **T018** [P] Create default configurations in iris_devtools/config/defaults.py
+- [x] **T018** [P] Create default configurations in iris_devtester/config/defaults.py
   - Define DEFAULT_HOST = "localhost"
   - Define DEFAULT_PORT = 1972
   - Define DEFAULT_NAMESPACE = "USER"
   - Define default credentials (SuperUser/SYS)
   - Document why these defaults (zero-config principle)
 
-- [x] **T019** Update iris_devtools/config/__init__.py exports
+- [x] **T019** Update iris_devtester/config/__init__.py exports
   - Export IRISConfig, discover_config, defaults
   - Clean public API
 
@@ -185,7 +185,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test logging of driver selection
   - Should FAIL (not implemented)
 
-- [ ] **T023** Extract and enhance connection manager in iris_devtools/connections/manager.py
+- [ ] **T023** Extract and enhance connection manager in iris_devtester/connections/manager.py
   - Extract from: `~/ws/rag-templates/common/iris_connection_manager.py` (~500 lines total)
   - Extract core IRISConnectionManager class
   - Implement DBAPI-first, JDBC-fallback logic
@@ -200,14 +200,14 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test environment variable updates
   - Should FAIL (not implemented)
 
-- [ ] **T025** Extract and enhance password reset handler in iris_devtools/connections/recovery.py
+- [ ] **T025** Extract and enhance password reset handler in iris_devtester/connections/recovery.py
   - Extract from: `~/ws/rag-templates/tests/utils/iris_password_reset.py` (~200 lines)
   - Extract from: `~/ws/rag-templates/common/iris_connection_manager.py` (password reset integration)
   - Implement IRISPasswordResetHandler class
   - Add automatic detection and remediation
   - Make T024 pass
 
-- [ ] **T026** Implement convenience functions in iris_devtools/connections/__init__.py
+- [ ] **T026** Implement convenience functions in iris_devtester/connections/__init__.py
   - Implement `get_iris_connection(config=None)` wrapper
   - Implement `reset_password_if_needed()` wrapper
   - Implement `test_connection()` helper
@@ -224,7 +224,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test timeout handling
   - Should FAIL (not implemented)
 
-- [ ] **T028** Create custom wait strategies in iris_devtools/containers/wait_strategies.py
+- [ ] **T028** Create custom wait strategies in iris_devtester/containers/wait_strategies.py
   - New code: implement IRISReadyWaitStrategy
   - Verify port open, process running, database ready
   - Test namespace existence
@@ -238,7 +238,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test password reset integration
   - Should FAIL (not implemented)
 
-- [ ] **T030** Create enhanced IRIS container in iris_devtools/containers/iris_container.py
+- [ ] **T030** Create enhanced IRIS container in iris_devtester/containers/iris_container.py
   - Extend testcontainers.iris.IRISContainer (don't replace)
   - Implement .community() and .enterprise() class methods
   - Integrate wait_for_ready() with custom wait strategies
@@ -246,7 +246,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Integrate reset_password() with recovery handler
   - Make T029 pass, T007 pass (container API contract tests)
 
-- [ ] **T031** Update iris_devtools/containers/__init__.py exports
+- [ ] **T031** Update iris_devtester/containers/__init__.py exports
   - Export IRISContainer, IRISReadyWaitStrategy
   - Clean public API
 
@@ -261,7 +261,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test caching
   - Should FAIL (not implemented)
 
-- [ ] **T033** Extract and enhance schema manager in iris_devtools/testing/schema_manager.py
+- [ ] **T033** Extract and enhance schema manager in iris_devtester/testing/schema_manager.py
   - Extract from: `~/ws/rag-templates/tests/utils/schema_validator.py` (~200 lines)
   - Extract from: `~/ws/rag-templates/tests/fixtures/schema_reset.py` (~100 lines)
   - Merge SchemaValidator and SchemaResetter into unified SchemaManager
@@ -275,7 +275,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test error handling (cleanup failures)
   - Should FAIL (not implemented)
 
-- [ ] **T035** [P] Extract cleanup handler in iris_devtools/testing/cleanup.py
+- [ ] **T035** [P] Extract cleanup handler in iris_devtester/testing/cleanup.py
   - Extract from: `~/ws/rag-templates/tests/fixtures/database_cleanup.py` (~100 lines)
   - Port DatabaseCleanupHandler, CleanupRegistry
   - Implement register_cleanup() function
@@ -286,7 +286,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test state registry
   - Should FAIL (not implemented)
 
-- [ ] **T037** [P] Extract test state manager in iris_devtools/testing/state.py
+- [ ] **T037** [P] Extract test state manager in iris_devtester/testing/state.py
   - Extract from: `~/ws/rag-templates/tests/fixtures/database_state.py` (~80 lines)
   - Port TestDatabaseState, TestStateRegistry
   - Enhance with TestState model from T015
@@ -297,7 +297,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test PreflightChecker validation
   - Should FAIL (not implemented)
 
-- [ ] **T039** [P] Extract preflight checker in iris_devtools/testing/preflight.py
+- [ ] **T039** [P] Extract preflight checker in iris_devtester/testing/preflight.py
   - Extract from: `~/ws/rag-templates/tests/utils/preflight_checks.py` (~150 lines)
   - Port PreflightChecker class
   - Add automatic remediation attempts
@@ -307,7 +307,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
 
 ## Phase 3.8: pytest Fixtures
 
-- [ ] **T040** Extract and create pytest fixtures in iris_devtools/testing/fixtures.py
+- [ ] **T040** Extract and create pytest fixtures in iris_devtester/testing/fixtures.py
   - Extract from: `~/ws/rag-templates/tests/conftest.py` (Feature 028 sections, ~200 lines)
   - Implement `iris_db` fixture (function-scoped, isolated)
   - Implement `iris_db_shared` fixture (module-scoped, shared)
@@ -315,12 +315,12 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Integrate with connection manager, cleanup handler, state manager
   - Make T006 pass (testing fixtures API contract tests)
 
-- [ ] **T041** Create conftest.py for pytest plugin in iris_devtools/testing/conftest.py
+- [ ] **T041** Create conftest.py for pytest plugin in iris_devtester/testing/conftest.py
   - Register fixtures for auto-discovery
   - Configure pytest markers (iris, slow, isolation_required, enterprise_only)
   - Export pytest plugin entrypoint
 
-- [ ] **T042** Update iris_devtools/testing/__init__.py exports
+- [ ] **T042** Update iris_devtester/testing/__init__.py exports
   - Export fixtures, validate_schema, reset_schema, register_cleanup
   - Export models (SchemaDefinition, etc.)
   - Clean public API
@@ -335,7 +335,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test port discovery
   - Should FAIL (not implemented)
 
-- [ ] **T044** [P] Create Docker helpers in iris_devtools/utils/docker_helpers.py
+- [ ] **T044** [P] Create Docker helpers in iris_devtester/utils/docker_helpers.py
   - New code: extract Docker utility patterns from rag-templates
   - Implement container inspection, port discovery
   - Make T043 pass
@@ -345,12 +345,12 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Test diagnostic report generation
   - Should FAIL (not implemented)
 
-- [ ] **T046** [P] Create diagnostics module in iris_devtools/utils/diagnostics.py
+- [ ] **T046** [P] Create diagnostics module in iris_devtester/utils/diagnostics.py
   - New code: diagnostic and troubleshooting utilities
   - Connection testing, performance profiling, error reporting
   - Make T045 pass
 
-- [ ] **T047** [P] Update iris_devtools/utils/__init__.py exports
+- [ ] **T047** [P] Update iris_devtester/utils/__init__.py exports
   - Export Docker helpers, diagnostics
   - Clean public API
 
@@ -443,7 +443,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
 
 - [ ] **T060** [P] Create migration guide in docs/migration-guide.md
   - Backwards compatibility notes
-  - rag-templates → iris-devtools migration steps
+  - rag-templates → iris-devtester migration steps
   - Code examples (before/after)
 
 - [ ] **T061** [P] Create troubleshooting guide in docs/troubleshooting.md
@@ -472,7 +472,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
 
 - [ ] **T064a** [P] Document embedded Python considerations in docs/learnings/embedded-python-considerations.md
   - Explain embedded vs external Python
-  - Clarify iris-devtools scope (external only)
+  - Clarify iris-devtester scope (external only)
   - Use case comparison (embedded for stored procedures, external for apps)
   - Connection type comparison table
   - FAQ: Why not embedded Python support?
@@ -502,20 +502,20 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
 ## Phase 3.14: Package Polish
 
 - [ ] **T068** Run full test suite and achieve 95%+ coverage
-  - `pytest --cov=iris_devtools --cov-report=html`
+  - `pytest --cov=iris_devtester --cov-report=html`
   - Verify coverage ≥95%
   - Add tests for any uncovered lines
 
 - [ ] **T069** [P] Format all code with black and isort
-  - `black iris_devtools/ tests/`
-  - `isort iris_devtools/ tests/`
+  - `black iris_devtester/ tests/`
+  - `isort iris_devtester/ tests/`
 
 - [ ] **T070** [P] Type check with mypy
-  - `mypy iris_devtools/`
+  - `mypy iris_devtester/`
   - Fix any type errors
 
 - [ ] **T071** [P] Lint with flake8
-  - `flake8 iris_devtools/ tests/`
+  - `flake8 iris_devtester/ tests/`
   - Fix any linting issues
 
 - [ ] **T072** Update README.md with badges and quickstart
@@ -528,7 +528,7 @@ This is an **extraction and enhancement** project (~1000 lines from rag-template
   - Behavior test: do old patterns still work?
   - Document any breaking changes (should be none for v1.0.0)
 
-- [ ] **T074** Run quickstart validation from specs/001-implement-iris-devtools/quickstart.md
+- [ ] **T074** Run quickstart validation from specs/001-implement-iris-devtester/quickstart.md
   - Execute all steps in quickstart.md
   - Verify all tests pass
   - Verify zero-config works

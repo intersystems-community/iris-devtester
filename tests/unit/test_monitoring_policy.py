@@ -21,7 +21,7 @@ class TestMonitoringPolicyDefaults:
         # FR-003: Default 1-hour retention
         assert policy.retention_seconds == 3600
         assert policy.continuous is True
-        assert policy.name == "iris-devtools-default"
+        assert policy.name == "iris-devtester-default"
 
     def test_default_policy_collects_all_metrics(self):
         """Test that default policy enables comprehensive monitoring."""

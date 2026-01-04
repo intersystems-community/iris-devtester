@@ -37,7 +37,7 @@ Include:
 
 ### For Package Users
 
-1. **Keep Updated**: Use the latest version of iris-devtools
+1. **Keep Updated**: Use the latest version of iris-devtester
 2. **Review Dependencies**: Regularly update testcontainers and other deps
 3. **Secure Credentials**: Never commit IRIS credentials to version control
 4. **Container Security**: Use official IRIS images from trusted sources
@@ -55,7 +55,7 @@ Include:
 
 ### IRIS Credentials
 - Default IRIS credentials are well-known (\_SYSTEM/SYS)
-- iris-devtools automatically resets passwords on container startup
+- iris-devtester automatically resets passwords on container startup
 - Always use unique credentials in production
 
 ### Container Isolation
@@ -64,7 +64,7 @@ Include:
 - Clean up containers after tests complete
 
 ### Dependency Chain
-- iris-devtools depends on testcontainers-python and docker-py
+- iris-devtester depends on testcontainers-python and docker-py
 - Security is inherited from these dependencies
 - We monitor security advisories for all dependencies
 

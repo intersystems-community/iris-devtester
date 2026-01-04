@@ -98,7 +98,7 @@ cursor.execute("CALL %SYS.PTools.StatsSQL_CreatePolicy(?)", [policy_name])
 - Slower than DBAPI (3x)
 - Needs Java
 
-### Option 2: Hybrid Approach (BEST for iris-devtools)
+### Option 2: Hybrid Approach (BEST for iris-devtester)
 
 Use both DBAPI and JDBC as needed:
 
@@ -257,7 +257,7 @@ def iris_container_conn(iris_container):
 
 ## References
 
-- Feature 002 Implementation: `iris_devtools/containers/monitoring.py`
+- Feature 002 Implementation: `iris_devtester/containers/monitoring.py`
 - Integration Tests: `tests/integration/test_monitoring_integration.py`
 - DBAPI Documentation: https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT
 - JDBC Documentation: https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BJAVA

@@ -9,18 +9,18 @@
 This quickstart walks you through creating, validating, and loading .DAT fixtures for fast, reproducible testing.
 
 **Time**: <5 minutes
-**Prerequisites**: IRIS instance running, iris-devtools installed
+**Prerequisites**: IRIS instance running, iris-devtester installed
 
 ---
 
 ## Installation
 
 ```bash
-# Install iris-devtools with fixtures support
-pip install iris-devtools[fixtures]
+# Install iris-devtester with fixtures support
+pip install iris-devtester[fixtures]
 
 # Verify installation
-iris-devtools --version
+iris-devtester --version
 ```
 
 ---
@@ -57,7 +57,7 @@ Create some test data programmatically (the "slow" way we'll replace with fixtur
 
 ```python
 # create_test_data.py
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 # Connect to IRIS (auto-discovery)
 conn = get_connection()
@@ -104,7 +104,7 @@ Now export this test data to a reusable .DAT fixture:
 
 ```bash
 # Create fixture from USER namespace
-iris-devtools fixture create \
+iris-devtester fixture create \
   --name test-entities-100 \
   --namespace USER \
   --output ./fixtures/test-entities-100 \
@@ -130,8 +130,8 @@ Size: 0.45 MB
 Time: 2.3s
 
 Next steps:
-  1. Validate: iris-devtools fixture validate --fixture ./fixtures/test-entities-100
-  2. Load: iris-devtools fixture load --fixture ./fixtures/test-entities-100
+  1. Validate: iris-devtester fixture validate --fixture ./fixtures/test-entities-100
+  2. Load: iris-devtester fixture load --fixture ./fixtures/test-entities-100
   3. Commit to git: git add ./fixtures/test-entities-100
 ```
 
@@ -155,7 +155,7 @@ Output:
 Validate the fixture integrity (checksums, manifest):
 
 ```bash
-iris-devtools fixture validate --fixture ./fixtures/test-entities-100
+iris-devtester fixture validate --fixture ./fixtures/test-entities-100
 ```
 
 **Expected output**:
@@ -190,7 +190,7 @@ Clean out the test data to simulate a fresh environment:
 
 ```python
 # clean_database.py
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 conn = get_connection()
 cursor = conn.cursor()
@@ -214,7 +214,7 @@ python clean_database.py
 Now load the fixture back into the database:
 
 ```bash
-iris-devtools fixture load --fixture ./fixtures/test-entities-100
+iris-devtester fixture load --fixture ./fixtures/test-entities-100
 ```
 
 **Expected output**:
@@ -247,7 +247,7 @@ Verify the loaded data matches what we originally created:
 
 ```python
 # verify_data.py
-from iris_devtools.connections import get_connection
+from iris_devtester.connections import get_connection
 
 conn = get_connection()
 cursor = conn.cursor()
@@ -294,7 +294,7 @@ Now use the fixture in your pytest tests:
 ```python
 # test_rag_queries.py
 import pytest
-from iris_devtools.fixtures import DATFixtureLoader
+from iris_devtester.fixtures import DATFixtureLoader
 
 @pytest.fixture(scope="class")
 def loaded_fixture():
@@ -433,7 +433,7 @@ git push origin main
 Create fixture from namespace containing multiple tables:
 
 ```bash
-iris-devtools fixture create \
+iris-devtester fixture create \
   --name rag-full \
   --namespace RAG_PRODUCTION \
   --output ./fixtures/rag-full \
@@ -447,7 +447,7 @@ iris-devtools fixture create \
 Load fixture to a different target namespace than the source:
 
 ```bash
-iris-devtools fixture load \
+iris-devtester fixture load \
   --fixture ./fixtures/test-entities-100 \
   --namespace USER_TEST_001
 ```
@@ -457,7 +457,7 @@ iris-devtools fixture load \
 ### List Available Fixtures
 
 ```bash
-iris-devtools fixture list ./fixtures/
+iris-devtester fixture list ./fixtures/
 ```
 
 Output:
@@ -482,7 +482,7 @@ Total: 2 fixtures, 12.75 MB
 Get detailed fixture information:
 
 ```bash
-iris-devtools fixture info --fixture ./fixtures/test-entities-100
+iris-devtester fixture info --fixture ./fixtures/test-entities-100
 ```
 
 Output:
@@ -519,7 +519,7 @@ Location: ./fixtures/test-entities-100
 ```bash
 # Error: Checksum mismatch for IRIS.DAT
 # Fix: Recalculate checksum
-iris-devtools fixture validate --fixture ./fixtures/test-entities-100 --recalc
+iris-devtester fixture validate --fixture ./fixtures/test-entities-100 --recalc
 ```
 
 ### Fixture Load Fails
@@ -528,7 +528,7 @@ iris-devtools fixture validate --fixture ./fixtures/test-entities-100 --recalc
 # Error: Namespace already exists
 # Cause: Target namespace conflicts with existing namespace
 # Fix: Load to different target namespace
-iris-devtools fixture load \
+iris-devtester fixture load \
   --fixture ./fixtures/test-entities-100 \
   --namespace USER_TEST_002
 ```
@@ -537,7 +537,7 @@ iris-devtools fixture load \
 
 ```bash
 # Fix: Re-create fixture from current namespace state
-iris-devtools fixture create \
+iris-devtester fixture create \
   --name test-entities-100 \
   --namespace USER \
   --output ./fixtures/test-entities-100-v2
@@ -552,7 +552,7 @@ docker ps | grep iris_db
 docker logs iris_db
 
 # Test connection
-iris-devtools connection test
+iris-devtester connection test
 ```
 
 ---
@@ -571,7 +571,7 @@ iris-devtools connection test
 ## Summary
 
 You've successfully:
-- ✅ Installed iris-devtools with fixtures support
+- ✅ Installed iris-devtester with fixtures support
 - ✅ Created test data programmatically
 - ✅ Exported namespace to IRIS.DAT fixture (2.3s)
 - ✅ Validated fixture integrity (single checksum)

@@ -119,7 +119,7 @@ class FixtureValidator:
                 f"  The IRIS.DAT file has been modified or corrupted.\n\n"
                 f"How to fix it:\n"
                 f"  1. Re-download the fixture from version control\n"
-                f"  2. Or recalculate checksums: iris-devtools fixture validate --recalc\n"
+                f"  2. Or recalculate checksums: iris-devtester fixture validate --recalc\n"
                 f"  3. Or re-create the fixture from the source namespace"
             )
 

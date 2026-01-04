@@ -22,27 +22,27 @@ Implement battle-tested connection manager with DBAPI-first architecture, automa
 
 ### Phase 1: Connection Infrastructure (4-6 hours)
 
-**T001**: Create `iris_devtools/connections/dbapi.py`
+**T001**: Create `iris_devtester/connections/dbapi.py`
 - Extract DBAPI connection logic from rag-templates
 - Implement `create_dbapi_connection(config)` function
 - Handle intersystems-irispython import gracefully
 - Comprehensive error messages
 - **Tests**: Unit tests for DBAPI connection creation
 
-**T002**: Create `iris_devtools/connections/jdbc.py`
+**T002**: Create `iris_devtester/connections/jdbc.py`
 - Extract JDBC connection logic from rag-templates
 - Implement `create_jdbc_connection(config)` function
 - JDBC driver path discovery (multiple locations)
 - Helpful error if driver missing
 - **Tests**: Unit tests for JDBC connection creation
 
-**T003**: Create `iris_devtools/connections/fallback.py`
+**T003**: Create `iris_devtester/connections/fallback.py`
 - Implement connection fallback logic
 - Try DBAPI first, fall back to JDBC
 - Log which connection type succeeded
 - **Tests**: Unit tests for fallback scenarios
 
-**T004**: Create `iris_devtools/config/discovery.py`
+**T004**: Create `iris_devtester/config/discovery.py`
 - Configuration discovery (env vars, .env file, Docker)
 - Priority: explicit config > env vars > .env > Docker defaults
 - Validation and helpful errors
@@ -52,7 +52,7 @@ Implement battle-tested connection manager with DBAPI-first architecture, automa
 
 ### Phase 2: Password Reset (3-4 hours)
 
-**T005**: Create `iris_devtools/utils/password_reset.py`
+**T005**: Create `iris_devtester/utils/password_reset.py`
 - Extract password reset logic from rag-templates
 - Detect "Password change required" errors
 - Reset via Docker exec + ObjectScript
@@ -70,7 +70,7 @@ Implement battle-tested connection manager with DBAPI-first architecture, automa
 
 ### Phase 3: High-Level API (2-3 hours)
 
-**T007**: Create `iris_devtools/connections/__init__.py`
+**T007**: Create `iris_devtester/connections/__init__.py`
 - Implement `get_iris_connection(config=None)` function
 - Zero-config: auto-discover from environment
 - DBAPI-first with JDBC fallback
@@ -88,14 +88,14 @@ Implement battle-tested connection manager with DBAPI-first architecture, automa
 
 ### Phase 4: pytest Integration (2-3 hours)
 
-**T009**: Create `iris_devtools/testing/fixtures.py`
+**T009**: Create `iris_devtester/testing/fixtures.py`
 - `iris_db` fixture (function-scoped)
 - `iris_db_shared` fixture (module-scoped)
 - `iris_container` fixture (raw container access)
 - Auto-cleanup on teardown
 - **Tests**: Contract tests for fixtures
 
-**T010**: Create `iris_devtools/testing/conftest.py`
+**T010**: Create `iris_devtester/testing/conftest.py`
 - Register fixtures for pytest discovery
 - Configure pytest markers
 - Integration with testcontainers
@@ -139,7 +139,7 @@ Implement battle-tested connection manager with DBAPI-first architecture, automa
 ## File Structure
 
 ```
-iris_devtools/
+iris_devtester/
 ├── connections/
 │   ├── __init__.py          # Public API: get_iris_connection()
 │   ├── dbapi.py             # DBAPI connection
@@ -213,7 +213,7 @@ raise ConnectionError(
     "  intersystems-irispython package not installed.\n"
     "\n"
     "How to fix it:\n"
-    "  pip install 'iris-devtools[dbapi]'\n"
+    "  pip install 'iris-devtester[dbapi]'\n"
     "  # OR\n"
     "  pip install intersystems-irispython\n"
 )

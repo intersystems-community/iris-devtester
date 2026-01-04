@@ -94,7 +94,7 @@ docs/ [directory]
 
 **Required Sections**:
 ```markdown
-# Contributing to iris-devtools
+# Contributing to iris-devtester
 
 ## Welcome
 ## Code of Conduct
@@ -230,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Schema**:
 ```toml
 [project]
-name = "iris-devtools"                    # MUST match package directory
+name = "iris-devtester"                    # MUST match package directory
 version = "X.Y.Z"                         # Semantic versioning
 description = "<200 char tagline>"        # MUST match README tagline
 readme = "README.md"                      # Implies text/markdown
@@ -252,7 +252,7 @@ dev = [...]
 docs = [...]
 
 [project.scripts]
-iris-devtools = "iris_devtools.cli:main"  # CLI entry point
+iris-devtester = "iris_devtester.cli:main"  # CLI entry point
 
 [project.urls]
 Homepage = "..."
@@ -349,7 +349,7 @@ Recommended order for new users:
 All examples require:
 - Python 3.9+
 - Docker Desktop running
-- `pip install iris-devtools[all]`
+- `pip install iris-devtester[all]`
 
 ## Running Examples
 
@@ -388,14 +388,14 @@ Demonstrates:
 
 Prerequisites:
 - Docker Desktop running
-- pip install iris-devtools[<extras>]
+- pip install iris-devtester[<extras>]
 
 Expected output:
 - <What you should see>
 """
 
 # All imports explicit (FR-017)
-from iris_devtools.containers import IRISContainer
+from iris_devtester.containers import IRISContainer
 import sys
 
 def main():
@@ -462,12 +462,12 @@ Password change required: <READ>zf+Password1+Password2
 IRIS default password needs changing on first use.
 
 **Solution**:
-This is automatically handled by iris-devtools. If you see this error:
-1. Ensure you're using `IRISContainer` from iris-devtools (not raw testcontainers)
+This is automatically handled by iris-devtester. If you see this error:
+1. Ensure you're using `IRISContainer` from iris-devtester (not raw testcontainers)
 2. Wait 5 seconds and retry
 
 **Prevention**:
-Always use `iris_devtools.containers.IRISContainer` wrapper.
+Always use `iris_devtester.containers.IRISContainer` wrapper.
 
 ---
 
@@ -496,7 +496,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: iris-devtools version
+      label: iris-devtester version
       placeholder: "1.0.0"
     validations:
       required: true
@@ -566,7 +566,7 @@ body:
 - [ ] Tests added/updated
 - [ ] Documentation updated
 - [ ] CHANGELOG.md updated
-- [ ] Code passes `black . && isort . && mypy iris_devtools/`
+- [ ] Code passes `black . && isort . && mypy iris_devtester/`
 - [ ] All tests pass (`pytest`)
 - [ ] Follows constitutional principles
 

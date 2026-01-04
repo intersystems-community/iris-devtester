@@ -194,7 +194,7 @@ docker run -d \
 - Requires volume management
 - Not needed for ephemeral test containers
 
-## What iris-devtools Must Do
+## What iris-devtester Must Do
 
 ### For IRISContainer (Testcontainers)
 
@@ -311,7 +311,7 @@ def test_cpf_merge_for_production():
 - ✅ Test both fresh AND restart scenarios
 - ✅ Make startup script bulletproof
 
-## Checklist for iris-devtools
+## Checklist for iris-devtester
 
 Container initialization must:
 
@@ -333,6 +333,6 @@ Container initialization must:
 
 ---
 
-**Lesson Learned**: Container configuration is ephemeral by default. ALWAYS enable CallIn and unexpire passwords on EVERY container start. Make it idempotent. Test both fresh starts AND restarts. This is now automatic in iris-devtools so developers never fight this again.
+**Lesson Learned**: Container configuration is ephemeral by default. ALWAYS enable CallIn and unexpire passwords on EVERY container start. Make it idempotent. Test both fresh starts AND restarts. This is now automatic in iris-devtester so developers never fight this again.
 
 **Time Saved**: Days of debugging → 2 seconds of automatic setup.

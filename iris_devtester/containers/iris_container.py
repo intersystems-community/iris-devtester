@@ -30,7 +30,7 @@ except ImportError:
     # Fallback: create minimal base class
     logger.warning(
         "testcontainers-iris-python not installed. "
-        "Install with: pip install 'iris-devtools[containers]'"
+        "Install with: pip install 'iris-devtester[containers]'"
     )
     HAS_TESTCONTAINERS_IRIS = False
 
@@ -111,10 +111,10 @@ class IRISContainer(BaseIRISContainer):
                 "\n"
                 "How to fix it:\n"
                 "  1. Install testcontainers support:\n"
-                "     pip install 'iris-devtools[containers]'\n"
+                "     pip install 'iris-devtester[containers]'\n"
                 "\n"
                 "  2. Or install all optional dependencies:\n"
-                "     pip install 'iris-devtools[all]'\n"
+                "     pip install 'iris-devtester[all]'\n"
             )
 
         super().__init__(image=image, **kwargs)
@@ -306,7 +306,7 @@ class IRISContainer(BaseIRISContainer):
 
         See Also:
             - docs/learnings/rag-templates-production-patterns.md (Pattern 1, 2)
-            - iris_devtools.config.auto_discovery
+            - iris_devtester.config.auto_discovery
         """
         if not auto_discover:
             return None

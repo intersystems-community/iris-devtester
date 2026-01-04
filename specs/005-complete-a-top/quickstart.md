@@ -38,7 +38,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 
 Bug reports are tracked as GitHub Issues. When creating a bug report:
 1. Use the bug report template
-2. Include iris-devtools version, Python version, IRIS edition
+2. Include iris-devtester version, Python version, IRIS edition
 3. Provide minimal reproduction steps
 4. Include relevant log output
 
@@ -69,8 +69,8 @@ Feature requests are also tracked as GitHub Issues. When suggesting enhancements
 
 ```bash
 # Clone repository
-git clone https://github.com/intersystems-community/iris-devtools.git
-cd iris-devtools
+git clone https://github.com/intersystems-community/iris-devtester.git
+cd iris-devtester
 
 # Install in development mode with all dependencies
 pip install -e ".[all,dev,test]"
@@ -92,7 +92,7 @@ pytest tests/unit/
 pytest tests/integration/
 
 # With coverage report
-pytest --cov=iris_devtools --cov-report=html
+pytest --cov=iris_devtester --cov-report=html
 ```
 
 ### Code Style
@@ -107,8 +107,8 @@ Run all checks:
 ```bash
 black .
 isort .
-mypy iris_devtools/
-flake8 iris_devtools/
+mypy iris_devtester/
+flake8 iris_devtester/
 pytest
 ```
 
@@ -117,7 +117,7 @@ Pre-commit hooks will run these automatically.
 ## Project Structure
 
 ```
-iris_devtools/
+iris_devtester/
 ├── connections/    # DBAPI/JDBC connection management
 ├── containers/     # Testcontainers wrapper with auto-remediation
 ├── testing/        # pytest fixtures and utilities
@@ -305,7 +305,7 @@ Include:
 
 ### For Package Users
 
-1. **Keep Updated**: Use the latest version of iris-devtools
+1. **Keep Updated**: Use the latest version of iris-devtester
 2. **Review Dependencies**: Regularly update testcontainers and other deps
 3. **Secure Credentials**: Never commit IRIS credentials to version control
 4. **Container Security**: Use official IRIS images from trusted sources
@@ -323,7 +323,7 @@ Include:
 
 ### IRIS Credentials
 - Default IRIS credentials are well-known (\_SYSTEM/SYS)
-- iris-devtools automatically resets passwords on container startup
+- iris-devtester automatically resets passwords on container startup
 - Always use unique credentials in production
 
 ### Container Isolation
@@ -332,7 +332,7 @@ Include:
 - Clean up containers after tests complete
 
 ### Dependency Chain
-- iris-devtools depends on testcontainers-python and docker-py
+- iris-devtester depends on testcontainers-python and docker-py
 - Security is inherited from these dependencies
 - We monitor security advisories for all dependencies
 
@@ -385,7 +385,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: iris-devtools version
+      label: iris-devtester version
       placeholder: "1.0.0"
     validations:
       required: true
@@ -522,7 +522,7 @@ cat > .github/PULL_REQUEST_TEMPLATE.md << 'EOF'
 - [ ] Documentation updated
 - [ ] CHANGELOG.md updated
 - [ ] Code formatted (`black . && isort .`)
-- [ ] Type checking passes (`mypy iris_devtools/`)
+- [ ] Type checking passes (`mypy iris_devtester/`)
 - [ ] Follows constitutional principles (see CONSTITUTION.md)
 
 ## Test Plan
@@ -570,7 +570,7 @@ EOF
 # Convert patterns like:
 #   [CONTRIBUTING.md](CONTRIBUTING.md)
 # To:
-#   [CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtools/blob/main/CONTRIBUTING.md)
+#   [CONTRIBUTING.md](https://github.com/intersystems-community/iris-devtester/blob/main/CONTRIBUTING.md)
 
 # Also remove references to non-existent files:
 #   - docs/quickstart.md (doesn't exist)
@@ -607,9 +607,9 @@ Add learning path and expected outputs.
 ### Audit Docstrings
 
 Check all public APIs in:
-- `iris_devtools/containers/`
-- `iris_devtools/connections/`
-- `iris_devtools/testing/`
+- `iris_devtester/containers/`
+- `iris_devtester/connections/`
+- `iris_devtester/testing/`
 
 ### Add Example Testing to CI
 
@@ -635,7 +635,7 @@ All code blocks should show:
 Verify version matches in:
 - README.md
 - pyproject.toml
-- iris_devtools/__init__.py
+- iris_devtester/__init__.py
 - CHANGELOG.md
 
 ## Validation

@@ -1,6 +1,6 @@
 # Research: IRIS DevTools Extraction & Enhancement
 
-**Feature**: 001-implement-iris-devtools
+**Feature**: 001-implement-iris-devtester
 **Date**: 2025-10-05
 **Purpose**: Document source code mapping, technology decisions, and migration strategy
 
@@ -10,26 +10,26 @@ This is an **extraction and enhancement project**, not greenfield development. W
 
 ## Source Code Mapping
 
-### From rag-templates to iris-devtools
+### From rag-templates to iris-devtester
 
-| Source (rag-templates) | Target (iris-devtools) | Lines | Notes |
+| Source (rag-templates) | Target (iris-devtester) | Lines | Notes |
 |------------------------|------------------------|-------|-------|
-| `common/iris_connection_manager.py` | `iris_devtools/connections/manager.py` | ~500 | Core connection manager, DBAPI/JDBC fallback |
-| `common/iris_connection_manager.py` | `iris_devtools/connections/recovery.py` | ~100 | Extract password reset logic |
-| `tests/utils/iris_password_reset.py` | `iris_devtools/connections/recovery.py` | ~200 | Merge password reset utilities |
-| `tests/utils/preflight_checks.py` | `iris_devtools/testing/preflight.py` | ~150 | Pre-flight validation |
-| `tests/utils/schema_validator.py` | `iris_devtools/testing/schema_manager.py` | ~200 | Schema validation logic |
-| `tests/fixtures/schema_reset.py` | `iris_devtools/testing/schema_manager.py` | ~100 | Merge schema reset |
-| `tests/fixtures/database_cleanup.py` | `iris_devtools/testing/cleanup.py` | ~100 | Test cleanup handler |
-| `tests/fixtures/database_state.py` | `iris_devtools/testing/state.py` | ~80 | Test state tracking |
-| `tests/utils/schema_models.py` | `iris_devtools/testing/models.py` | ~120 | Data models (SchemaDefinition, etc.) |
-| `tests/conftest.py` (Feature 028) | `iris_devtools/testing/fixtures.py` | ~200 | pytest fixtures |
-| New | `iris_devtools/containers/iris_container.py` | ~150 | Enhanced testcontainers wrapper |
-| New | `iris_devtools/containers/wait_strategies.py` | ~100 | Custom wait strategies |
-| New | `iris_devtools/config/discovery.py` | ~150 | Configuration auto-discovery |
-| New | `iris_devtools/config/defaults.py` | ~50 | Default configurations |
-| New | `iris_devtools/utils/docker_helpers.py` | ~100 | Docker utilities |
-| New | `iris_devtools/utils/diagnostics.py` | ~80 | Diagnostic tools |
+| `common/iris_connection_manager.py` | `iris_devtester/connections/manager.py` | ~500 | Core connection manager, DBAPI/JDBC fallback |
+| `common/iris_connection_manager.py` | `iris_devtester/connections/recovery.py` | ~100 | Extract password reset logic |
+| `tests/utils/iris_password_reset.py` | `iris_devtester/connections/recovery.py` | ~200 | Merge password reset utilities |
+| `tests/utils/preflight_checks.py` | `iris_devtester/testing/preflight.py` | ~150 | Pre-flight validation |
+| `tests/utils/schema_validator.py` | `iris_devtester/testing/schema_manager.py` | ~200 | Schema validation logic |
+| `tests/fixtures/schema_reset.py` | `iris_devtester/testing/schema_manager.py` | ~100 | Merge schema reset |
+| `tests/fixtures/database_cleanup.py` | `iris_devtester/testing/cleanup.py` | ~100 | Test cleanup handler |
+| `tests/fixtures/database_state.py` | `iris_devtester/testing/state.py` | ~80 | Test state tracking |
+| `tests/utils/schema_models.py` | `iris_devtester/testing/models.py` | ~120 | Data models (SchemaDefinition, etc.) |
+| `tests/conftest.py` (Feature 028) | `iris_devtester/testing/fixtures.py` | ~200 | pytest fixtures |
+| New | `iris_devtester/containers/iris_container.py` | ~150 | Enhanced testcontainers wrapper |
+| New | `iris_devtester/containers/wait_strategies.py` | ~100 | Custom wait strategies |
+| New | `iris_devtester/config/discovery.py` | ~150 | Configuration auto-discovery |
+| New | `iris_devtester/config/defaults.py` | ~50 | Default configurations |
+| New | `iris_devtester/utils/docker_helpers.py` | ~100 | Docker utilities |
+| New | `iris_devtester/utils/diagnostics.py` | ~80 | Diagnostic tools |
 
 **Total**: ~1080 lines from rag-templates + ~630 lines new = ~1710 lines (within <2000 target)
 
@@ -68,7 +68,7 @@ This is an **extraction and enhancement project**, not greenfield development. W
 def get_connection(config):
     # ...
 
-# iris-devtools (full types)
+# iris-devtester (full types)
 from typing import Optional, Protocol
 from dataclasses import dataclass
 
@@ -181,7 +181,7 @@ def iris_db_shared():
 **Future Consideration**:
 ```python
 # Future API (backwards compatible)
-from iris_devtools.connections import get_connection_pool
+from iris_devtester.connections import get_connection_pool
 
 pool = get_connection_pool(config, max_size=10)
 with pool.acquire() as conn:
@@ -209,9 +209,9 @@ with pool.acquire() as conn:
 - Java already in environment (enterprise deployments)
 
 **Note on Embedded Python**:
-IRIS also supports embedded Python (Python code running **inside** IRIS process). This is out of scope for iris-devtools:
+IRIS also supports embedded Python (Python code running **inside** IRIS process). This is out of scope for iris-devtester:
 - **Embedded Python**: For IRIS-internal code (stored procedures, business logic)
-- **iris-devtools**: For external Python applications (web apps, testing, data pipelines)
+- **iris-devtester**: For external Python applications (web apps, testing, data pipelines)
 - **Use case separation**: Embedded = in-IRIS; External = connect-to-IRIS
 - **See**: `docs/learnings/embedded-python-considerations.md` for detailed analysis
 
@@ -262,7 +262,7 @@ class SchemaValidator:
 
 ### Backwards Compatibility Requirements
 
-**Goal**: rag-templates can migrate to iris-devtools without code changes
+**Goal**: rag-templates can migrate to iris-devtester without code changes
 
 **Strategy**:
 1. **Preserve imports**: Same function names, same signatures
@@ -277,13 +277,13 @@ from common.iris_connection_manager import IRISConnectionManager
 manager = IRISConnectionManager()
 conn = manager.get_connection()
 
-# iris-devtools (new, backwards compatible)
-from iris_devtools.connections import IRISConnectionManager  # Same class name!
+# iris-devtester (new, backwards compatible)
+from iris_devtester.connections import IRISConnectionManager  # Same class name!
 manager = IRISConnectionManager()
 conn = manager.get_connection()  # Same method!
 
-# iris-devtools (new, preferred)
-from iris_devtools import get_iris_connection
+# iris-devtester (new, preferred)
+from iris_devtester import get_iris_connection
 conn = get_iris_connection()  # Simpler!
 ```
 
@@ -356,7 +356,7 @@ raise ErrorType(
 ```python
 import logging
 
-logger = logging.getLogger("iris_devtools")
+logger = logging.getLogger("iris_devtester")
 
 # INFO: Important state changes
 logger.info("Using DBAPI connection (3x faster than JDBC)", extra={

@@ -2,12 +2,12 @@
 
 **Status**: Critical Bug
 **Discovered**: 2025-10-16
-**Affects**: All iris-devtools password reset utilities
+**Affects**: All iris-devtester password reset utilities
 **Impact**: Breaking for automated CI/CD workflows
 
 ## The Problem
 
-IRIS requires an interactive password change on first connection to fresh containers. The iris-devtools password reset utilities (`reset_password()`, `unexpire_all_passwords()`) **execute successfully but DO NOT fix the authentication error** when using the DBAPI module.
+IRIS requires an interactive password change on first connection to fresh containers. The iris-devtester password reset utilities (`reset_password()`, `unexpire_all_passwords()`) **execute successfully but DO NOT fix the authentication error** when using the DBAPI module.
 
 ## Root Cause
 
@@ -68,10 +68,10 @@ if reset_iris_password_if_needed(e, max_retries=1):
 
 **rag-templates NEVER uses `intersystems_iris.dbapi._DBAPI.connect()`**. It always uses `iris.connect()`.
 
-## Impact on iris-devtools
+## Impact on iris-devtester
 
 ### Current State (BROKEN)
-iris-devtools' Constitutional Principle #2 states "DBAPI First, JDBC Fallback" and was designed to use `intersystems_iris.dbapi._DBAPI` as the primary connection method.
+iris-devtester' Constitutional Principle #2 states "DBAPI First, JDBC Fallback" and was designed to use `intersystems_iris.dbapi._DBAPI` as the primary connection method.
 
 **This is fundamentally incompatible with automatic password reset.**
 
@@ -100,7 +100,7 @@ iris terminal IRIS
 # You'll be prompted to change password
 ```
 
-## Recommended Fix for iris-devtools
+## Recommended Fix for iris-devtester
 
 ### Change Connection Strategy
 
@@ -150,7 +150,7 @@ Rationale:
 import pytest
 import intersections_iris.dbapi._DBAPI as dbapi
 import iris
-from iris_devtools.utils.password_reset import reset_password
+from iris_devtester.utils.password_reset import reset_password
 
 def test_password_reset_with_dbapi_EXPECTED_FAILURE():
     """Password reset doesn't work with DBAPI module."""
@@ -192,7 +192,7 @@ def test_password_reset_with_iris_connect_SUCCESS():
 ## Action Items
 
 - [ ] Update CONSTITUTION.md Principle #2
-- [ ] Rewrite `iris_devtools/connections/manager.py` to use `iris.connect()`
+- [ ] Rewrite `iris_devtester/connections/manager.py` to use `iris.connect()`
 - [ ] Update all documentation references
 - [ ] Add warnings to password reset utilities about DBAPI incompatibility
 - [ ] Create migration guide for existing users
@@ -200,13 +200,13 @@ def test_password_reset_with_iris_connect_SUCCESS():
 
 ## Related Files
 
-- `/Users/tdyar/ws/iris-devtools/CONSTITUTION.md` - Principle #2 needs update
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/connections/manager.py` - Connection implementation
-- `/Users/tdyar/ws/iris-devtools/iris_devtools/utils/password_reset.py` - Works, but needs DBAPI warning
+- `/Users/tdyar/ws/iris-devtester/CONSTITUTION.md` - Principle #2 needs update
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/connections/manager.py` - Connection implementation
+- `/Users/tdyar/ws/iris-devtester/iris_devtester/utils/password_reset.py` - Works, but needs DBAPI warning
 - `/Users/tdyar/ws/rag-templates/common/iris_connection_manager.py` - Reference implementation (uses `iris.connect()`)
 
 ## Conclusion
 
-**The iris-devtools package was designed with a fundamentally flawed assumption**: that `intersystems_iris.dbapi._DBAPI` would be the primary connection method. This violates Constitutional Principle #1 (Automatic Remediation) because DBAPI doesn't support automatic password reset.
+**The iris-devtester package was designed with a fundamentally flawed assumption**: that `intersystems_iris.dbapi._DBAPI` would be the primary connection method. This violates Constitutional Principle #1 (Automatic Remediation) because DBAPI doesn't support automatic password reset.
 
 **The fix**: Change to `iris.connect()` as primary method, matching what rag-templates uses successfully in production.

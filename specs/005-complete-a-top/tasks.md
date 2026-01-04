@@ -43,7 +43,7 @@ This is a documentation-only feature. Paths:
 - **GitHub templates**: `/Users/tdyar/ws/iris-devtester/.github/{path}`
 - **Examples**: `/Users/tdyar/ws/iris-devtester/examples/{file}`
 - **Docs**: `/Users/tdyar/ws/iris-devtester/docs/{file}`
-- **Source** (for docstring audit): `/Users/tdyar/ws/iris-devtester/iris_devtools/{module}`
+- **Source** (for docstring audit): `/Users/tdyar/ws/iris-devtester/iris_devtester/{module}`
 
 ---
 
@@ -149,7 +149,7 @@ This is a documentation-only feature. Paths:
 - [ ] **T011** Fix README.md relative links to absolute URLs
   - **File**: `/Users/tdyar/ws/iris-devtester/README.md`
   - **Action**: Convert all relative links to absolute format
-  - **Pattern**: `[text](file)` → `[text](https://github.com/intersystems-community/iris-devtools/blob/main/file)`
+  - **Pattern**: `[text](file)` → `[text](https://github.com/intersystems-community/iris-devtester/blob/main/file)`
   - **Affected Links**:
     - `[CONTRIBUTING.md](CONTRIBUTING.md)` → absolute
     - `[Quickstart Guide](docs/quickstart.md)` → remove or create file
@@ -187,7 +187,7 @@ This is a documentation-only feature. Paths:
 
 - [ ] **T015** Add changelog URL to pyproject.toml
   - **File**: `/Users/tdyar/ws/iris-devtester/pyproject.toml`
-  - **Action**: Add to `[project.urls]` section: `Changelog = "https://github.com/intersystems-community/iris-devtools/blob/main/CHANGELOG.md"`
+  - **Action**: Add to `[project.urls]` section: `Changelog = "https://github.com/intersystems-community/iris-devtester/blob/main/CHANGELOG.md"`
   - **Validation**: URL resolves, points to CHANGELOG.md
   - **Time**: 5 minutes
 
@@ -294,7 +294,7 @@ This is a documentation-only feature. Paths:
   - **Files**: All `/Users/tdyar/ws/iris-devtester/examples/*.py`
   - **Action**: Run each example: `python examples/{file}.py`
   - **Validation**: All examples complete successfully, no errors
-  - **Dependencies**: Requires Docker running, iris-devtools installed
+  - **Dependencies**: Requires Docker running, iris-devtester installed
   - **Time**: 30 minutes
 
 **Phase 3 Exit Criteria**:
@@ -314,8 +314,8 @@ This is a documentation-only feature. Paths:
 
 ### Docstring Audits
 
-- [ ] **T027** [P] Audit iris_devtools/containers/ docstrings
-  - **Files**: All Python files in `/Users/tdyar/ws/iris-devtester/iris_devtools/containers/`
+- [ ] **T027** [P] Audit iris_devtester/containers/ docstrings
+  - **Files**: All Python files in `/Users/tdyar/ws/iris-devtester/iris_devtester/containers/`
   - **Check**: All public classes/functions have Google-style docstrings with examples
   - **Requirements** (from FR-021, FR-022):
     - One-line summary
@@ -327,15 +327,15 @@ This is a documentation-only feature. Paths:
   - **Validation**: All public APIs have complete docstrings
   - **Time**: 2 hours
 
-- [ ] **T028** [P] Audit iris_devtools/connections/ docstrings
-  - **Files**: All Python files in `/Users/tdyar/ws/iris-devtester/iris_devtools/connections/`
+- [ ] **T028** [P] Audit iris_devtester/connections/ docstrings
+  - **Files**: All Python files in `/Users/tdyar/ws/iris-devtester/iris_devtester/connections/`
   - **Check**: Same requirements as T027
   - **Action**: Add/enhance docstrings
   - **Validation**: All public APIs have complete docstrings
   - **Time**: 2 hours
 
-- [ ] **T029** [P] Audit iris_devtools/testing/ docstrings
-  - **Files**: All Python files in `/Users/tdyar/ws/iris-devtester/iris_devtools/testing/`
+- [ ] **T029** [P] Audit iris_devtester/testing/ docstrings
+  - **Files**: All Python files in `/Users/tdyar/ws/iris-devtester/iris_devtester/testing/`
   - **Check**: Same requirements as T027
   - **Action**: Add/enhance docstrings
   - **Validation**: All public APIs have complete docstrings
@@ -347,7 +347,7 @@ This is a documentation-only feature. Paths:
   - **Files**:
     - `/Users/tdyar/ws/iris-devtester/README.md` (badge)
     - `/Users/tdyar/ws/iris-devtester/pyproject.toml` (version field)
-    - `/Users/tdyar/ws/iris-devtester/iris_devtools/__init__.py` (__version__)
+    - `/Users/tdyar/ws/iris-devtester/iris_devtester/__init__.py` (__version__)
     - `/Users/tdyar/ws/iris-devtester/CHANGELOG.md` (latest version)
   - **Action**: Extract version from each file, ensure all match
   - **Validation**: All 4 locations show same version (1.0.0)
@@ -486,9 +486,9 @@ Task: "Create examples/09_enterprise.py with enterprise edition demo"
 ### Launch Phase 4 Docstring Audits in Parallel
 ```bash
 # Parallel tasks (different modules)
-Task: "Audit and enhance docstrings in iris_devtools/containers/ module"
-Task: "Audit and enhance docstrings in iris_devtools/connections/ module"
-Task: "Audit and enhance docstrings in iris_devtools/testing/ module"
+Task: "Audit and enhance docstrings in iris_devtester/containers/ module"
+Task: "Audit and enhance docstrings in iris_devtester/connections/ module"
+Task: "Audit and enhance docstrings in iris_devtester/testing/ module"
 ```
 
 ---
