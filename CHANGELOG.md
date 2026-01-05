@@ -34,14 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimization strategies: namespace isolation, container reuse, pre-baked images
   - Quick wins for faster development cycles
 
-## [1.7.1] - 2026-01-04 - Documentation & Metadata Fixes
+## [1.7.2] - 2026-01-04 - Metadata & Documentation Sync
 
 ### Fixed
 
 - **Broken Documentation Links**: Fixed all references to the old `iris-devtools` name across README and documentation files.
 - **PyPI Meta Data**: Corrected repository and documentation URLs in `pyproject.toml`.
 - **Concise README**: Shortened the README for better visibility on PyPI, moving detailed guides to the `docs/` directory.
-- **Metadata Consistency**: Re-synchronized `__init__.py` and `pyproject.toml` version strings.
+- **Metadata Consistency**: Synchronized `__init__.py`, `pyproject.toml`, and `skill.md` version strings.
+
+## [1.7.1] - 2026-01-04 - Documentation & Metadata Fixes (Internal)
 
 ## [1.7.0] - 2026-01-02 - Feature 021: Hierarchical Agent Skills
 

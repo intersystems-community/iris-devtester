@@ -3,7 +3,7 @@ name: iris-devtester
 description: Battle-tested InterSystems IRIS infrastructure utilities for Python database testing.
 triggers: [iris, database, testing, container, fixture, dat, connection, remediation]
 metadata:
-  version: 1.7.0
+  version: 1.7.2
   author: InterSystems Community
   principles: [library-first, dbapi-first, isolation-by-default, fail-fast]
 ---
