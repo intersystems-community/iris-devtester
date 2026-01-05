@@ -1,14 +1,13 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "iris-devtester"
-version = "1.7.3"
+version = "1.7.4"
 description = "Battle-tested InterSystems IRIS infrastructure utilities for Python development"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
 authors = [
     {name = "InterSystems Community", email = "community@intersystems.com"}
 ]

@@ -2,7 +2,7 @@
 
 **Battle-tested InterSystems IRIS infrastructure utilities for Python development**
 
-[![PyPI version](https://badge.fury.io/py/iris-devtester.svg)](https://badge.fury.io/py/iris-devtester)
+[![PyPI version](https://badge.fury.io/py/iris-devtester.svg)](https://pypi.org/project/iris-devtester)
 [![Python Versions](https://img.shields.io/pypi/pyversions/iris-devtester.svg)](https://pypi.org/project/iris-devtester/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Test Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](https://github.com/intersystems-community/iris-devtester)

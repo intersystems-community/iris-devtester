@@ -34,14 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optimization strategies: namespace isolation, container reuse, pre-baked images
   - Quick wins for faster development cycles
 
-## [1.7.3] - 2026-01-04 - Fix PyPI broken links
+## [1.7.4] - 2026-01-04 - Metadata & Link Finalization
 
 ### Fixed
 
-- **PyPI Broken Links**: Converted all relative links in `README.md` to absolute GitHub URLs to prevent broken links on the PyPI project page.
-- **Project Metadata**: Added explicit links for "Agent Skills", "Getting Started", and "Troubleshooting" to the PyPI sidebar.
+- **Absolute Documentation Links**: Converted ALL documentation links in `README.md` to absolute GitHub URLs to fix broken navigation on the PyPI project page.
+- **PyPI Meta Data**: Removed redundant license metadata fields that were causing distribution validation errors.
+- **Simplified Project Structure**: Cleaned up the root directory and ensured all AI metadata files are correctly indexed.
 
-## [1.7.2] - 2026-01-04 - Metadata & Documentation Sync
+## [1.7.3] - 2026-01-04 - Fix PyPI broken links (Internal)
 
 ### Fixed
 
