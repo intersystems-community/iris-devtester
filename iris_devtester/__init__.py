@@ -26,7 +26,7 @@ LangChain Integration:
     ...     # Build your RAG app...
 """
 
-__version__ = "1.7.3"
+__version__ = "1.7.5"
 __author__ = "InterSystems Community"
 __license__ = "MIT"
 
