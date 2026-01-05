@@ -54,16 +54,16 @@ def test_connection():
 ## AI-Assisted Development
 
 This project is optimized for AI coding assistants:
-- **[Agent Skill Manifest](skill.md)** - Hierarchical guidance for Claude, Cursor, and Copilot.
-- **[AGENTS.md](AGENTS.md)** - Common build and test commands.
+- **[Agent Skill Manifest](https://github.com/intersystems-community/iris-devtester/blob/main/skill.md)** - Hierarchical guidance for Claude, Cursor, and Copilot.
+- **[AGENTS.md](https://github.com/intersystems-community/iris-devtester/blob/main/AGENTS.md)** - Common build and test commands.
 
 ## Documentation
 
-- **[Getting Started](docs/GETTING_STARTED.md)**
-- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)**
-- **[Examples](examples/)**
-- **[Codified Learnings](docs/learnings/)**
+- **[Getting Started](https://github.com/intersystems-community/iris-devtester/blob/main/docs/GETTING_STARTED.md)**
+- **[Troubleshooting Guide](https://github.com/intersystems-community/iris-devtester/blob/main/docs/TROUBLESHOOTING.md)**
+- **[Examples](https://github.com/intersystems-community/iris-devtester/tree/main/examples/)**
+- **[Codified Learnings](https://github.com/intersystems-community/iris-devtester/tree/main/docs/learnings/)**
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+MIT License - See [LICENSE](https://github.com/intersystems-community/iris-devtester/blob/main/LICENSE)
