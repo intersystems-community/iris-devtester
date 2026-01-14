@@ -247,7 +247,7 @@ iris.start()
 
 The repository exposes core functionality as "Skills" to help AI agents work autonomously.
 
-- **[skill.md](skill.md)** (NEW!) - Hierarchical manifest and operational guidance for all agents.
+- **[SKILL.md](SKILL.md)** (NEW!) - Hierarchical manifest and operational guidance for all agents.
 
 | Skill | Trigger (Claude) | Trigger (Cursor) | Description |
 |-------|------------------|------------------|-------------|

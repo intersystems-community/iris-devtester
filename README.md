@@ -54,7 +54,7 @@ def test_connection():
 ## AI-Assisted Development
 
 This project is optimized for AI coding assistants:
-- **[Agent Skill Manifest](https://github.com/intersystems-community/iris-devtester/blob/main/skill.md)** - Hierarchical guidance for Claude, Cursor, and Copilot.
+- **[Agent Skill Manifest](https://github.com/intersystems-community/iris-devtester/blob/main/SKILL.md)** - Hierarchical guidance for Claude, Cursor, and Copilot.
 - **[AGENTS.md](https://github.com/intersystems-community/iris-devtester/blob/main/AGENTS.md)** - Common build and test commands.
 
 ## Documentation

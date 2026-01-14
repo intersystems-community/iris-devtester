@@ -31,7 +31,7 @@ pip install iris-devtester[all]
 
 ### AI Assistant Activation
 To activate these skills in your assistant:
-- **Claude Code**: These skills are automatically available as slash commands if `skill.md` is in root.
+- **Claude Code**: These skills are automatically available as slash commands if `SKILL.md` is in root.
 - **Cursor IDE**: This file is indexed as a Project Rule. You can reference it via `@iris-devtester`.
 - **Generic Agents**: Inject this file into your system prompt as a "Testing Tools Capability".
 

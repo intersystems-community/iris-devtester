@@ -102,7 +102,7 @@ Optional (install with `[all]`):
 
 ### Must Read Before Coding
 
-- `skill.md` - Hierarchical agent guidance (PRIMARY ENTRY POINT)
+- `SKILL.md` - Hierarchical agent guidance (PRIMARY ENTRY POINT)
 - `CONSTITUTION.md` - 8 core principles (NON-NEGOTIABLE)
 - `README.md` - User-facing documentation
 - `pyproject.toml` - Package configuration

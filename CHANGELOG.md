@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Absolute Documentation Links**: Converted all documentation links in `README.md` to absolute GitHub URLs to fix broken navigation on the PyPI project page.
 - **PyPI Meta Data**: Removed redundant license metadata fields that were causing distribution validation errors.
-- **Metadata Consistency**: Synchronized version strings across `pyproject.toml`, `__init__.py`, and `skill.md`.
+- **Metadata Consistency**: Synchronized version strings across `pyproject.toml`, `__init__.py`, and `SKILL.md`.
 
 ## [1.7.4] - 2026-01-04 - Metadata & Link Finalization (Internal)
 
@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Broken Documentation Links**: Fixed all references to the old `iris-devtools` name across README and documentation files.
 - **PyPI Meta Data**: Corrected repository and documentation URLs in `pyproject.toml`.
 - **Concise README**: Shortened the README for better visibility on PyPI, moving detailed guides to the `docs/` directory.
-- **Metadata Consistency**: Synchronized `__init__.py`, `pyproject.toml`, and `skill.md` version strings.
+- **Metadata Consistency**: Synchronized `__init__.py`, `pyproject.toml`, and `SKILL.md` version strings.
 
 ## [1.7.1] - 2026-01-04 - Documentation & Metadata Fixes (Internal)
 
@@ -57,14 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Hierarchical Agent Skill Manifest (`skill.md`)**
+- **Hierarchical Agent Skill Manifest (`SKILL.md`)**
   - Root-level guide for AI coding assistants following the "Progressive Disclosure" pattern.
   - **Level 1: Onboarding** - Automated pytest integration and conftest templates.
   - **Level 2: Operations** - Reliable container and connection management patterns.
   - **Level 3: Advanced** - DAT fixtures and resource monitoring guidance.
   - **Level 4: Debugging** - Autonomous troubleshooting for macOS latency and security flags.
 - **Project Integration Module**: Specific instructions for agents to incorporate the library into new/existing repositories.
-- **Enhanced Distribution**: Added `MANIFEST.in` to ensure AI metadata files (`skill.md`, `AGENTS.md`, `CLAUDE.md`) ship with the package.
+- **Enhanced Distribution**: Added `MANIFEST.in` to ensure AI metadata files (`SKILL.md`, `AGENTS.md`, `CLAUDE.md`) ship with the package.
 
 ### Fixed
 

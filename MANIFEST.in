@@ -1,6 +1,6 @@
 include README.md
 include AGENTS.md
-include skill.md
+include SKILL.md
 include CLAUDE.md
 include CONSTITUTION.md
 recursive-include docs *.md

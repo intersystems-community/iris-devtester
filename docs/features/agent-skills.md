@@ -75,7 +75,7 @@ Just ask naturally. Copilot has been pre-prompted with the library's best practi
 The skills are installed as part of the repository structure. You can customize them by editing the files in `.claude/commands/` or `.cursor/rules/`, but we recommend keeping them in sync with the library updates.
 
 ## Agent Skill Manifest
-The primary entry point for AI agents is the **[skill.md](../../skill.md)** file at the repository root. This file provides:
+The primary entry point for AI agents is the **[SKILL.md](../../SKILL.md)** file at the repository root. This file provides:
 - Hierarchical guidance (Setup to Advanced)
 - Copy-paste ready Python snippets
 - Constitutional enforcement

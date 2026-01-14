@@ -95,7 +95,7 @@ Documentation = "https://github.com/intersystems-community/iris-devtester/blob/m
 Repository = "https://github.com/intersystems-community/iris-devtester"
 Issues = "https://github.com/intersystems-community/iris-devtester/issues"
 Changelog = "https://github.com/intersystems-community/iris-devtester/blob/main/CHANGELOG.md"
-"Agent Skills" = "https://github.com/intersystems-community/iris-devtester/blob/main/skill.md"
+"Agent Skills" = "https://github.com/intersystems-community/iris-devtester/blob/main/SKILL.md"
 "Getting Started" = "https://github.com/intersystems-community/iris-devtester/blob/main/docs/GETTING_STARTED.md"
 Troubleshooting = "https://github.com/intersystems-community/iris-devtester/blob/main/docs/TROUBLESHOOTING.md"
 
