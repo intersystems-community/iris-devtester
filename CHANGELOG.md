@@ -5,6 +5,15 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-01-05 - Feature 022: CPF Merge Support 
+
+### Added 
+
+- **Declarative Configuration (`with_cpf_merge`)**: New method for `IRISContainer` to apply CPF snippets during container boot. 
+- **Optimization Presets**: Added `CPFPreset.CI_OPTIMIZED` and `CPFPreset.SECURE_DEFAULTS` for instant setup. 
+- **2025 Agent Skills Standard**: Standardized on root-level `SKILL.md` and consolidated assistant triggers. 
+- **Consolidated CLI & UI**: Unified agent commands into `/idt` (Claude) and `@idt` (Cursor) for zero clutter. 
+
 ## [1.5.2] - 2025-12-24 - Performance & Reliability
 
 ### Fixed
