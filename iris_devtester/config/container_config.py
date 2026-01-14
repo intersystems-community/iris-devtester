@@ -98,6 +98,10 @@ class ContainerConfig(BaseModel):
         default="latest",
         description="Docker image tag"
     )
+    cpf_merge: Optional[str] = Field(
+        default=None,
+        description="Path to CPF merge file or raw CPF content"
+    )
 
     @field_validator("container_name")
     @classmethod
@@ -166,7 +170,7 @@ class ContainerConfig(BaseModel):
         config_data = {}
 
         # Map direct fields
-        for field in ["edition", "container_name", "namespace", "password", "license_key", "volumes", "image", "image_tag"]:
+        for field in ["edition", "container_name", "namespace", "password", "license_key", "volumes", "image", "image_tag", "cpf_merge"]:
             if field in yaml_data:
                 config_data[field] = yaml_data[field]
 
@@ -217,6 +221,7 @@ class ContainerConfig(BaseModel):
             "IRIS_LICENSE_KEY": "license_key",
             "IRIS_IMAGE": "image",
             "IRIS_IMAGE_TAG": "image_tag",
+            "IRIS_CPF_MERGE": "cpf_merge",
         }
 
         for env_var, field_info in env_mappings.items():

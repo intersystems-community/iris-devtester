@@ -53,6 +53,29 @@ class IRISReadyWaitStrategy:
         timeout: Optional[int] = None,
         container_name: Optional[str] = None,
     ) -> bool:
+        """
+        Wait until IRIS container is ready.
+
+        Args:
+            host: Container host/IP
+            port: Port to check (uses self.port if not provided)
+            timeout: Timeout in seconds (uses self.timeout if not provided)
+            container_name: Optional Docker container name for application check
+        Returns:
+            True if ready within timeout, False otherwise
+
+        Raises:
+            TimeoutError: If container not ready within timeout
+
+        Example:
+            >>> strategy = IRISReadyWaitStrategy(timeout=30)
+            >>> with IRISContainer.community() as iris:
+            ...     iris.start()
+            ...     config = iris.get_config()
+            ...     ready = strategy.wait_until_ready(config.host, config.port)
+            ...     if ready:
+            ...         print("IRIS is ready to accept connections")
+        """
         port = port or self.port
         timeout = timeout or self.timeout
 

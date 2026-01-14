@@ -105,7 +105,12 @@ def iris_db_both_editions(request):
     name = f"iris_test_{edition}_{test_name}_{container_id}"
 
     if edition == "community":
-        iris_container = IRISContainer.community(username="test", password="test")
+        import platform as platform_module
+        if platform_module.machine() == "arm64":
+            image = "containers.intersystems.com/intersystems/iris-community:2025.1"
+        else:
+            image = "intersystemsdc/iris-community:latest"
+        iris_container = IRISContainer.community(image=image, username="test", password="test")
     else:
         license_key = os.environ.get("IRIS_LICENSE_KEY")
         if not license_key:

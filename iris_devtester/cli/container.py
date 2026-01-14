@@ -44,8 +44,12 @@ def container_group(ctx):
     default=60,
     help="Health check timeout in seconds (default: 60)"
 )
+@click.option(
+    "--cpf",
+    help="Path to CPF merge file or raw CPF content"
+)
 @click.pass_context
-def up(ctx, config, detach, timeout):
+def up(ctx, config, detach, timeout, cpf):
     """
     Create and start IRIS container from configuration.
 
@@ -88,6 +92,10 @@ def up(ctx, config, detach, timeout):
             else:
                 container_config = ContainerConfig.default()
                 click.echo("⚡ Creating container from zero-config defaults")
+
+        if cpf:
+            container_config.cpf_merge = cpf
+            click.echo(f"  → CPF Merge: {cpf[:50]}...")
 
         # Check if container already exists
         existing_container = IRISContainerManager.get_existing(container_config.container_name)

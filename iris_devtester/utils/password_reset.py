@@ -134,8 +134,13 @@ def _harden_iris_user(
             f'Write ##class(Security.Users).Modify("{username}",.p)'
         )
 
+        subprocess.run(
+            ["docker", "exec", "-u", "root", container_name, "sh", "-c", "chown -R irisowner:irisowner /usr/irissys/mgr /usr/irissys/bin"],
+            capture_output=True, timeout=15
+        )
+
         cmd = [
-            "docker", "exec", "-i", container_name,
+            "docker", "exec", "-u", "irisowner", "-i", container_name,
             "iris", "session", "IRIS", "-U", "%SYS"
         ]
 

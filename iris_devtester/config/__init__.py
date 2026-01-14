@@ -8,9 +8,11 @@ from .auto_discovery import (
 )
 from .discovery import discover_config
 from .models import IRISConfig
+from .presets import CPFPreset
 
 __all__ = [
     "IRISConfig",
+    "CPFPreset",
     "discover_config",
     "auto_discover_iris",
     "discover_docker_iris",

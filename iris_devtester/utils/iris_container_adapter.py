@@ -302,6 +302,9 @@ class IRISContainerManager:
             spec = VolumeMountSpec.parse(volume)
             container.with_volume_mapping(spec.host_path, spec.container_path, spec.mode)
 
+        if config.cpf_merge:
+            container.with_cpf_merge(config.cpf_merge)
+
         return container
 
     @staticmethod
@@ -330,6 +333,22 @@ class IRISContainerManager:
         # Add license key for Enterprise edition
         if config.edition == 'enterprise' and config.license_key:
             environment['ISC_LICENSE_KEY'] = config.license_key
+
+        if config.cpf_merge:
+            import os
+            import tempfile
+            container_path = "/usr/irissys/merge.cpf"
+            environment['ISC_CPF_MERGE_FILE'] = container_path
+            
+            cpf_source = config.cpf_merge
+            if os.path.exists(cpf_source) and os.path.isfile(cpf_source):
+                host_path = os.path.abspath(cpf_source)
+            else:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.cpf', delete=False) as f:
+                    f.write(cpf_source)
+                    host_path = f.name
+            
+            volumes[host_path] = {'bind': container_path, 'mode': 'ro'}
 
         # Create container without testcontainers labels (prevents ryuk cleanup)
         container = client.containers.create(

@@ -51,6 +51,7 @@ class IRISConfig:
     driver: Literal["dbapi", "jdbc", "auto"] = "auto"
     connection_string: Optional[str] = None
     timeout: int = 30
+    container_name: Optional[str] = None
 
     def __post_init__(self):
         """Validate configuration after initialization."""

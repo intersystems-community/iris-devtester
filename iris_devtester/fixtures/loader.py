@@ -64,17 +64,29 @@ class DATFixtureLoader:
             db_name = f"DB_{namespace}"
             db_dir = f"/usr/irissys/mgr/db_{namespace.lower()}"
 
-            objectscript = f"""
- Set dbDir = "{db_dir}"
- Set dbName = "{db_name}"
+            refresh_script = ""
+            if force_refresh:
+                refresh_script = f"""
  Set nsName = "{namespace}"
- 
+ Set dbName = "{db_name}"
  If ##class(Config.Namespaces).Exists(nsName,.obj) Do ##class(Config.Namespaces).Delete(nsName)
  If ##class(Config.Databases).Exists(dbName,.obj) {{
  Set dir = obj.Directory
  Do ##class(SYS.Database).DismountDatabase(dir)
  Do ##class(Config.Databases).Delete(dbName)
  }}
+"""
+            else:
+                refresh_script = f"""
+ Do ##class(Config.Namespaces).Exists("{namespace}",.obj,.nsStatus)
+ If nsStatus=1 Write "NAMESPACE_EXISTS","SUCCESS" Halt
+"""
+
+            objectscript = f"""
+ Set dbDir = "{db_dir}"
+ Set dbName = "{db_name}"
+ 
+ {refresh_script}
  
  If '##class(%File).DirectoryExists(dbDir) Do ##class(%File).CreateDirectoryChain(dbDir)
  Do ##class(%File).CopyFile("{container_dat_path}",dbDir_"/IRIS.DAT")
