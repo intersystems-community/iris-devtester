@@ -5,6 +5,7 @@ fixtures by exporting namespaces using BACKUP^DBACK routine.
 """
 
 import datetime
+import subprocess
 from pathlib import Path
 from typing import Optional, Any, List, Dict
 
@@ -167,7 +168,7 @@ class FixtureCreator:
         iris_version = self._get_iris_version()
 
         # Get table list with row counts
-        tables = self.get_namespace_tables(namespace)
+        tables = self.get_namespace_tables(self.get_connection(), namespace)
 
         # Calculate checksum
         checksum = self.calculate_checksum(str(dat_file_path))
@@ -208,6 +209,7 @@ class FixtureCreator:
 
         Raises:
             FixtureCreateError: If backup fails or container not available
+            ValueError: If required parameters are missing
 
         Example:
             >>> with IRISContainer.community() as container:
@@ -217,6 +219,9 @@ class FixtureCreator:
             ...         "/tmp/test-100/IRIS.DAT"  # Path from container's perspective
             ...     )
         """
+        if not namespace or not dat_file_path:
+            raise ValueError("Namespace and dat_file_path are required")
+
         if not self.container:
             raise FixtureCreateError(
                 "BACKUP operations require container parameter\n"
@@ -234,8 +239,6 @@ class FixtureCreator:
             )
 
         try:
-            import subprocess
-
             container_name = self.container.get_container_name()
 
             # BACKUP to /tmp inside container, then docker cp to host
@@ -455,49 +458,35 @@ Halt"""
         """
         return self.validator.calculate_sha256(dat_file_path)
 
-    def get_namespace_tables(self, namespace: str) -> List[TableInfo]:
+    def get_namespace_tables(self, connection: Any = None, namespace: str = "") -> List[TableInfo]:
         """
-        Get list of tables in namespace with row counts.
+        Get list of user tables in namespace with row counts.
 
         Args:
-            namespace: Namespace to inspect
+            connection: Active DBAPI connection (optional)
+            namespace: Source namespace (e.g., "USER")
 
         Returns:
-            List of TableInfo objects with names and row counts
-
-        Raises:
-            FixtureCreateError: If namespace doesn't exist or query fails
-
-        Example:
-            >>> creator = FixtureCreator()
-            >>> tables = creator.get_namespace_tables("USER_TEST_100")
-            >>> for table in tables:
-            ...     print(f"{table.name}: {table.row_count} rows")
+            List of TableInfo objects
         """
+        if connection is None:
+            connection = self.get_connection()
+        if not namespace:
+            namespace = "USER"
+
+        tables = []
         try:
-            # Get connection config and create connection to target namespace
-            from iris_devtester.config import discover_config
-            config = self.connection_config if self.connection_config else discover_config()
-
-            # Update config to use the target namespace
-            import dataclasses
-            namespace_config = dataclasses.replace(config, namespace=namespace)
-
-            # Get connection to target namespace
-            conn = get_connection(namespace_config)
-            cursor = conn.cursor()
-
-            # Query for all tables
+            cursor = connection.cursor()
+            # Query INFORMATION_SCHEMA for user tables
             cursor.execute(
                 """
                 SELECT TABLE_SCHEMA, TABLE_NAME
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_TYPE = 'BASE TABLE'
-                ORDER BY TABLE_SCHEMA, TABLE_NAME
+                AND TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', '%SYS', '%Library')
                 """
             )
 
-            tables = []
             for row in cursor.fetchall():
                 schema_name = row[0]
                 table_name = row[1]
@@ -506,16 +495,15 @@ Halt"""
                 # Get row count
                 try:
                     cursor.execute(f"SELECT COUNT(*) FROM {qualified_name}")
-                    row_count = cursor.fetchone()[0]
+                    count_row = cursor.fetchone()
+                    row_count = count_row[0] if count_row else 0
 
                     tables.append(TableInfo(name=qualified_name, row_count=row_count))
-                except Exception as table_error:
+                except Exception:
                     # Skip tables we can't count (permissions, corrupted, etc.)
-                    # Log warning but continue
                     continue
 
             cursor.close()
-            conn.close()
             return tables
 
         except Exception as e:
@@ -602,7 +590,7 @@ Halt"""
             self.export_namespace_to_dat(namespace, str(dat_file_path))
 
             # Get updated table list
-            tables = self.get_namespace_tables(namespace)
+            tables = self.get_namespace_tables(self.get_connection(), namespace)
 
             # Recalculate checksum
             checksum = self.calculate_checksum(str(dat_file_path))

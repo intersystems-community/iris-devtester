@@ -8,6 +8,16 @@ import pytest
 from iris_devtester.containers import IRISContainer
 
 
+@pytest.fixture(autouse=True)
+def clean_port_registry():
+    """Ensure a clean port registry for each integration test."""
+    from iris_devtester.ports.registry import PortRegistry
+    registry = PortRegistry()
+    registry.clear_all()
+    yield
+    registry.clear_all()
+
+
 @pytest.fixture(scope="session")
 def iris_container():
     """

@@ -12,9 +12,19 @@ logger = logging.getLogger(__name__)
 
 class DATFixtureLoader:
 
-    def __init__(self, container: Optional[IRISContainer] = None):
+    def __init__(self, container: Optional[IRISContainer] = None, **kwargs):
         self.container = container
+        self.connection_config = kwargs.get('connection_config')
         self._owns_container = False
+
+    def validate_fixture(self, fixture_path: str, validate_checksum: bool = True) -> FixtureManifest:
+        """Contract‑compatible validation wrapper."""
+        from .validator import FixtureValidator
+        validator = FixtureValidator()
+        result = validator.validate_fixture(fixture_path, validate_checksum=validate_checksum)
+        if not result.valid or result.manifest is None:
+            raise FixtureValidationError(f"Invalid fixture: {result.errors}")
+        return result.manifest
 
     def _load_manifest(self, fixture_path: str) -> FixtureManifest:
         manifest_path = Path(fixture_path) / "manifest.json"
@@ -151,3 +161,18 @@ class DATFixtureLoader:
             )
         except Exception as e:
             raise FixtureLoadError(f"Table verification failed: {e}")
+
+    def cleanup_fixture(self, namespace: str, delete_namespace: bool = True):
+        """Contract‑compatible cleanup wrapper."""
+        if not namespace:
+            raise ValueError("Namespace is required")
+        if not self.container:
+            raise RuntimeError("IRIS container required for cleanup")
+        
+        if delete_namespace:
+            self.container.delete_namespace(namespace)
+
+    def get_connection(self):
+        """Contract‑compatible connection getter."""
+        from iris_devtester.connections import get_connection
+        return get_connection(config=self.connection_config)

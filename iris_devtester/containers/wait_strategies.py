@@ -7,6 +7,7 @@ before returning control to tests or application code.
 
 import logging
 import socket
+import subprocess
 import time
 from typing import Optional
 
@@ -127,7 +128,6 @@ class IRISReadyWaitStrategy:
 
     def check_iris_initialized(self, container_name: str) -> bool:
         try:
-            import subprocess
             result = subprocess.run(
                 ["docker", "exec", container_name, "iris", "session", "IRIS", "-U", "%SYS", "W 1", "Halt"],
                 capture_output=True,
@@ -158,8 +158,6 @@ class IRISReadyWaitStrategy:
             ...         print("IRIS process is active")
         """
         try:
-            import subprocess
-
             result = subprocess.run(
                 ["docker", "exec", container_name, "iris", "list"],
                 capture_output=True,

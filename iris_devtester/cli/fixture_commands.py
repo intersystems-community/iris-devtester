@@ -24,6 +24,9 @@ from iris_devtester.fixtures import (
     FixtureValidationError,
 )
 
+# Import IRISContainer for container handling
+from iris_devtester.containers import IRISContainer
+
 
 @click.group()
 def fixture():
@@ -37,14 +40,32 @@ def fixture():
 @click.option('--output', required=True, help='Output directory for fixture')
 @click.option('--description', default="", help='Human-readable description')
 @click.option('--version', default="1.0.0", help='Semantic version')
+@click.option('--container', default=None, help='IRIS container name to use for fixture creation')
 @click.option('--verbose', is_flag=True, help='Show detailed progress')
-def create(name: str, namespace: str, output: str, description: str, version: str, verbose: bool):
+def create(name: str, namespace: str, output: str, description: str, version: str, container: str, verbose: bool):
     """Create .DAT fixture by exporting IRIS namespace."""
     try:
         if verbose:
             click.echo("Connecting to IRIS...")
 
-        creator = FixtureCreator()
+        # Resolve IRIS container: use provided name or start a community container
+        if container:
+            try:
+                # Attach to an existing container by name
+                container_obj = IRISContainer.attach(container)
+            except Exception as e:
+                click.secho(f"\n❌ Failed to attach to container '{container}': {e}", fg='red', bold=True)
+                sys.exit(1)
+        else:
+            # No container specified; start a temporary community container
+            try:
+                container_obj = IRISContainer.community()
+                # Ensure it's started
+                container_obj.start()
+            except Exception as e:
+                click.secho(f"\n❌ Failed to start community IRIS container: {e}", fg='red', bold=True)
+                sys.exit(1)
+        creator = FixtureCreator(container=container_obj)
 
         if verbose:
             click.echo(f"Exporting namespace '{namespace}' to {output}...")
@@ -216,6 +237,9 @@ def validate(fixture: str, no_checksums: bool, recalc: bool, verbose: bool):
 
         if result.valid:
             manifest = result.manifest
+            if manifest is None:
+                click.secho("\n❌ Unexpected error: manifest is None", fg='red', bold=True)
+                sys.exit(1)
             sizes = validator.get_fixture_size(fixture)
 
             table_count = len(manifest.tables)

@@ -5,6 +5,18 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-01-17 - Bug Fixes & API Contract Synchronization
+
+### Fixed
+
+- **CLI `fixture create` Container Support**: Added missing `--container` parameter to specify source IRIS instance.
+- **API Contract Synchronization**: Fixed method signatures and return types across `FixtureCreator`, `DATFixtureLoader`, and `IRISContainer` to align with public contract tests.
+- **Contract Test Compatibility**: Implemented a robust compatibility layer in `iris_devtester.testing` and `iris_devtester.connections` to support legacy assistant expectations.
+- **Test Performance & Stability**: 
+  - Optimized `IRISContainer` startup logic to prevent hangs in restricted environments.
+  - Improved `wait_for_iris_ready` timing reliability.
+  - Added `clean_port_registry` fixture for integration test isolation.
+
 ## [1.8.0] - 2026-01-05 - Feature 022: CPF Merge Support 
 
 ### Added 

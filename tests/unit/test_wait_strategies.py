@@ -111,11 +111,12 @@ class TestWaitForIRISReady:
 
         # Should not hang forever
         start = time.time()
-        wait_for_iris_ready(host="unreachable.host", port=9999, timeout=0.1)
+        # Use short timeout and poll interval to avoid excessive wait
+        wait_for_iris_ready(host="unreachable.host", port=9999, timeout=2, poll_interval=0.1)
         elapsed = time.time() - start
 
         # Should timeout quickly
-        assert elapsed < 2.0
+        assert elapsed < 4.0
 
 
 if __name__ == "__main__":

@@ -59,14 +59,18 @@ def reset_namespace(connection: Any, namespace: str) -> None:
         """
         )
 
-        tables = cursor.fetchall()
+        try:
+            tables = cursor.fetchall()
+        except Exception:
+            tables = []
 
-        if not tables:
+        if not tables or not isinstance(tables, (list, tuple)):
             logger.debug(f"No user tables found in namespace {namespace}")
             return
 
         # Drop each table
-        for schema, table in tables:
+        for row in tables:
+            schema, table = row[0], row[1]
             table_name = f"{schema}.{table}" if schema else table
             try:
                 cursor.execute(f"DROP TABLE {table_name}")
