@@ -376,13 +376,15 @@ iris_devtester/fixtures/
 ```
 
 ### CLI Commands
+ 
+ ```bash
+ # Create fixture from tables
+-iris-devtester fixture create --name test-100 --tables RAG.Entities --output ./fixtures/test-100
++iris-devtester fixture create --container iris_db --name test-100 --namespace USER --output ./fixtures/test-100
+ 
+ # Validate fixture integrity
+ iris-devtester fixture validate --fixture ./fixtures/test-100
 
-```bash
-# Create fixture from tables
-iris-devtester fixture create --name test-100 --tables RAG.Entities --output ./fixtures/test-100
-
-# Validate fixture integrity
-iris-devtester fixture validate --fixture ./fixtures/test-100
 
 # Load fixture into IRIS
 iris-devtester fixture load --fixture ./fixtures/test-100

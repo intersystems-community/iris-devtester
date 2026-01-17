@@ -32,13 +32,15 @@ print(f"Loaded {len(result.tables_loaded)} tables in {result.elapsed_seconds:.2f
 ```
 
 ### CLI Commands
+ 
+ ```bash
+ # Create fixture from namespace
+-iris-devtester fixture create --name test-100 --namespace USER --output ./fixtures/test-100
++iris-devtester fixture create --container iris_db --name test-100 --namespace USER --output ./fixtures/test-100
+ 
+ # Validate fixture integrity (SHA256 checksums)
+ iris-devtester fixture validate --fixture ./fixtures/test-100
 
-```bash
-# Create fixture from namespace
-iris-devtester fixture create --name test-100 --namespace USER --output ./fixtures/test-100
-
-# Validate fixture integrity (SHA256 checksums)
-iris-devtester fixture validate --fixture ./fixtures/test-100
 
 # Load fixture into IRIS
 iris-devtester fixture load --fixture ./fixtures/test-100
