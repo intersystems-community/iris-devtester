@@ -162,29 +162,35 @@ class IRISContainer(BaseIRISContainer):
         """
         Verify that pre-configured credentials work after container is ready.
 
-        Attempts a connection using the pre-configured credentials.
+        Attempts a connection using the pre-configured credentials with retries
+        to allow the authentication subsystem to initialize.
 
         Returns:
             True if credentials work, False if fallback to password reset is needed.
         """
-        try:
-            config = self.get_config()
-            test_config = IRISConfig(
-                host=config.host,
-                port=config.port,
-                namespace=config.namespace,
-                username=self._username,
-                password=self._password,
-                container_name=self.get_container_name(),
-            )
-            conn = get_connection(test_config)
-            if conn:
-                conn.close()
-                self._password_preconfigured = True
-                logger.info("Password pre-configuration verified successfully")
-                return True
-        except Exception as e:
-            logger.debug(f"Pre-configuration verification failed: {e}")
+        for attempt in range(3):
+            try:
+                # Brief settle delay for auth subsystem (especially on macOS)
+                if attempt > 0:
+                    time.sleep(1.0)
+                
+                config = self.get_config()
+                test_config = IRISConfig(
+                    host=config.host,
+                    port=config.port,
+                    namespace=config.namespace,
+                    username=self._username,
+                    password=self._password,
+                    container_name=self.get_container_name(),
+                )
+                conn = get_connection(test_config)
+                if conn:
+                    conn.close()
+                    self._password_preconfigured = True
+                    logger.info("Password pre-configuration verified successfully")
+                    return True
+            except Exception as e:
+                logger.debug(f"Pre-configuration verification attempt {attempt + 1} failed: {e}")
         return False
 
     def get_assigned_port(self) -> int:
@@ -272,6 +278,10 @@ class IRISContainer(BaseIRISContainer):
 
     def start(self):
         """Start IRIS container with port registry integration and optional password pre-config."""
+        if hasattr(self, "_is_attached") and self._is_attached:
+            logger.info("Container is attached - skipping start()")
+            return self
+
         if self._port_registry:
             self._port_assignment = self._port_registry.assign_port(
                 project_path=self._project_path, preferred_port=self._preferred_port
@@ -321,6 +331,8 @@ class IRISContainer(BaseIRISContainer):
                         namespace=config.namespace,
                         timeout=10,
                     )
+                    # Mark password as ready after successful fallback
+                    self._password_preconfigured = True
                 except Exception as e:
                     logger.debug(f"Initial password reset failed (non-critical): {e}")
 
@@ -468,14 +480,17 @@ class IRISContainer(BaseIRISContainer):
 
         config = self.get_config()
 
-        reset_password(
-            container_name=container_name,
-            username=config.username,
-            new_password=config.password,
-            hostname=config.host,
-            port=config.port,
-            namespace=config.namespace,
-        )
+        # Only reset password if not already configured via pre-config or startup fallback
+        if not self._password_preconfigured:
+            reset_password(
+                container_name=container_name,
+                username=config.username,
+                new_password=config.password,
+                hostname=config.host,
+                port=config.port,
+                namespace=config.namespace,
+            )
+            self._password_preconfigured = True
 
         self._connection = get_connection(config)
         return self._connection
@@ -513,18 +528,27 @@ class IRISContainer(BaseIRISContainer):
 
             from iris_devtester.utils.password_reset import reset_password
 
-            # Convert result to bool to satisfy type checker
-            result = reset_password(
-                container_name=self.get_container_name(),
-                username=config.username,
-                new_password=config.password,
-                hostname=None,
-                port=config.port,
-                namespace=config.namespace,
-            )
-            if hasattr(result, "success"):
-                return bool(getattr(result, "success"))
-            return bool(result[0])
+            # Only reset password if not already configured
+            if not self._password_preconfigured:
+                # Convert result to bool to satisfy type checker
+                result = reset_password(
+                    container_name=self.get_container_name(),
+                    username=config.username,
+                    new_password=config.password,
+                    hostname=None,
+                    port=config.port,
+                    namespace=config.namespace,
+                )
+                if hasattr(result, "success"):
+                    success = bool(getattr(result, "success"))
+                else:
+                    success = bool(result[0])
+                
+                if success:
+                    self._password_preconfigured = True
+                return success
+            
+            return True
         except (TimeoutError, IndexError, TypeError):
             return False
 
