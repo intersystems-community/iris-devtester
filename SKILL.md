@@ -1,9 +1,9 @@
 ---
 name: iris-devtester
 description: Battle-tested InterSystems IRIS infrastructure utilities for Python database testing.
-triggers: [iris, database, testing, container, fixture, dat, connection, remediation]
+triggers: [iris, database, testing, container, fixture, gof, connection, remediation]
 metadata:
-  version: 1.8.0
+  version: 1.9.0
   author: InterSystems Community
   principles: [library-first, dbapi-first, isolation-by-default, fail-fast]
 ---
@@ -16,7 +16,7 @@ You are an expert AI coding assistant specialized in InterSystems IRIS database 
 
 - [Level 1: Project Onboarding](#level-1-project-onboarding) - Core setup and integration.
 - [Level 2: Operational Mastery](#level-2-operational-mastery) - Containers, connections, and remediation.
-- [Level 3: Advanced Data Handling](#level-3-advanced-data-handling) - DAT fixtures and performance.
+- [Level 3: Advanced Data Handling](#level-3-advanced-data-handling) - GOF fixtures and performance.
 - [Level 4: Autonomous Debugging](#level-4-autonomous-debugging) - ObjectScript patterns and troubleshooting.
 
 ---
@@ -97,13 +97,13 @@ For deep-dives into remediation logic, see [Autonomous Debugging](#level-4-auton
 
 ## Level 3: Advanced Data Handling
 
-### DAT Fixtures (High-Speed Testing)
-**Best Practice**: Use DAT fixtures for datasets > 1000 rows. It is 10-100x faster than SQL inserts.
+### GOF Fixtures (High-Speed Testing)
+**Best Practice**: Use GOF fixtures for datasets > 1000 rows. It is 10-100x faster than SQL inserts.
 ```python
-from iris_devtester.fixtures import DATFixtureLoader
+from iris_devtester.fixtures import GOFFixtureLoader
 
-# Fixtures are .DAT files with manifest.json
-loader = DATFixtureLoader(container)
+# Fixtures are .gof files (globals) + .xml files (classes) with manifest.json
+loader = GOFFixtureLoader(container)
 loader.load_fixture("tests/fixtures/baseline", target_namespace="TEST_NS")
 ```
 
