@@ -379,7 +379,7 @@ def enable_callin_service(container: Container) -> None:
     """
     # Execute ObjectScript to enable CallIn
     objectscript_cmd = (
-        "iris session iris -U%SYS "
+        "iris session IRIS -U%SYS "
         '"Do ##class(Security.Services).Get("%Service_CallIn", .service) '
         "Set service.Enabled = 1 "
         'Do ##class(Security.Services).Modify("%Service_CallIn", .service)"'

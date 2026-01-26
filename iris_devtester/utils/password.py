@@ -572,7 +572,7 @@ Halt
             container_name,
             "sh",
             "-c",
-            f'iris session iris -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
+            f'iris session IRIS -U %SYS << "EOF"\n{objectscript_commands}\nEOF',
         ]
 
         logger.info(f"Unexpiring passwords in container: {container_name}")
@@ -626,7 +626,7 @@ Halt
             "\n"
             "Manual fix:\n"
             f"  docker exec {container_name} bash -c 'echo \"do ##class(Security.Users)"
-            f'.UnExpireUserPasswords(\\"*\\")" | iris session iris -U %SYS\'\n',
+            f'.UnExpireUserPasswords(\\"*\\")" | iris session IRIS -U %SYS\'\n',
         )
 
 
