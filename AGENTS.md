@@ -281,3 +281,9 @@ The repository exposes core functionality as "Skills" to help AI agents work aut
 - [CONSTITUTION.md](CONSTITUTION.md) - 8 core principles
 - [docs/learnings/](docs/learnings/) - Codified lessons
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues
+
+## Active Technologies
+- N/A (documentation only) (023-docs-cleanup)
+
+## Recent Changes
+- 023-docs-cleanup: Added N/A (documentation only)
