@@ -24,15 +24,18 @@ from iris_devtester.testing.schema_reset import (
 # Compatibility layer for contract tests
 # -----------------------------------------------------------------
 
+
 def validate_schema(connection, schema):
     """Contract‑compatible schema validation wrapper."""
     # Basic implementation for contract tests
     return SchemaValidationResult(is_valid=True, mismatches=[])
 
+
 def register_cleanup(action):
     """Contract‑compatible cleanup registration wrapper."""
     # Global state or dummy for contract test
     return True
+
 
 # Export fixtures module
 from . import fixtures

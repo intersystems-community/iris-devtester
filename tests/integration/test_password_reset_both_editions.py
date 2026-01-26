@@ -16,9 +16,11 @@ Tests verify:
 - T004: Performance SLA (<100ms typical) met on both editions
 """
 
-import pytest
 import time
-from iris_devtester.utils.password_reset import reset_password
+
+import pytest
+
+from iris_devtester.utils.password import reset_password
 
 
 @pytest.mark.integration
@@ -65,11 +67,7 @@ class TestPasswordResetBothEditions:
 
         # Try to connect with credentials (should work - fixture already hardened)
         new_conn = get_connection(
-            hostname=host,
-            port=port,
-            namespace="USER",
-            username=username,
-            password=password
+            hostname=host, port=port, namespace="USER", username=username, password=password
         )
 
         # Verify connection works by executing query
@@ -80,7 +78,9 @@ class TestPasswordResetBothEditions:
 
         new_conn.close()
 
-        print(f"[{edition.upper()}] ✅ Password hardening verified (fixture completed successfully)")
+        print(
+            f"[{edition.upper()}] ✅ Password hardening verified (fixture completed successfully)"
+        )
 
     def test_security_users_api_identical_both_editions(self, iris_db_both_editions):
         """
@@ -119,7 +119,7 @@ class TestPasswordResetBothEditions:
             port=port,
             namespace="USER",
             username=test_username,
-            password=test_password
+            password=test_password,
         )
 
         cursor = verify_conn.cursor()
@@ -166,7 +166,7 @@ class TestPasswordResetBothEditions:
             port=port,
             namespace="USER",
             username=test_username,
-            password=test_password
+            password=test_password,
         )
 
         # Execute multiple queries to ensure connection is stable
@@ -218,7 +218,7 @@ class TestPasswordResetBothEditions:
             port=port,
             namespace="USER",
             username=test_username,
-            password=test_password
+            password=test_password,
         )
         elapsed_ms = (time.time() - start_time) * 1000
 
@@ -227,7 +227,9 @@ class TestPasswordResetBothEditions:
 
         # Connection should be fast (much faster than password reset)
         if elapsed_ms > 1000:
-            print(f"[{edition.upper()}] ⚠️ WARNING: Connection took {elapsed_ms:.0f}ms (unusually slow)")
+            print(
+                f"[{edition.upper()}] ⚠️ WARNING: Connection took {elapsed_ms:.0f}ms (unusually slow)"
+            )
         else:
             print(f"[{edition.upper()}] ✅ Connection established in {elapsed_ms:.0f}ms")
 

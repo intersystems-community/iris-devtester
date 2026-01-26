@@ -11,6 +11,7 @@ Constitutional Principles:
 """
 
 import pytest
+
 from iris_devtester.containers import IRISContainer
 
 
@@ -80,12 +81,14 @@ class TestMyFeature:
         cursor = iris_connection.cursor()
 
         # Create table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE TestData (
                 ID INT PRIMARY KEY,
                 Name VARCHAR(100)
             )
-        """)
+        """
+        )
 
         # Insert data
         cursor.execute("INSERT INTO TestData (ID, Name) VALUES (1, 'Test')")

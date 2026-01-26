@@ -36,15 +36,9 @@ def test_multi_project_isolation(temp_registry):
     7. Verify ports released
     """
     # Create containers for two projects
-    container_a = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
+    container_a = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
 
-    container_b = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-b"
-    )
+    container_b = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-b")
 
     # Start both containers
     container_a.start()
@@ -97,19 +91,13 @@ def test_multi_project_idempotency(temp_registry):
     4. Verify port X assigned again (idempotent)
     """
     # First start
-    container_1 = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
+    container_1 = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
     container_1.start()
     port_1 = container_1.get_assigned_port()
     container_1.stop()
 
     # Second start (same project)
-    container_2 = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
+    container_2 = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
     container_2.start()
 
     try:

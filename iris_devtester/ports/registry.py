@@ -192,7 +192,10 @@ class PortRegistry:
                 # Find stale assignments (container doesn't exist)
                 active_assignments = []
                 for assignment in assignments:
-                    if assignment.container_name and assignment.container_name not in container_names:
+                    if (
+                        assignment.container_name
+                        and assignment.container_name not in container_names
+                    ):
                         # Container removed - mark as stale
                         assignment.status = "stale"
                         released.append(assignment)
@@ -298,9 +301,7 @@ class PortRegistry:
                 return port
 
         # All ports exhausted
-        raise PortExhaustedError(
-            port_range=self.port_range, current_assignments=assignments
-        )
+        raise PortExhaustedError(port_range=self.port_range, current_assignments=assignments)
 
     def _get_docker_bound_ports(self) -> set:
         """

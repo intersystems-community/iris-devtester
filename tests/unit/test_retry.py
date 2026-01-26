@@ -6,11 +6,12 @@ Tests verify exponential backoff and retry behavior.
 
 import time
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from iris_devtester.connections.retry import (
-    retry_with_backoff,
     create_connection_with_retry,
+    retry_with_backoff,
 )
 
 
@@ -36,10 +37,7 @@ class TestRetryWithBackoff:
 
         Expected: Retries once, returns result.
         """
-        mock_func = MagicMock(side_effect=[
-            Exception("First attempt failed"),
-            "success"
-        ])
+        mock_func = MagicMock(side_effect=[Exception("First attempt failed"), "success"])
 
         result = retry_with_backoff(mock_func, max_retries=3, initial_delay=0.01)
 
@@ -65,11 +63,13 @@ class TestRetryWithBackoff:
 
         Expected: Delays increase exponentially (0.1s → 0.2s → 0.4s).
         """
-        mock_func = MagicMock(side_effect=[
-            Exception("Attempt 1"),
-            Exception("Attempt 2"),
-            Exception("Attempt 3"),
-        ])
+        mock_func = MagicMock(
+            side_effect=[
+                Exception("Attempt 1"),
+                Exception("Attempt 2"),
+                Exception("Attempt 3"),
+            ]
+        )
 
         start_time = time.time()
 
@@ -93,12 +93,14 @@ class TestRetryWithBackoff:
 
         Expected: Delays capped at max_delay.
         """
-        mock_func = MagicMock(side_effect=[
-            Exception("Attempt 1"),
-            Exception("Attempt 2"),
-            Exception("Attempt 3"),
-            Exception("Attempt 4"),
-        ])
+        mock_func = MagicMock(
+            side_effect=[
+                Exception("Attempt 1"),
+                Exception("Attempt 2"),
+                Exception("Attempt 3"),
+                Exception("Attempt 4"),
+            ]
+        )
 
         start_time = time.time()
 
@@ -169,11 +171,9 @@ class TestCreateConnectionWithRetry:
         Expected: Retries and succeeds.
         """
         mock_connection = MagicMock()
-        mock_func = MagicMock(side_effect=[
-            Exception("Connection refused"),
-            Exception("Timeout"),
-            mock_connection
-        ])
+        mock_func = MagicMock(
+            side_effect=[Exception("Connection refused"), Exception("Timeout"), mock_connection]
+        )
 
         result = create_connection_with_retry(mock_func, max_retries=3)
 
@@ -199,11 +199,13 @@ class TestCreateConnectionWithRetry:
 
         Expected: Uses 0.5s, 1s, 2s delay pattern.
         """
-        mock_func = MagicMock(side_effect=[
-            Exception("Attempt 1"),
-            Exception("Attempt 2"),
-            Exception("Attempt 3"),
-        ])
+        mock_func = MagicMock(
+            side_effect=[
+                Exception("Attempt 1"),
+                Exception("Attempt 2"),
+                Exception("Attempt 3"),
+            ]
+        )
 
         start_time = time.time()
 
@@ -239,11 +241,9 @@ class TestRetryEdgeCases:
 
         Expected: Retries regardless of exception type.
         """
-        mock_func = MagicMock(side_effect=[
-            ValueError("Type error"),
-            ConnectionError("Network error"),
-            "success"
-        ])
+        mock_func = MagicMock(
+            side_effect=[ValueError("Type error"), ConnectionError("Network error"), "success"]
+        )
 
         result = retry_with_backoff(mock_func, max_retries=3, initial_delay=0.01)
 

@@ -76,9 +76,7 @@ def enable_callin_service(
             "{{.Names}}",
         ]
 
-        result = subprocess.run(
-            check_cmd, capture_output=True, text=True, timeout=timeout
-        )
+        result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=timeout)
 
         if container_name not in result.stdout:
             return (
@@ -116,7 +114,7 @@ def enable_callin_service(
             container_name,
             "bash",
             "-c",
-            f'''echo "set prop(\\"Enabled\\")=1 set prop(\\"AutheEnabled\\")={DEFAULT_AUTHENABLED} write ##class(Security.Services).Modify(\\"%Service_CallIn\\",.prop)" | iris session IRIS -U %SYS''',
+            f"""echo "set prop(\\"Enabled\\")=1 set prop(\\"AutheEnabled\\")={DEFAULT_AUTHENABLED} write ##class(Security.Services).Modify(\\"%Service_CallIn\\",.prop)" | iris session IRIS -U %SYS""",
         ]
 
         result = subprocess.run(
@@ -163,9 +161,9 @@ def enable_callin_service(
             "\n"
             "  2. Try manually enabling CallIn:\n"
             f"     docker exec -it {container_name} iris session IRIS -U %SYS\n"
-            "     Do ##class(Security.Services).Get(\"%Service_CallIn\",.prop)\n"
-            "     Set prop(\"Enabled\")=1\n"
-            "     Do ##class(Security.Services).Modify(\"%Service_CallIn\",.prop)\n"
+            '     Do ##class(Security.Services).Get("%Service_CallIn",.prop)\n'
+            '     Set prop("Enabled")=1\n'
+            '     Do ##class(Security.Services).Modify("%Service_CallIn",.prop)\n'
             "\n"
             "  3. Check IRIS license (Community vs Enterprise):\n"
             "     docker exec {container_name} iris list\n"

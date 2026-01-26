@@ -9,10 +9,10 @@ CRITICAL: These examples show what works and what doesn't. Copy these patterns.
 
 import intersystems_iris.dbapi._DBAPI as dbapi
 
-
 # =============================================================================
 # PATTERN 1: SQL Operations via DBAPI (✅ FAST - 3x faster)
 # =============================================================================
+
 
 def example_sql_operations():
     """✅ Correct: Use DBAPI for all SQL operations."""
@@ -21,14 +21,16 @@ def example_sql_operations():
     cursor = conn.cursor()
 
     # ✅ CREATE TABLE
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE Employee (
             ID INT PRIMARY KEY,
             Name VARCHAR(100),
             Department VARCHAR(50),
             Salary DECIMAL(10,2)
         )
-    """)
+    """
+    )
 
     # ✅ INSERT DATA
     cursor.execute("INSERT INTO Employee VALUES (1, 'Alice', 'Engineering', 120000)")
@@ -63,6 +65,7 @@ def example_sql_operations():
 # PATTERN 2: Namespace Backup via DBAPI + $SYSTEM.OBJ.Execute() (✅ WORKS)
 # =============================================================================
 
+
 def example_backup_namespace_correct():
     """✅ Correct: Use $SYSTEM.OBJ.Execute() wrapper for backup operations."""
 
@@ -72,7 +75,8 @@ def example_backup_namespace_correct():
     # ✅ This works - ObjectScript wrapped in SQL function
     backup_path = "/tmp/user_backup.dat"
 
-    cursor.execute(f"""
+    cursor.execute(
+        f"""
         SELECT $SYSTEM.OBJ.Execute('
             Set sc = ##class(SYS.Database).BackupNamespace("USER", "{backup_path}")
             If sc {{
@@ -81,7 +85,8 @@ def example_backup_namespace_correct():
                 Write "FAILED: "_$system.Status.GetErrorText(sc)
             }}
         ')
-    """)
+    """
+    )
 
     result = cursor.fetchone()[0]
     print(f"Backup result: {result}")
@@ -99,6 +104,7 @@ def example_backup_namespace_correct():
 # PATTERN 3: ObjectScript Operations via iris.connect() (✅ CORRECT)
 # =============================================================================
 
+
 def example_objectscript_operations():
     """✅ Correct: Use iris.connect() for ObjectScript operations."""
 
@@ -106,11 +112,7 @@ def example_objectscript_operations():
 
     # Connect with iris.connect() for ObjectScript access
     conn = iris.connect(
-        hostname="localhost",
-        port=1972,
-        namespace="%SYS",
-        username="_SYSTEM",
-        password="SYS"
+        hostname="localhost", port=1972, namespace="%SYS", username="_SYSTEM", password="SYS"
     )
 
     iris_obj = iris.createIRIS(conn)
@@ -129,12 +131,14 @@ def example_objectscript_operations():
     print(f"Get global ^EmployeeCount = {count}")
 
     # ✅ EXECUTE OBJECTSCRIPT CODE
-    iris_obj.execute("""
+    iris_obj.execute(
+        """
         Set ^EmployeeCount = 100
         Set ^EmployeeNames(1) = "Alice"
         Set ^EmployeeNames(2) = "Bob"
         Set ^EmployeeNames(3) = "Charlie"
-    """)
+    """
+    )
     print("Executed ObjectScript to populate globals")
 
     # ✅ READ UPDATED GLOBALS
@@ -155,6 +159,7 @@ def example_objectscript_operations():
 # PATTERN 4: Integration Test Setup (✅ CORRECT PATTERN)
 # =============================================================================
 
+
 def example_integration_test_pattern():
     """
     ✅ Correct: Use iris.connect() for setup/cleanup, DBAPI for testing.
@@ -162,8 +167,9 @@ def example_integration_test_pattern():
     This is the pattern all integration tests should follow.
     """
 
-    import iris
     import uuid
+
+    import iris
 
     # Generate unique namespace name
     namespace = f"TEST_{uuid.uuid4().hex[:8].upper()}"
@@ -171,11 +177,7 @@ def example_integration_test_pattern():
     # SETUP: Use iris.connect() for namespace creation
     print(f"Setting up test namespace: {namespace}")
     conn = iris.connect(
-        hostname="localhost",
-        port=1972,
-        namespace="%SYS",
-        username="_SYSTEM",
-        password="SYS"
+        hostname="localhost", port=1972, namespace="%SYS", username="_SYSTEM", password="SYS"
     )
     iris_obj = iris.createIRIS(conn)
     iris_obj.classMethodValue("Config.Namespaces", "Create", namespace)
@@ -203,11 +205,7 @@ def example_integration_test_pattern():
         # CLEANUP: Use iris.connect() for namespace deletion
         print(f"Cleaning up test namespace: {namespace}")
         conn = iris.connect(
-            hostname="localhost",
-            port=1972,
-            namespace="%SYS",
-            username="_SYSTEM",
-            password="SYS"
+            hostname="localhost", port=1972, namespace="%SYS", username="_SYSTEM", password="SYS"
         )
         iris_obj = iris.createIRIS(conn)
         iris_obj.classMethodValue("Config.Namespaces", "Delete", namespace)
@@ -217,6 +215,7 @@ def example_integration_test_pattern():
 # =============================================================================
 # ANTI-PATTERN 1: ObjectScript via DBAPI (❌ BREAKS!)
 # =============================================================================
+
 
 def antipattern_objectscript_via_dbapi():
     """
@@ -252,6 +251,7 @@ def antipattern_objectscript_via_dbapi():
 # ANTI-PATTERN 2: Namespace Creation via DBAPI (❌ SECURITY ERROR!)
 # =============================================================================
 
+
 def antipattern_namespace_creation_via_dbapi():
     """
     ❌ WRONG: Cannot create namespaces via $SYSTEM.OBJ.Execute()
@@ -265,11 +265,13 @@ def antipattern_namespace_creation_via_dbapi():
 
     try:
         # ❌ BREAKS - Security restriction
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT $SYSTEM.OBJ.Execute('
                 Do ##class(Config.Namespaces).Create("TEST_FAIL")
             ')
-        """)
+        """
+        )
         print("This line never executes")
 
     except Exception as e:
@@ -283,6 +285,7 @@ def antipattern_namespace_creation_via_dbapi():
 # ANTI-PATTERN 3: Using iris.connect() for SQL Queries (⚠️ SLOW!)
 # =============================================================================
 
+
 def antipattern_sql_via_iris_connect():
     """
     ⚠️ SLOW: Using iris.connect() for SQL queries is 3x slower than DBAPI.
@@ -290,15 +293,12 @@ def antipattern_sql_via_iris_connect():
     This works but is inefficient. Always use DBAPI for SQL operations.
     """
 
-    import iris
     import time
 
+    import iris
+
     conn = iris.connect(
-        hostname="localhost",
-        port=1972,
-        namespace="USER",
-        username="_SYSTEM",
-        password="SYS"
+        hostname="localhost", port=1972, namespace="USER", username="_SYSTEM", password="SYS"
     )
     iris_obj = iris.createIRIS(conn)
 
@@ -331,6 +331,7 @@ def antipattern_sql_via_iris_connect():
 # DECISION HELPER FUNCTION
 # =============================================================================
 
+
 def what_tool_should_i_use(operation: str) -> str:
     """
     Quick reference: What tool should I use for this operation?
@@ -346,11 +347,26 @@ def what_tool_should_i_use(operation: str) -> str:
         "query data": ("DBAPI", "cursor.execute('SELECT * FROM MyTable')"),
         "insert data": ("DBAPI", "cursor.execute('INSERT INTO MyTable VALUES (...)')"),
         "create table": ("DBAPI", "cursor.execute('CREATE TABLE ...')"),
-        "backup namespace": ("DBAPI + $SYSTEM.OBJ.Execute", "cursor.execute('SELECT $SYSTEM.OBJ.Execute(...)')"),
-        "restore namespace": ("DBAPI + $SYSTEM.OBJ.Execute", "cursor.execute('SELECT $SYSTEM.OBJ.Execute(...)')"),
-        "create namespace": ("iris.connect()", "iris_obj.classMethodValue('Config.Namespaces', 'Create', 'TEST')"),
-        "delete namespace": ("iris.connect()", "iris_obj.classMethodValue('Config.Namespaces', 'Delete', 'TEST')"),
-        "task manager": ("iris.connect()", "iris_obj.execute('Set task = ##class(%SYS.Task).%New()')"),
+        "backup namespace": (
+            "DBAPI + $SYSTEM.OBJ.Execute",
+            "cursor.execute('SELECT $SYSTEM.OBJ.Execute(...)')",
+        ),
+        "restore namespace": (
+            "DBAPI + $SYSTEM.OBJ.Execute",
+            "cursor.execute('SELECT $SYSTEM.OBJ.Execute(...)')",
+        ),
+        "create namespace": (
+            "iris.connect()",
+            "iris_obj.classMethodValue('Config.Namespaces', 'Create', 'TEST')",
+        ),
+        "delete namespace": (
+            "iris.connect()",
+            "iris_obj.classMethodValue('Config.Namespaces', 'Delete', 'TEST')",
+        ),
+        "task manager": (
+            "iris.connect()",
+            "iris_obj.execute('Set task = ##class(%SYS.Task).%New()')",
+        ),
         "set global": ("iris.connect()", "iris_obj.set('^MyGlobal', 'value')"),
         "get global": ("iris.connect()", "iris_obj.get('^MyGlobal')"),
         "reset password": ("docker exec", "docker exec iris_db iris session IRIS -U %SYS ..."),

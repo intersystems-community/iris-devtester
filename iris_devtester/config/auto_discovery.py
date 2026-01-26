@@ -13,7 +13,7 @@ import logging
 import re
 import subprocess
 import sys
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -201,9 +201,7 @@ def discover_native_iris() -> Optional[Dict[str, Any]]:
     """
     try:
         # Run 'iris list' to see running instances
-        result = subprocess.run(
-            ["iris", "list"], capture_output=True, text=True, timeout=5
-        )
+        result = subprocess.run(["iris", "list"], capture_output=True, text=True, timeout=5)
 
         if result.returncode != 0:
             logger.debug(f"'iris list' failed with exit code {result.returncode}")
@@ -224,9 +222,7 @@ def discover_native_iris() -> Optional[Dict[str, Any]]:
                         if match:
                             port = int(match.group(1))
 
-                            logger.info(
-                                f"✅ Discovered native IRIS on SuperServer port {port}"
-                            )
+                            logger.info(f"✅ Discovered native IRIS on SuperServer port {port}")
 
                             return {
                                 "host": "localhost",
@@ -280,17 +276,13 @@ def auto_discover_iris() -> Optional[Dict[str, Any]]:
     # Priority 1: Docker containers
     config = discover_docker_iris()
     if config:
-        logger.info(
-            f"✓ Auto-discovery successful (Docker): {config['host']}:{config['port']}"
-        )
+        logger.info(f"✓ Auto-discovery successful (Docker): {config['host']}:{config['port']}")
         return config
 
     # Priority 2: Native IRIS
     config = discover_native_iris()
     if config:
-        logger.info(
-            f"✓ Auto-discovery successful (Native): {config['host']}:{config['port']}"
-        )
+        logger.info(f"✓ Auto-discovery successful (Native): {config['host']}:{config['port']}")
         return config
 
     # Priority 3: Multi-port scanning
@@ -303,9 +295,7 @@ def auto_discover_iris() -> Optional[Dict[str, Any]]:
             "password": "SYS",
             "namespace": "USER",
         }
-        logger.info(
-            f"✓ Auto-discovery successful (Port scan): {config['host']}:{config['port']}"
-        )
+        logger.info(f"✓ Auto-discovery successful (Port scan): {config['host']}:{config['port']}")
         return config
 
     logger.warning(
@@ -326,9 +316,7 @@ def auto_discover_iris() -> Optional[Dict[str, Any]]:
 
 if __name__ == "__main__":
     """Quick test of auto-discovery."""
-    logging.basicConfig(
-        level=logging.INFO, format="%(levelname)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     print("=" * 60)
     print("IRIS Auto-Discovery Test")

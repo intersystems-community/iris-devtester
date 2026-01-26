@@ -6,9 +6,11 @@ Tests the detection and usage of intersystems-irispython (modern package).
 CRITICAL: These tests use the OFFICIAL iris.connect() API (Constitutional Principle #8).
 The _DBAPI private module does NOT exist in intersystems-irispython v5.1.2 or v5.3.0.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+
 import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestModernPackageContract:
@@ -21,12 +23,10 @@ class TestModernPackageContract:
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }):
+        with patch.dict("sys.modules", {"iris": mock_iris}):
             # Clear module cache to force re-detection
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+            if "iris_devtester.utils.dbapi_compat" in sys.modules:
+                del sys.modules["iris_devtester.utils.dbapi_compat"]
 
             from iris_devtester.utils.dbapi_compat import detect_dbapi_package
 
@@ -40,11 +40,9 @@ class TestModernPackageContract:
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }):
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+        with patch.dict("sys.modules", {"iris": mock_iris}):
+            if "iris_devtester.utils.dbapi_compat" in sys.modules:
+                del sys.modules["iris_devtester.utils.dbapi_compat"]
 
             from iris_devtester.utils.dbapi_compat import detect_dbapi_package
 
@@ -59,11 +57,9 @@ class TestModernPackageContract:
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }):
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+        with patch.dict("sys.modules", {"iris": mock_iris}):
+            if "iris_devtester.utils.dbapi_compat" in sys.modules:
+                del sys.modules["iris_devtester.utils.dbapi_compat"]
 
             from iris_devtester.utils.dbapi_compat import get_connection
 
@@ -72,7 +68,7 @@ class TestModernPackageContract:
                 port=1972,
                 namespace="USER",
                 username="_SYSTEM",
-                password="SYS"
+                password="SYS",
             )
             assert conn is not None
 
@@ -82,16 +78,16 @@ class TestModernPackageContract:
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }):
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+        with patch.dict("sys.modules", {"iris": mock_iris}):
+            if "iris_devtester.utils.dbapi_compat" in sys.modules:
+                del sys.modules["iris_devtester.utils.dbapi_compat"]
 
             from iris_devtester.utils.dbapi_compat import detect_dbapi_package
 
             info = detect_dbapi_package()
-            assert info.detection_time_ms < 10.0, f"Detection took {info.detection_time_ms}ms (>10ms)"
+            assert (
+                info.detection_time_ms < 10.0
+            ), f"Detection took {info.detection_time_ms}ms (>10ms)"
 
     def test_package_info_correct(self):
         """Contract: Package info contains correct metadata."""
@@ -99,11 +95,12 @@ class TestModernPackageContract:
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }), patch('importlib.metadata.version', return_value="5.3.0"):
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+        with (
+            patch.dict("sys.modules", {"iris": mock_iris}),
+            patch("importlib.metadata.version", return_value="5.3.0"),
+        ):
+            if "iris_devtester.utils.dbapi_compat" in sys.modules:
+                del sys.modules["iris_devtester.utils.dbapi_compat"]
 
             from iris_devtester.utils.dbapi_compat import get_package_info
 
@@ -118,13 +115,15 @@ class TestModernPackageContract:
         mock_iris = MagicMock()
         mock_iris.connect = mock_connect
 
-        with patch.dict('sys.modules', {
-            'iris': mock_iris
-        }), patch('importlib.metadata.version', return_value="5.3.0"):
-            if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-                del sys.modules['iris_devtester.utils.dbapi_compat']
+        with (
+            patch.dict("sys.modules", {"iris": mock_iris}),
+            patch("importlib.metadata.version", return_value="5.3.0"),
+        ):
+            if "iris_devtester.utils.dbapi_compat" in sys.modules:
+                del sys.modules["iris_devtester.utils.dbapi_compat"]
 
             import logging
+
             caplog.set_level(logging.INFO)
 
             from iris_devtester.utils.dbapi_compat import detect_dbapi_package
@@ -135,8 +134,8 @@ class TestModernPackageContract:
     def test_version_validation(self):
         """Contract: Version validation enforces minimum version."""
         # Clear module cache first
-        if 'iris_devtester.utils.dbapi_compat' in sys.modules:
-            del sys.modules['iris_devtester.utils.dbapi_compat']
+        if "iris_devtester.utils.dbapi_compat" in sys.modules:
+            del sys.modules["iris_devtester.utils.dbapi_compat"]
 
         mock_connect = MagicMock()
         mock_iris = MagicMock()
@@ -144,15 +143,22 @@ class TestModernPackageContract:
 
         # Test with old version (should fail - minimum is 5.1.2)
         # Mock both the iris module AND importlib.metadata.version
-        with patch.dict('sys.modules', {'iris': mock_iris}), \
-             patch('iris_devtester.utils.dbapi_compat.importlib.metadata.version', return_value="5.1.0"):
+        with (
+            patch.dict("sys.modules", {"iris": mock_iris}),
+            patch(
+                "iris_devtester.utils.dbapi_compat.importlib.metadata.version", return_value="5.1.0"
+            ),
+        ):
 
             with pytest.raises(ImportError) as exc_info:
                 from iris_devtester.utils.dbapi_compat import detect_dbapi_package
+
                 detect_dbapi_package()
 
             # Check for version incompatibility message
             error_message = str(exc_info.value)
             assert "5.1.0" in error_message  # Version should be mentioned
-            assert ("incompatible" in error_message.lower() or
-                    "minimum required" in error_message.lower())
+            assert (
+                "incompatible" in error_message.lower()
+                or "minimum required" in error_message.lower()
+            )

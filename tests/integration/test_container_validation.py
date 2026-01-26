@@ -10,14 +10,16 @@ Constitutional Compliance:
 """
 
 import time
-import pytest
+
 import docker
+import pytest
+
 from iris_devtester.containers import (
-    IRISContainer,
-    validate_container,
+    ContainerHealthStatus,
     ContainerValidator,
     HealthCheckLevel,
-    ContainerHealthStatus,
+    IRISContainer,
+    validate_container,
 )
 
 
@@ -41,9 +43,7 @@ def stopped_container(docker_client):
     """Create and stop a container for testing NOT_RUNNING status."""
     # Create container but don't start it
     container = docker_client.containers.create(
-        "intersystemsdc/iris-community:latest",
-        name="iris_test_stopped",
-        detach=True
+        "intersystemsdc/iris-community:latest", name="iris_test_stopped", detach=True
     )
 
     try:
@@ -62,10 +62,7 @@ class TestValidateContainerWithRunningContainer:
         """Validate healthy container with MINIMAL level check."""
         container_name = running_iris_container.get_container_name()
 
-        result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.MINIMAL
-        )
+        result = validate_container(container_name=container_name, level=HealthCheckLevel.MINIMAL)
 
         assert result.success is True
         assert result.status == ContainerHealthStatus.HEALTHY
@@ -79,10 +76,7 @@ class TestValidateContainerWithRunningContainer:
         """Validate healthy container with STANDARD level check."""
         container_name = running_iris_container.get_container_name()
 
-        result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.STANDARD
-        )
+        result = validate_container(container_name=container_name, level=HealthCheckLevel.STANDARD)
 
         assert result.success is True
         assert result.status == ContainerHealthStatus.HEALTHY
@@ -94,10 +88,7 @@ class TestValidateContainerWithRunningContainer:
         """Validate healthy container with FULL level check (includes IRIS health)."""
         container_name = running_iris_container.get_container_name()
 
-        result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.FULL
-        )
+        result = validate_container(container_name=container_name, level=HealthCheckLevel.FULL)
 
         assert result.success is True
         assert result.status == ContainerHealthStatus.HEALTHY
@@ -114,10 +105,7 @@ class TestValidateContainerPerformanceSLAs:
         container_name = running_iris_container.get_container_name()
 
         start = time.time()
-        result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.MINIMAL
-        )
+        result = validate_container(container_name=container_name, level=HealthCheckLevel.MINIMAL)
         elapsed = time.time() - start
 
         assert result.success is True
@@ -129,10 +117,7 @@ class TestValidateContainerPerformanceSLAs:
         container_name = running_iris_container.get_container_name()
 
         start = time.time()
-        result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.STANDARD
-        )
+        result = validate_container(container_name=container_name, level=HealthCheckLevel.STANDARD)
         elapsed = time.time() - start
 
         assert result.success is True
@@ -144,10 +129,7 @@ class TestValidateContainerPerformanceSLAs:
         container_name = running_iris_container.get_container_name()
 
         start = time.time()
-        result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.FULL
-        )
+        result = validate_container(container_name=container_name, level=HealthCheckLevel.FULL)
         elapsed = time.time() - start
 
         assert result.success is True
@@ -163,7 +145,7 @@ class TestValidateContainerErrorScenarios:
         result = validate_container(
             container_name="iris_nonexistent_container_12345",
             level=HealthCheckLevel.STANDARD,
-            docker_client=docker_client
+            docker_client=docker_client,
         )
 
         assert result.success is False
@@ -178,7 +160,7 @@ class TestValidateContainerErrorScenarios:
         result = validate_container(
             container_name=stopped_container,
             level=HealthCheckLevel.STANDARD,
-            docker_client=docker_client
+            docker_client=docker_client,
         )
 
         assert result.success is False
@@ -193,7 +175,7 @@ class TestValidateContainerErrorScenarios:
         result = validate_container(
             container_name="iris_test_not_found",
             level=HealthCheckLevel.STANDARD,
-            docker_client=docker_client
+            docker_client=docker_client,
         )
 
         message = result.format_message()
@@ -210,18 +192,12 @@ class TestValidateContainerInputValidation:
     def test_validate_container_empty_name_raises_valueerror(self, docker_client):
         """Empty container name must raise ValueError."""
         with pytest.raises(ValueError, match="container_name cannot be empty"):
-            validate_container(
-                container_name="",
-                docker_client=docker_client
-            )
+            validate_container(container_name="", docker_client=docker_client)
 
     def test_validate_container_none_name_raises_typeerror(self, docker_client):
         """None container name must raise TypeError."""
         with pytest.raises(TypeError, match="container_name must be str"):
-            validate_container(
-                container_name=None,
-                docker_client=docker_client
-            )
+            validate_container(container_name=None, docker_client=docker_client)
 
     def test_validate_container_invalid_level_raises_typeerror(self, docker_client):
         """Invalid level type must raise TypeError."""
@@ -229,17 +205,13 @@ class TestValidateContainerInputValidation:
             validate_container(
                 container_name="iris_db",
                 level="invalid",  # Should be HealthCheckLevel enum
-                docker_client=docker_client
+                docker_client=docker_client,
             )
 
     def test_validate_container_invalid_timeout_raises_valueerror(self, docker_client):
         """Invalid timeout must raise ValueError."""
         with pytest.raises(ValueError, match="timeout must be positive"):
-            validate_container(
-                container_name="iris_db",
-                timeout=-1,
-                docker_client=docker_client
-            )
+            validate_container(container_name="iris_db", timeout=-1, docker_client=docker_client)
 
 
 class TestContainerValidatorClass:
@@ -392,12 +364,10 @@ class TestIRISContainerValidationMethods:
         # but we can test the logic by using validate_container directly
 
         # This test verifies the error message structure when validation fails
-        from iris_devtester.containers.models import ValidationResult, ContainerHealthStatus
+        from iris_devtester.containers.models import ContainerHealthStatus, ValidationResult
 
         result = ValidationResult.not_found(
-            name="iris_test",
-            available_containers=["iris_db"],
-            validation_time=0.1
+            name="iris_test", available_containers=["iris_db"], validation_time=0.1
         )
 
         # Verify format_message() produces correct structure
@@ -459,10 +429,7 @@ class TestEdgeCasesAndBoundaryConditions:
         container_name = running_iris_container.get_container_name()
         custom_client = docker.from_env()
 
-        result = validate_container(
-            container_name=container_name,
-            docker_client=custom_client
-        )
+        result = validate_container(container_name=container_name, docker_client=custom_client)
 
         assert result.success is True
 
@@ -472,9 +439,7 @@ class TestEdgeCasesAndBoundaryConditions:
 
         # Even with 1s timeout, MINIMAL check should complete
         result = validate_container(
-            container_name=container_name,
-            level=HealthCheckLevel.MINIMAL,
-            timeout=1
+            container_name=container_name, level=HealthCheckLevel.MINIMAL, timeout=1
         )
 
         assert result.success is True

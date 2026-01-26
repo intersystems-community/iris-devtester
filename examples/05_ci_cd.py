@@ -12,6 +12,7 @@ Constitutional Principle #7: Medical-Grade Reliability
 """
 
 import os
+
 from iris_devtester.containers import IRISContainer
 
 
@@ -188,7 +189,7 @@ def example_multi_environment_test():
         # Expected output: Testing with Community Edition:
 
         try:
-            with IRISContainer(image=env['image']) as iris:
+            with IRISContainer(image=env["image"]) as iris:
                 conn = iris.get_connection()
                 cursor = conn.cursor()
                 cursor.execute("SELECT 1")

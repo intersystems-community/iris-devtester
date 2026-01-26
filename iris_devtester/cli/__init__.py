@@ -1,10 +1,12 @@
 """CLI commands for iris-devtester."""
 
 import click
+
 from iris_devtester import __version__
-from .fixture_commands import fixture
-from .container import container_group as container
+
 from .connection_commands import test_connection
+from .container import container_group as container
+from .fixture_commands import fixture
 
 
 @click.group()

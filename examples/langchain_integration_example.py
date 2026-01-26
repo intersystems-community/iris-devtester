@@ -13,6 +13,7 @@ Usage:
 """
 
 import os
+
 from langchain.schema import Document
 from langchain_openai import OpenAIEmbeddings
 

@@ -145,9 +145,7 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
             "\n"
             "What went wrong:\n"
             f"  The JDBC driver ({JDBC_JAR_NAME}) was not found.\n"
-            "  Searched locations:\n"
-            + "".join(f"    - {loc}\n" for loc in search_locations)
-            + "\n"
+            "  Searched locations:\n" + "".join(f"    - {loc}\n" for loc in search_locations) + "\n"
             "How to fix it:\n"
             "  1. Download the JDBC driver:\n"
             "     wget https://github.com/intersystems-community/iris-driver-distribution/raw/main/JDBC/JDK18/intersystems-jdbc-3.8.4.jar\n"
@@ -172,9 +170,7 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
             str(jdbc_jar_path),
         )
 
-        logger.debug(
-            f"JDBC connection established to {jdbc_url} using driver at {jdbc_jar_path}"
-        )
+        logger.debug(f"JDBC connection established to {jdbc_url} using driver at {jdbc_jar_path}")
         return connection
 
     except Exception as e:

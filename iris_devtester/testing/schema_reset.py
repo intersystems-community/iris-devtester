@@ -227,9 +227,7 @@ def cleanup_test_data(connection: Any, test_id: str) -> int:
                     cursor.execute(f"DELETE FROM {table} WHERE test_id = ?", (test_id,))
                     deleted = cursor.rowcount
                     if deleted > 0:
-                        logger.debug(
-                            f"Deleted {deleted} row(s) from {table} for test_id={test_id}"
-                        )
+                        logger.debug(f"Deleted {deleted} row(s) from {table} for test_id={test_id}")
                     cleaned_count += 1
 
             except Exception as e:

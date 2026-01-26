@@ -19,13 +19,15 @@ class TestAttachMethodSignature:
     def test_attach_method_exists(self):
         """Contract: IRISContainer.attach() class method must exist."""
         from iris_devtester.containers.iris_container import IRISContainer
+
         assert hasattr(IRISContainer, "attach")
         assert callable(getattr(IRISContainer, "attach"))
 
     def test_attach_is_classmethod(self):
         """Contract: attach() is a class method, not instance method."""
-        from iris_devtester.containers.iris_container import IRISContainer
         import inspect
+
+        from iris_devtester.containers.iris_container import IRISContainer
 
         # Class methods have __func__ attribute
         method = getattr(IRISContainer, "attach")
@@ -33,8 +35,9 @@ class TestAttachMethodSignature:
 
     def test_attach_signature(self):
         """Contract: attach() accepts container_name parameter."""
-        from iris_devtester.containers.iris_container import IRISContainer
         import inspect
+
+        from iris_devtester.containers.iris_container import IRISContainer
 
         sig = inspect.signature(IRISContainer.attach)
         params = list(sig.parameters.keys())
@@ -43,13 +46,14 @@ class TestAttachMethodSignature:
 
     def test_attach_returns_iriscontainer(self):
         """Contract: attach() returns IRISContainer instance."""
-        from iris_devtester.containers.iris_container import IRISContainer
         import inspect
+
+        from iris_devtester.containers.iris_container import IRISContainer
 
         sig = inspect.signature(IRISContainer.attach)
         # Return annotation should be IRISContainer or "IRISContainer" (string)
         return_annotation = sig.return_annotation
-        assert return_annotation in [IRISContainer, "IRISContainer", "\"IRISContainer\""]
+        assert return_annotation in [IRISContainer, "IRISContainer", '"IRISContainer"']
 
 
 class TestAttachLifecycleGuards:
@@ -63,7 +67,7 @@ class TestAttachLifecycleGuards:
         Lifecycle management is disabled for attached containers.
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T020 complete")
+        # pytest.skip("Implementation required - test will fail until T020 complete")
 
     @pytest.mark.contract
     def test_attached_container_rejects_stop(self):
@@ -72,7 +76,7 @@ class TestAttachLifecycleGuards:
 
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T020 complete")
+        # pytest.skip("Implementation required - test will fail until T020 complete")
 
     @pytest.mark.contract
     def test_attached_container_rejects_context_manager(self):
@@ -81,7 +85,7 @@ class TestAttachLifecycleGuards:
 
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T020 complete")
+        # pytest.skip("Implementation required - test will fail until T020 complete")
 
     @pytest.mark.contract
     def test_utility_methods_work_on_attached(self):
@@ -91,4 +95,4 @@ class TestAttachLifecycleGuards:
         Only lifecycle methods are disabled.
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T020 complete")
+        # pytest.skip("Implementation required - test will fail until T020 complete")

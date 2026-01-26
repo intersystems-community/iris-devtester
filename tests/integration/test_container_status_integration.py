@@ -5,6 +5,7 @@ Tests verify comprehensive status reporting on real IRIS containers.
 """
 
 import pytest
+
 from iris_devtester.utils.container_status import get_container_status
 
 
@@ -90,6 +91,8 @@ class TestContainerStatusIntegration:
 
         # Verify all status dimensions included
         assert "Running:" in status_report, "Should check running status"
-        assert "Health:" in status_report or "healthcheck" in status_report.lower(), "Should check health"
+        assert (
+            "Health:" in status_report or "healthcheck" in status_report.lower()
+        ), "Should check health"
         assert "Connection:" in status_report, "Should check connection"
         assert "Overall:" in status_report, "Should have overall summary"

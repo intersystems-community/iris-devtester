@@ -6,6 +6,7 @@ and properly detects namespace issues.
 """
 
 import pytest
+
 from iris_devtester.utils.test_connection import test_connection
 
 

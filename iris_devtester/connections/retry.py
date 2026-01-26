@@ -52,14 +52,11 @@ def retry_with_backoff(
 
             # Don't retry on last attempt
             if attempt == max_retries - 1:
-                logger.warning(
-                    f"All {max_retries} retry attempts failed. Giving up."
-                )
+                logger.warning(f"All {max_retries} retry attempts failed. Giving up.")
                 break
 
             logger.warning(
-                f"Attempt {attempt + 1}/{max_retries} failed: {e}. "
-                f"Retrying in {delay:.1f}s..."
+                f"Attempt {attempt + 1}/{max_retries} failed: {e}. " f"Retrying in {delay:.1f}s..."
             )
 
             time.sleep(delay)

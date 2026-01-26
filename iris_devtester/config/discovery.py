@@ -13,16 +13,16 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from iris_devtester.config.models import IRISConfig
 from iris_devtester.config.defaults import (
-    DEFAULT_HOST,
-    DEFAULT_PORT,
-    DEFAULT_NAMESPACE,
-    DEFAULT_USERNAME,
-    DEFAULT_PASSWORD,
     DEFAULT_DRIVER,
+    DEFAULT_HOST,
+    DEFAULT_NAMESPACE,
+    DEFAULT_PASSWORD,
+    DEFAULT_PORT,
     DEFAULT_TIMEOUT,
+    DEFAULT_USERNAME,
 )
+from iris_devtester.config.models import IRISConfig
 
 
 def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:

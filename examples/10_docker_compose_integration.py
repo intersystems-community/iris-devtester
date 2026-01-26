@@ -12,10 +12,10 @@ Use Case: Licensed IRIS running via docker-compose that you want to use for test
 Constitutional Principle #6: Enterprise Ready, Community Friendly
 """
 
+from iris_devtester.containers import IRISContainer
+from iris_devtester.utils.container_status import get_container_status
 from iris_devtester.utils.enable_callin import enable_callin_service
 from iris_devtester.utils.test_connection import test_connection
-from iris_devtester.utils.container_status import get_container_status
-from iris_devtester.containers import IRISContainer
 
 
 def example_standalone_utilities():

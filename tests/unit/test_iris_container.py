@@ -5,8 +5,9 @@ Tests wrapper around testcontainers-iris-python with automatic connection
 and password reset integration.
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 
 class TestIRISContainer:
@@ -55,11 +56,19 @@ class TestIRISContainer:
 
         assert hasattr(IRISContainer, "wait_for_ready") or "wait_for_ready" in dir(IRISContainer)
 
-    def test_reset_password_method_exists(self):
-        """Test that reset_password() method exists."""
+    def test_with_preconfigured_password_method_exists(self):
+        """Test that with_preconfigured_password() method exists for password pre-configuration."""
         from iris_devtester.containers import IRISContainer
 
-        assert hasattr(IRISContainer, "reset_password") or "reset_password" in dir(IRISContainer)
+        assert hasattr(IRISContainer, "with_preconfigured_password")
+        assert callable(getattr(IRISContainer, "with_preconfigured_password"))
+
+    def test_with_credentials_method_exists(self):
+        """Test that with_credentials() method exists for credential pre-configuration."""
+        from iris_devtester.containers import IRISContainer
+
+        assert hasattr(IRISContainer, "with_credentials")
+        assert callable(getattr(IRISContainer, "with_credentials"))
 
     def test_get_config_method_exists(self):
         """Test that get_config() method returns IRISConfig."""
@@ -81,13 +90,17 @@ class TestIRISContainerIntegration:
         # The key is that IRISContainer should use the connection manager
         assert mock_get_connection is not None
 
-    @patch("iris_devtester.containers.iris_container.reset_password_if_needed")
-    def test_reset_password_uses_recovery_handler(self, mock_reset):
-        """Test that reset_password() integrates with password reset utility."""
+    def test_password_preconfig_sets_env_vars(self):
+        """Test that password pre-configuration works via env vars."""
         from iris_devtester.containers import IRISContainer
 
-        # This tests integration - actual implementation will vary
-        assert mock_reset is not None
+        # Create container with pre-configured password
+        container = IRISContainer.community()
+        container.with_preconfigured_password("TestPass123")
+
+        # Verify internal state was set
+        assert container._preconfigure_password == "TestPass123"
+        assert container._password == "TestPass123"
 
     def test_container_provides_connection_info(self):
         """Test that container can provide connection information."""

@@ -9,21 +9,21 @@ Tests cover:
 - T014: Atomic namespace mounting (all-or-nothing)
 """
 
-import pytest
-import tempfile
 import shutil
+import tempfile
+import time
 from pathlib import Path
 
-from iris_devtester.fixtures import (
-    FixtureCreator,
-    DATFixtureLoader,
-    FixtureValidator,
-    ChecksumMismatchError,
-    FixtureValidationError,
-)
-from iris_devtester.connections import get_connection
-import time
+import pytest
 
+from iris_devtester.connections import get_connection
+from iris_devtester.fixtures import (
+    ChecksumMismatchError,
+    DATFixtureLoader,
+    FixtureCreator,
+    FixtureValidationError,
+    FixtureValidator,
+)
 
 # Use shared fixtures from conftest.py instead of duplicating
 # The conftest.py provides:
@@ -45,7 +45,9 @@ def temp_fixture_dir():
 class TestFixtureRoundtrip:
     """Test T012: Complete fixture roundtrip workflow."""
 
-    def test_create_validate_load_verify(self, iris_container, test_namespace, iris_connection, temp_fixture_dir):
+    def test_create_validate_load_verify(
+        self, iris_container, test_namespace, iris_connection, temp_fixture_dir
+    ):
         """
         Test complete roundtrip: create fixture → validate → load → verify data.
 
@@ -61,13 +63,15 @@ class TestFixtureRoundtrip:
         cursor = iris_connection.cursor()
 
         # Create test table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE TestData (
                 ID INT PRIMARY KEY,
                 Name VARCHAR(100),
                 Value DECIMAL(10,2)
             )
-        """)
+        """
+        )
 
         # Insert test rows
         cursor.execute("INSERT INTO TestData (ID, Name, Value) VALUES (1, 'Alice', 100.50)")
@@ -86,7 +90,7 @@ class TestFixtureRoundtrip:
             namespace=source_namespace,
             output_dir=str(fixture_path),
             description="Integration test fixture",
-            version="1.0.0"
+            version="1.0.0",
         )
 
         # Verify manifest
@@ -113,7 +117,7 @@ class TestFixtureRoundtrip:
         load_result = loader.load_fixture(
             fixture_path=str(fixture_path),
             target_namespace=target_namespace,
-            validate_checksum=True
+            validate_checksum=True,
         )
 
         # Verify load result
@@ -169,7 +173,7 @@ class TestChecksumMismatch:
             namespace=source_namespace,
             output_dir=str(fixture_path),
             description="Checksum test fixture",
-            version="1.0.0"
+            version="1.0.0",
         )
 
         # Corrupt the IRIS.DAT file
@@ -196,9 +200,7 @@ class TestChecksumMismatch:
         fixture_path = Path(temp_fixture_dir) / "test-skip"
 
         creator.create_fixture(
-            fixture_id="test-skip",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="test-skip", namespace=source_namespace, output_dir=str(fixture_path)
         )
 
         # Corrupt the DAT file
@@ -227,9 +229,7 @@ class TestAtomicOperations:
         fixture_path = Path(temp_fixture_dir) / "test-atomic"
 
         creator.create_fixture(
-            fixture_id="test-atomic",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="test-atomic", namespace=source_namespace, output_dir=str(fixture_path)
         )
 
         # Load fixture should succeed
@@ -237,8 +237,7 @@ class TestAtomicOperations:
         target_namespace = iris_container.get_test_namespace(prefix="ATOMIC_TARGET")
 
         result = loader.load_fixture(
-            fixture_path=str(fixture_path),
-            target_namespace=target_namespace
+            fixture_path=str(fixture_path), target_namespace=target_namespace
         )
 
         assert result.success
@@ -257,19 +256,14 @@ class TestAtomicOperations:
         fixture_path = Path(temp_fixture_dir) / "test-cleanup"
 
         creator.create_fixture(
-            fixture_id="test-cleanup",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="test-cleanup", namespace=source_namespace, output_dir=str(fixture_path)
         )
 
         # Load into target namespace
         loader = DATFixtureLoader(container=iris_container)
         target_namespace = iris_container.get_test_namespace(prefix="CLEANUP_TARGET")
 
-        loader.load_fixture(
-            fixture_path=str(fixture_path),
-            target_namespace=target_namespace
-        )
+        loader.load_fixture(fixture_path=str(fixture_path), target_namespace=target_namespace)
 
         # Cleanup with delete
         loader.cleanup_fixture(target_namespace, delete_namespace=True)
@@ -298,6 +292,7 @@ class TestErrorScenarios:
 
         # Create manifest without DAT file
         from iris_devtester.fixtures import FixtureManifest, TableInfo
+
         manifest = FixtureManifest(
             fixture_id="test",
             version="1.0.0",
@@ -308,7 +303,7 @@ class TestErrorScenarios:
             namespace="TEST",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[]
+            tables=[],
         )
         manifest.to_file(str(fixture_path / "manifest.json"))
 
@@ -330,6 +325,7 @@ class TestErrorScenarios:
 def test_integration_test_count():
     """Verify we have comprehensive integration tests."""
     import sys
+
     module = sys.modules[__name__]
 
     test_classes = [
@@ -341,7 +337,7 @@ def test_integration_test_count():
 
     total_tests = 0
     for test_class in test_classes:
-        test_methods = [m for m in dir(test_class) if m.startswith('test_')]
+        test_methods = [m for m in dir(test_class) if m.startswith("test_")]
         total_tests += len(test_methods)
 
     # Should have at least 8 integration tests

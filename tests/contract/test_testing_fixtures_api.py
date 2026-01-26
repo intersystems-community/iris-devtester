@@ -7,7 +7,6 @@ specs/001-implement-iris-devtester/contracts/testing-fixtures-api.md
 These tests MUST FAIL until implementation is complete.
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
@@ -20,14 +19,14 @@ class TestIrisDbFixture:
         """Test that iris_db fixture can be imported."""
         from iris_devtester.testing import fixtures
 
-        assert hasattr(fixtures, 'iris_db')
+        assert hasattr(fixtures, "iris_db")
 
     def test_fixture_is_callable(self):
         """Test that iris_db is a fixture function."""
         from iris_devtester.testing.fixtures import iris_db
 
         # Check for pytest fixture marker
-        assert hasattr(iris_db, '_pytestfixturefunction')
+        assert hasattr(iris_db, "_pytestfixturefunction")
 
     def test_fixture_scope(self):
         """Test that iris_db has function scope."""
@@ -35,7 +34,7 @@ class TestIrisDbFixture:
 
         # Function scope means each test gets new instance
         fixture_info = iris_db._pytestfixturefunction
-        assert fixture_info.scope == 'function'
+        assert fixture_info.scope == "function"
 
 
 class TestIrisDbSharedFixture:
@@ -45,20 +44,20 @@ class TestIrisDbSharedFixture:
         """Test that iris_db_shared fixture can be imported."""
         from iris_devtester.testing import fixtures
 
-        assert hasattr(fixtures, 'iris_db_shared')
+        assert hasattr(fixtures, "iris_db_shared")
 
     def test_fixture_is_callable(self):
         """Test that iris_db_shared is a fixture function."""
         from iris_devtester.testing.fixtures import iris_db_shared
 
-        assert hasattr(iris_db_shared, '_pytestfixturefunction')
+        assert hasattr(iris_db_shared, "_pytestfixturefunction")
 
     def test_fixture_scope(self):
         """Test that iris_db_shared has module scope."""
         from iris_devtester.testing.fixtures import iris_db_shared
 
         fixture_info = iris_db_shared._pytestfixturefunction
-        assert fixture_info.scope == 'module'
+        assert fixture_info.scope == "module"
 
 
 class TestIrisContainerFixture:
@@ -68,20 +67,20 @@ class TestIrisContainerFixture:
         """Test that iris_container fixture can be imported."""
         from iris_devtester.testing import fixtures
 
-        assert hasattr(fixtures, 'iris_container')
+        assert hasattr(fixtures, "iris_container")
 
     def test_fixture_is_callable(self):
         """Test that iris_container is a fixture function."""
         from iris_devtester.testing.fixtures import iris_container
 
-        assert hasattr(iris_container, '_pytestfixturefunction')
+        assert hasattr(iris_container, "_pytestfixturefunction")
 
     def test_fixture_scope(self):
         """Test that iris_container has function scope."""
         from iris_devtester.testing.fixtures import iris_container
 
         fixture_info = iris_container._pytestfixturefunction
-        assert fixture_info.scope == 'function'
+        assert fixture_info.scope == "function"
 
 
 class TestValidateSchema:
@@ -95,20 +94,22 @@ class TestValidateSchema:
 
     def test_signature(self):
         """Test that validate_schema accepts required parameters."""
+        from unittest.mock import Mock
+
         from iris_devtester.testing import validate_schema
         from iris_devtester.testing.models import SchemaDefinition
-        from unittest.mock import Mock
 
         mock_conn = Mock()
         schema = SchemaDefinition()
         result = validate_schema(mock_conn, schema)
-        assert hasattr(result, 'is_valid')
+        assert hasattr(result, "is_valid")
 
     def test_returns_schema_validation_result(self):
         """Test that validate_schema returns SchemaValidationResult."""
+        from unittest.mock import Mock
+
         from iris_devtester.testing import validate_schema
         from iris_devtester.testing.models import SchemaDefinition, SchemaValidationResult
-        from unittest.mock import Mock
 
         mock_conn = Mock()
         schema = SchemaDefinition()
@@ -127,9 +128,10 @@ class TestResetSchema:
 
     def test_signature(self):
         """Test that reset_schema accepts required parameters."""
+        from unittest.mock import Mock
+
         from iris_devtester.testing import reset_schema
         from iris_devtester.testing.models import SchemaDefinition
-        from unittest.mock import Mock
 
         mock_conn = Mock()
         schema = SchemaDefinition()

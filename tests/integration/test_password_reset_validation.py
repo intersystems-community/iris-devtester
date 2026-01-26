@@ -9,8 +9,9 @@ These tests verify that:
 """
 
 import pytest
+
 from iris_devtester.containers import IRISContainer
-from iris_devtester.utils.password_reset import reset_password
+from iris_devtester.utils.password import reset_password
 
 
 class TestPasswordResetActuallyWorks:
@@ -31,9 +32,7 @@ class TestPasswordResetActuallyWorks:
         """
         # Create container with default credentials
         with IRISContainer.community(
-            username="SuperUser",
-            password="SYS",
-            namespace="USER"
+            username="SuperUser", password="SYS", namespace="USER"
         ) as iris:
             # Get initial connection (this triggers proactive password reset)
             conn1 = iris.get_connection()
@@ -86,9 +85,7 @@ class TestPasswordResetActuallyWorks:
 
         # Create container
         with IRISContainer.community(
-            username="SuperUser",
-            password="SYS",
-            namespace="USER"
+            username="SuperUser", password="SYS", namespace="USER"
         ) as iris:
             # Get connection to ensure container is ready
             conn1 = iris.get_connection()
@@ -127,8 +124,9 @@ class TestPasswordResetActuallyWorks:
 
             # Verify we got authentication error (not connection refused)
             error_msg = str(exc_info.value).lower()
-            assert "access denied" in error_msg or "authentication" in error_msg, \
-                f"Expected authentication error, got: {error_msg}"
+            assert (
+                "access denied" in error_msg or "authentication" in error_msg
+            ), f"Expected authentication error, got: {error_msg}"
 
             print(f"✓ Old password correctly rejected: {error_msg}")
 
@@ -161,10 +159,7 @@ class TestPasswordResetActuallyWorks:
             iris._config = None
 
             # This should NOT crash (Bug #2 fix)
-            success = iris.reset_password(
-                username="SuperUser",
-                new_password="TEST123"
-            )
+            success = iris.reset_password(username="SuperUser", new_password="TEST123")
 
             # Verify reset worked
             assert success, "Password reset failed"

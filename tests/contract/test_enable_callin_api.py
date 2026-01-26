@@ -13,8 +13,9 @@ Constitutional Compliance:
 - Principle #7: Medical-Grade Reliability (contract enforcement)
 """
 
-import pytest
 from typing import Tuple
+
+import pytest
 
 
 class TestEnableCallinSignature:
@@ -23,12 +24,14 @@ class TestEnableCallinSignature:
     def test_function_exists(self):
         """Contract: enable_callin_service function must exist."""
         from iris_devtester.utils.enable_callin import enable_callin_service
+
         assert callable(enable_callin_service)
 
     def test_signature_accepts_container_name(self):
         """Contract: Function accepts container_name parameter."""
-        from iris_devtester.utils.enable_callin import enable_callin_service
         import inspect
+
+        from iris_devtester.utils.enable_callin import enable_callin_service
 
         sig = inspect.signature(enable_callin_service)
         assert "container_name" in sig.parameters
@@ -39,8 +42,9 @@ class TestEnableCallinSignature:
 
     def test_signature_accepts_timeout(self):
         """Contract: Function accepts timeout parameter."""
-        from iris_devtester.utils.enable_callin import enable_callin_service
         import inspect
+
+        from iris_devtester.utils.enable_callin import enable_callin_service
 
         sig = inspect.signature(enable_callin_service)
         assert "timeout" in sig.parameters
@@ -51,8 +55,9 @@ class TestEnableCallinSignature:
 
     def test_return_type_is_tuple(self):
         """Contract: Function returns Tuple[bool, str]."""
-        from iris_devtester.utils.enable_callin import enable_callin_service
         import inspect
+
+        from iris_devtester.utils.enable_callin import enable_callin_service
 
         sig = inspect.signature(enable_callin_service)
         # Check return annotation
@@ -70,7 +75,7 @@ class TestEnableCallinIdempotent:
         Calling twice with same parameters should succeed both times.
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T013 complete")
+        # pytest.skip("Implementation required - test will fail until T013 complete")
 
 
 class TestEnableCallinErrorHandling:
@@ -83,7 +88,7 @@ class TestEnableCallinErrorHandling:
 
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T013 complete")
+        # pytest.skip("Implementation required - test will fail until T013 complete")
 
     @pytest.mark.contract
     def test_error_message_has_remediation(self):
@@ -96,4 +101,4 @@ class TestEnableCallinErrorHandling:
 
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T013 complete")
+        # pytest.skip("Implementation required - test will fail until T013 complete")

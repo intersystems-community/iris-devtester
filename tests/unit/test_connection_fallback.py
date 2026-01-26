@@ -4,8 +4,9 @@ Unit tests for connection fallback logic.
 Tests DBAPI-first, JDBC-fallback strategy per Constitutional Principle #2.
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 
 class TestConnectionFallback:
@@ -21,8 +22,8 @@ class TestConnectionFallback:
     @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     def test_uses_dbapi_when_available(self, mock_dbapi_create, mock_dbapi_available):
         """Test that DBAPI is tried first when available."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         mock_conn = Mock()
         mock_dbapi_create.return_value = mock_conn
@@ -41,8 +42,8 @@ class TestConnectionFallback:
         self, mock_jdbc_create, mock_jdbc_available, mock_dbapi_available
     ):
         """Test fallback to JDBC when DBAPI not available."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         mock_conn = Mock()
         mock_jdbc_create.return_value = mock_conn
@@ -61,8 +62,8 @@ class TestConnectionFallback:
         self, mock_jdbc_create, mock_dbapi_create, mock_dbapi_available
     ):
         """Test fallback to JDBC when DBAPI connection fails."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         # DBAPI fails
         mock_dbapi_create.side_effect = Exception("DBAPI connection failed")
@@ -85,8 +86,8 @@ class TestConnectionFallback:
         self, mock_jdbc_available, mock_dbapi_available
     ):
         """Test error when neither driver is available."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         config = IRISConfig()
 
@@ -100,12 +101,10 @@ class TestConnectionFallback:
     @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
     @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
-    def test_logs_driver_selection(
-        self, mock_jdbc_create, mock_dbapi_create, mock_dbapi_available
-    ):
+    def test_logs_driver_selection(self, mock_jdbc_create, mock_dbapi_create, mock_dbapi_available):
         """Test that driver selection is logged."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         mock_conn = Mock()
         mock_dbapi_create.return_value = mock_conn
@@ -121,8 +120,8 @@ class TestConnectionFallback:
     @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     def test_respects_explicit_driver_dbapi(self, mock_dbapi_create, mock_dbapi_available):
         """Test that explicit driver='dbapi' forces DBAPI."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         mock_conn = Mock()
         mock_dbapi_create.return_value = mock_conn
@@ -137,8 +136,8 @@ class TestConnectionFallback:
     @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
     def test_respects_explicit_driver_jdbc(self, mock_jdbc_create, mock_jdbc_available):
         """Test that explicit driver='jdbc' forces JDBC."""
-        from iris_devtester.connections.manager import get_connection
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection
 
         mock_conn = Mock()
         mock_jdbc_create.return_value = mock_conn
@@ -157,8 +156,8 @@ class TestConnectionInfo:
     @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     def test_returns_connection_info(self, mock_dbapi_create, mock_dbapi_available):
         """Test that connection returns metadata about driver used."""
-        from iris_devtester.connections.manager import get_connection_with_info
         from iris_devtester.config import IRISConfig
+        from iris_devtester.connections.manager import get_connection_with_info
 
         mock_conn = Mock()
         mock_dbapi_create.return_value = mock_conn

@@ -9,19 +9,20 @@ Tests verify that fixture operations meet performance targets:
 Note: These are integration tests requiring a live IRIS instance.
 """
 
-import pytest
-import tempfile
 import shutil
+import tempfile
 import time
 from pathlib import Path
 
+import pytest
+
+from iris_devtester.config import IRISConfig
+from iris_devtester.connections import get_connection
 from iris_devtester.fixtures import (
-    FixtureCreator,
     DATFixtureLoader,
+    FixtureCreator,
     FixtureValidator,
 )
-from iris_devtester.connections import get_connection
-
 
 # Use fixtures from tests/integration/conftest.py:
 # - iris_container (session scope)
@@ -40,7 +41,9 @@ def temp_dir():
 class TestFixtureCreationPerformance:
     """Test fixture creation performance (NFR-001)."""
 
-    def test_create_fixture_10k_rows_under_30s(self, iris_container, test_namespace, iris_connection, temp_dir):
+    def test_create_fixture_10k_rows_under_30s(
+        self, iris_container, test_namespace, iris_connection, temp_dir
+    ):
         """Test creating fixture with 10K rows completes in <30 seconds."""
         # Use test_namespace from fixture
         source_namespace = test_namespace
@@ -53,33 +56,45 @@ class TestFixtureCreationPerformance:
             pass  # Table doesn't exist, that's fine
 
         # Create table using SQL (DBAPI, 3x faster)
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE PerfTestData (
                 ID INT PRIMARY KEY,
                 Name VARCHAR(100),
                 Value DECIMAL(10,2),
                 Description VARCHAR(500)
             )
-        """)
+        """
+        )
 
         # Insert 10K rows using SQL (batch insert for performance)
         for i in range(1, 10001):
             cursor.execute(
                 "INSERT INTO PerfTestData (ID, Name, Value, Description) VALUES (?, ?, ?, ?)",
-                (i, f"Name_{i}", i * 1.5, f"Description for row {i}")
+                (i, f"Name_{i}", i * 1.5, f"Description for row {i}"),
             )
         cursor.close()
 
         # Measure creation time
         fixture_path = Path(temp_dir) / "perf-10k"
-        creator = FixtureCreator(container=iris_container)
+        # Use explicit credentials from conftest.py
+        creator = FixtureCreator(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
 
         start_time = time.time()
         manifest = creator.create_fixture(
             fixture_id="perf-10k",
             namespace=source_namespace,
             output_dir=str(fixture_path),
-            description="Performance test 10K rows"
+            description="Performance test 10K rows",
         )
         elapsed = time.time() - start_time
 
@@ -92,37 +107,45 @@ class TestFixtureCreationPerformance:
         assert table_info is not None
         assert table_info.row_count == 10000
 
-    def test_create_small_fixture_under_5s(self, iris_container, test_namespace, iris_connection, temp_dir):
+    def test_create_small_fixture_under_5s(
+        self, iris_container, test_namespace, iris_connection, temp_dir
+    ):
         """Test creating small fixture (<1K rows) completes in <5 seconds."""
         # Use test_namespace from fixture
         source_namespace = test_namespace
         cursor = iris_connection.cursor()
 
         # Create table with 100 rows using SQL
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE SmallTestData (
                 ID INT PRIMARY KEY,
                 Name VARCHAR(100)
             )
-        """)
+        """
+        )
 
         # Insert 100 rows
         for i in range(1, 101):
-            cursor.execute(
-                "INSERT INTO SmallTestData (ID, Name) VALUES (?, ?)",
-                (i, f"Name_{i}")
-            )
+            cursor.execute("INSERT INTO SmallTestData (ID, Name) VALUES (?, ?)", (i, f"Name_{i}"))
         cursor.close()
 
         # Measure creation time
         fixture_path = Path(temp_dir) / "perf-small"
-        creator = FixtureCreator(container=iris_container)
+        creator = FixtureCreator(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
 
         start_time = time.time()
         creator.create_fixture(
-            fixture_id="perf-small",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="perf-small", namespace=source_namespace, output_dir=str(fixture_path)
         )
         elapsed = time.time() - start_time
 
@@ -133,7 +156,9 @@ class TestFixtureLoadingPerformance:
     """Test fixture loading performance (NFR-002)."""
 
     @pytest.mark.slow
-    def test_load_fixture_10k_rows_under_10s(self, iris_container, test_namespace, iris_connection, temp_dir):
+    def test_load_fixture_10k_rows_under_10s(
+        self, iris_container, test_namespace, iris_connection, temp_dir
+    ):
         """Test loading fixture with 10K rows completes in <10 seconds."""
         # Use test_namespace provided by fixture (already created)
         source_namespace = test_namespace
@@ -147,40 +172,61 @@ class TestFixtureLoadingPerformance:
         except Exception:
             pass  # Table doesn't exist, that's fine
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE PerfTestData (
                 ID INT PRIMARY KEY,
                 Name VARCHAR(100),
                 Value DECIMAL(10,2)
             )
-        """)
+        """
+        )
 
         # Insert 10K rows
         for i in range(10000):
             cursor.execute(
                 "INSERT INTO PerfTestData (ID, Name, Value) VALUES (?, ?, ?)",
-                (i, f"Name_{i}", i * 1.5)
+                (i, f"Name_{i}", i * 1.5),
             )
         cursor.close()
 
         # Create fixture from source namespace
         fixture_path = Path(temp_dir) / "load-perf"
-        creator = FixtureCreator(container=iris_container)
+        creator = FixtureCreator(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
         creator.create_fixture(
-            fixture_id="load-perf",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="load-perf", namespace=source_namespace, output_dir=str(fixture_path)
         )
 
         # Measure load time
-        loader = DATFixtureLoader(container=iris_container)
-        target_namespace = iris_container.get_test_namespace(prefix="LOAD_PERF_TARGET")
+        loader = DATFixtureLoader(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
+        # Generate a unique name but don't create it yet - loader will create it from .DAT
+        import uuid
+
+        target_namespace = f"LOAD_PERF_TARGET_{str(uuid.uuid4())[:8].upper()}"
 
         start_time = time.time()
         result = loader.load_fixture(
             fixture_path=str(fixture_path),
             target_namespace=target_namespace,
-            validate_checksum=True
+            validate_checksum=True,
         )
         elapsed = time.time() - start_time
 
@@ -188,56 +234,77 @@ class TestFixtureLoadingPerformance:
         assert elapsed < 10.0, f"Load took {elapsed:.2f}s, expected <10s"
 
         # Cleanup target namespace
-        try:
-            loader.cleanup_fixture(target_namespace, delete_namespace=True)
-        except Exception:
-            pass  # Ignore cleanup errors
+        # try:
+        #     loader.cleanup_fixture(target_namespace, delete_namespace=True)
+        # except Exception:
+        #     pass  # Ignore cleanup errors
 
-    @pytest.mark.skip(reason="Flaky test - checksum performance difference unmeasurable on small (1-row) fixtures. Namespace creation overhead dominates timing. Test passes on large fixtures (10K+ rows) where checksum overhead is significant.")
-    def test_load_without_checksum_faster(self, iris_container, test_namespace, iris_connection, temp_dir):
+    def test_load_without_checksum_faster(
+        self, iris_container, test_namespace, iris_connection, temp_dir
+    ):
         """Test that skipping checksum validation speeds up loading."""
         # Use test_namespace provided by fixture
         source_namespace = test_namespace
 
-        # Create a small table for the fixture (need at least one table for valid manifest)
+        # Create a moderate table for the fixture to make checksum overhead visible
         cursor = iris_connection.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE ChecksumTest (
                 ID INT PRIMARY KEY,
-                Name VARCHAR(50)
+                Name VARCHAR(500)
             )
-        """)
-        cursor.execute("INSERT INTO ChecksumTest (ID, Name) VALUES (1, 'test')")
+        """
+        )
+        # Insert 1000 rows to ensure checksum calculation takes measurable time
+        for i in range(1000):
+            cursor.execute("INSERT INTO ChecksumTest (ID, Name) VALUES (?, ?)", (i, "test" * 100))
         cursor.close()
 
         # Create fixture
         fixture_path = Path(temp_dir) / "checksum-perf"
-        creator = FixtureCreator(container=iris_container)
+        creator = FixtureCreator(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
         creator.create_fixture(
-            fixture_id="checksum-perf",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="checksum-perf", namespace=source_namespace, output_dir=str(fixture_path)
         )
 
-        loader = DATFixtureLoader(container=iris_container)
+        loader = DATFixtureLoader(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
 
         # Load with checksum validation
-        namespace_with = iris_container.get_test_namespace(prefix="CHECKSUM_WITH")
+        import uuid
+
+        namespace_with = f"CHECKSUM_WITH_{str(uuid.uuid4())[:8].upper()}"
         start_with = time.time()
         result_with = loader.load_fixture(
-            fixture_path=str(fixture_path),
-            target_namespace=namespace_with,
-            validate_checksum=True
+            fixture_path=str(fixture_path), target_namespace=namespace_with, validate_checksum=True
         )
         elapsed_with = time.time() - start_with
 
         # Load without checksum validation
-        namespace_without = iris_container.get_test_namespace(prefix="CHECKSUM_WITHOUT")
+        namespace_without = f"CHECKSUM_WITHOUT_{str(uuid.uuid4())[:8].upper()}"
         start_without = time.time()
         result_without = loader.load_fixture(
             fixture_path=str(fixture_path),
             target_namespace=namespace_without,
-            validate_checksum=False
+            validate_checksum=False,
         )
         elapsed_without = time.time() - start_without
 
@@ -261,28 +328,40 @@ class TestFixtureLoadingPerformance:
 class TestFixtureValidationPerformance:
     """Test fixture validation performance (NFR-003)."""
 
-    def test_validate_fixture_under_5s(self, iris_container, test_namespace, temp_dir):
+    def test_validate_fixture_under_5s(
+        self, iris_container, test_namespace, iris_connection, temp_dir
+    ):
         """Test fixture validation completes in <5 seconds."""
         # Use test_namespace provided by fixture (already created)
         source_namespace = test_namespace
 
-        # Create fixture from source namespace (empty is fine for validation performance test)
+        # Create a table to ensure fixture is not empty (empty fixtures are invalid)
+        cursor = iris_connection.cursor()
+        cursor.execute("CREATE TABLE ValidTest (ID INT PRIMARY KEY)")
+        cursor.execute("INSERT INTO ValidTest VALUES (1)")
+        cursor.close()
+
+        # Create fixture from source namespace
         fixture_path = Path(temp_dir) / "validate-perf"
-        creator = FixtureCreator(container=iris_container)
+        creator = FixtureCreator(
+            container=iris_container,
+            connection_config=IRISConfig(
+                host=iris_container.get_container_host_ip(),
+                port=int(iris_container.get_exposed_port(1972)),
+                username="testuser",
+                password="testpassword",
+                container_name=iris_container.get_container_name(),
+            ),
+        )
         creator.create_fixture(
-            fixture_id="validate-perf",
-            namespace=source_namespace,
-            output_dir=str(fixture_path)
+            fixture_id="validate-perf", namespace=source_namespace, output_dir=str(fixture_path)
         )
 
         # Measure validation time
         validator = FixtureValidator()
 
         start_time = time.time()
-        result = validator.validate_fixture(
-            str(fixture_path),
-            validate_checksum=True
-        )
+        result = validator.validate_fixture(str(fixture_path), validate_checksum=True)
         elapsed = time.time() - start_time
 
         assert result.valid
@@ -298,8 +377,8 @@ class TestChecksumPerformance:
         test_file = Path(temp_dir) / "test.dat"
 
         # Create 10MB file
-        with open(test_file, 'wb') as f:
-            f.write(b'0' * (10 * 1024 * 1024))
+        with open(test_file, "wb") as f:
+            f.write(b"0" * (10 * 1024 * 1024))
 
         # Measure checksum time
         validator = FixtureValidator()
@@ -316,6 +395,7 @@ class TestChecksumPerformance:
 def test_performance_test_count():
     """Verify we have comprehensive performance tests."""
     import sys
+
     module = sys.modules[__name__]
 
     test_classes = [
@@ -327,7 +407,7 @@ def test_performance_test_count():
 
     total_tests = 0
     for test_class in test_classes:
-        test_methods = [m for m in dir(test_class) if m.startswith('test_')]
+        test_methods = [m for m in dir(test_class) if m.startswith("test_")]
         total_tests += len(test_methods)
 
     # Should have at least 6 performance tests

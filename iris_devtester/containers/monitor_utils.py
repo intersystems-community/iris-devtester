@@ -103,9 +103,7 @@ def is_monitor_collecting(conn) -> Tuple[bool, int]:
         return False, 0
 
 
-def get_monitor_samples(
-    conn, table: str = "HistoryPerf", limit: int = 10
-) -> List[Dict]:
+def get_monitor_samples(conn, table: str = "HistoryPerf", limit: int = 10) -> List[Dict]:
     """
     Get recent monitoring samples from %Monitor.System.
 

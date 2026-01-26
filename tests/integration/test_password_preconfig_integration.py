@@ -17,20 +17,30 @@ pytestmark = [
 
 @pytest.fixture
 def clean_iris_env():
-    """Fixture to ensure IRIS_PASSWORD env var is not set during test."""
-    old_password = os.environ.pop("IRIS_PASSWORD", None)
-    old_username = os.environ.pop("IRIS_USERNAME", None)
+    """Fixture to ensure IRIS_PASSWORD env var is isolated during test."""
+    old_password = os.environ.get("IRIS_PASSWORD")
+    old_username = os.environ.get("IRIS_USERNAME")
+
+    # Clear for test
+    if "IRIS_PASSWORD" in os.environ:
+        del os.environ["IRIS_PASSWORD"]
+    if "IRIS_USERNAME" in os.environ:
+        del os.environ["IRIS_USERNAME"]
+
     yield
+
+    # Restore or clear after test
     if old_password is not None:
         os.environ["IRIS_PASSWORD"] = old_password
+    elif "IRIS_PASSWORD" in os.environ:
+        del os.environ["IRIS_PASSWORD"]
+
     if old_username is not None:
         os.environ["IRIS_USERNAME"] = old_username
+    elif "IRIS_USERNAME" in os.environ:
+        del os.environ["IRIS_USERNAME"]
 
 
-@pytest.mark.skipif(
-    not os.environ.get("RUN_INTEGRATION_TESTS"),
-    reason="Integration tests require RUN_INTEGRATION_TESTS=1",
-)
 class TestEnvVarPreConfiguration:
     """Integration tests for env var-based pre-configuration."""
 
@@ -67,10 +77,6 @@ class TestEnvVarPreConfiguration:
         print(f"Container startup without IRIS_PASSWORD: {elapsed:.2f}s")
 
 
-@pytest.mark.skipif(
-    not os.environ.get("RUN_INTEGRATION_TESTS"),
-    reason="Integration tests require RUN_INTEGRATION_TESTS=1",
-)
 class TestProgrammaticApiPreConfiguration:
     """Integration tests for programmatic API pre-configuration."""
 
@@ -101,10 +107,6 @@ class TestProgrammaticApiPreConfiguration:
             assert result[0] == 1
 
 
-@pytest.mark.skipif(
-    not os.environ.get("RUN_INTEGRATION_TESTS"),
-    reason="Integration tests require RUN_INTEGRATION_TESTS=1",
-)
 class TestCIEnvironmentSimulation:
     """Integration tests simulating CI/CD environment."""
 
@@ -120,10 +122,6 @@ class TestCIEnvironmentSimulation:
         assert container._should_preconfigure() is True
 
 
-@pytest.mark.skipif(
-    not os.environ.get("RUN_INTEGRATION_TESTS"),
-    reason="Integration tests require RUN_INTEGRATION_TESTS=1",
-)
 class TestFallbackBehavior:
     """Integration tests for fallback to password reset."""
 

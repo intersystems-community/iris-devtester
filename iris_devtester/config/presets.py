@@ -1,14 +1,7 @@
 class CPFPreset:
-    ENABLE_CALLIN = (
-        "[Actions]\n"
-        "ModifyService:Name=%Service_CallIn,Enabled=1,AutheEnabled=48"
-    )
-    
-    CI_OPTIMIZED = (
-        "[config]\n"
-        "globals=0,0,256,0,0,0\n"
-        "gmheap=64000"
-    )
+    ENABLE_CALLIN = "[Actions]\n" "ModifyService:Name=%Service_CallIn,Enabled=1,AutheEnabled=48"
+
+    CI_OPTIMIZED = "[config]\n" "globals=0,0,256,0,0,0\n" "gmheap=64000"
 
     SECURE_DEFAULTS = (
         "[Actions]\n"

@@ -210,7 +210,9 @@ invalid: yaml: here: too: many: colons
             with pytest.raises(pyyaml.YAMLError) as exc_info:
                 load_yaml(Path(temp_path))
 
-            assert "invalid" in str(exc_info.value).lower() or "syntax" in str(exc_info.value).lower()
+            assert (
+                "invalid" in str(exc_info.value).lower() or "syntax" in str(exc_info.value).lower()
+            )
         finally:
             Path(temp_path).unlink()
 
@@ -287,10 +289,7 @@ class TestValidateSchema:
 
     def test_validate_schema_with_nested_structure(self):
         """Test validate_schema with nested structure."""
-        config = {
-            "edition": "community",
-            "ports": {"superserver": 1972, "webserver": 52773}
-        }
+        config = {"edition": "community", "ports": {"superserver": 1972, "webserver": 52773}}
         # Should not raise errors
         validate_schema(config)
 

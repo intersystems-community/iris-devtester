@@ -4,35 +4,40 @@ This module defines the data structures for IRIS .DAT fixture manifests,
 including FixtureManifest, TableInfo, ValidationResult, and LoadResult.
 """
 
-from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Any, Optional
 import json
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 # Custom Exceptions
 class FixtureError(Exception):
     """Base exception for fixture operations."""
+
     pass
 
 
 class FixtureValidationError(FixtureError):
     """Raised when fixture validation fails."""
+
     pass
 
 
 class FixtureLoadError(FixtureError):
     """Raised when fixture loading fails."""
+
     pass
 
 
 class FixtureCreateError(FixtureError):
     """Raised when fixture creation fails."""
+
     pass
 
 
 class ChecksumMismatchError(FixtureValidationError):
     """Raised when file checksum doesn't match manifest."""
+
     pass
 
 
@@ -218,10 +223,7 @@ class FixtureManifest:
             errors.append("Duplicate table names found")
 
         return ValidationResult(
-            valid=len(errors) == 0,
-            errors=errors,
-            warnings=warnings,
-            manifest=self
+            valid=len(errors) == 0, errors=errors, warnings=warnings, manifest=self
         )
 
 

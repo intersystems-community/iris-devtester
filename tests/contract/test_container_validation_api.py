@@ -9,11 +9,12 @@ Constitutional Compliance:
 """
 
 import pytest
+
 from iris_devtester.containers.models import (
+    ContainerHealth,
     ContainerHealthStatus,
     HealthCheckLevel,
     ValidationResult,
-    ContainerHealth,
 )
 
 
@@ -65,9 +66,7 @@ class TestValidationResultDataclass:
     def test_healthy_factory_method(self):
         """Factory method for healthy container must work correctly."""
         result = ValidationResult.healthy(
-            name="iris_db",
-            container_id="abc123def456",
-            validation_time=0.15
+            name="iris_db", container_id="abc123def456", validation_time=0.15
         )
 
         assert result.success is True
@@ -82,9 +81,7 @@ class TestValidationResultDataclass:
     def test_not_found_factory_method(self):
         """Factory method for container not found must work correctly."""
         result = ValidationResult.not_found(
-            name="iris_db",
-            available_containers=["iris_test", "iris_prod"],
-            validation_time=0.12
+            name="iris_db", available_containers=["iris_test", "iris_prod"], validation_time=0.12
         )
 
         assert result.success is False
@@ -100,9 +97,7 @@ class TestValidationResultDataclass:
     def test_not_running_factory_method(self):
         """Factory method for stopped container must work correctly."""
         result = ValidationResult.not_running(
-            name="iris_db",
-            container_id="abc123",
-            validation_time=0.10
+            name="iris_db", container_id="abc123", validation_time=0.10
         )
 
         assert result.success is False
@@ -120,7 +115,7 @@ class TestValidationResultDataclass:
             name="iris_db",
             container_id="abc123",
             error="Cannot connect to container daemon",
-            validation_time=0.25
+            validation_time=0.25,
         )
 
         assert result.success is False
@@ -136,10 +131,7 @@ class TestValidationResultDataclass:
     def test_stale_reference_factory_method(self):
         """Factory method for stale reference must work correctly."""
         result = ValidationResult.stale_reference(
-            name="iris_db",
-            cached_id="abc123old",
-            current_id="def456new",
-            validation_time=0.18
+            name="iris_db", cached_id="abc123old", current_id="def456new", validation_time=0.18
         )
 
         assert result.success is False
@@ -156,9 +148,7 @@ class TestValidationResultDataclass:
         """Factory method for Docker daemon error must work correctly."""
         test_error = ConnectionError("Error while fetching server API version")
         result = ValidationResult.docker_error(
-            name="iris_db",
-            error=test_error,
-            validation_time=0.05
+            name="iris_db", error=test_error, validation_time=0.05
         )
 
         assert result.success is False
@@ -183,11 +173,7 @@ class TestValidationResultDataclass:
 
     def test_format_message_for_not_found(self):
         """format_message() must follow constitutional structure for errors."""
-        result = ValidationResult.not_found(
-            "iris_db",
-            ["iris_test"],
-            0.12
-        )
+        result = ValidationResult.not_found("iris_db", ["iris_test"], 0.12)
         message = result.format_message()
 
         # Constitutional Principle #5: Structured error messages
@@ -247,7 +233,7 @@ class TestContainerHealthDataclass:
             status=ContainerHealthStatus.HEALTHY,
             running=True,
             accessible=True,
-            docker_sdk_version="6.1.0"
+            docker_sdk_version="6.1.0",
         )
 
         assert health.container_name == "iris_db"
@@ -267,7 +253,7 @@ class TestContainerHealthDataclass:
             container_id="abc123",
             started_at="2025-01-17T10:30:00Z",
             port_bindings={"1972/tcp": "1972"},
-            image="intersystemsdc/iris-community:latest"
+            image="intersystemsdc/iris-community:latest",
         )
 
         assert health.container_id == "abc123"
@@ -283,7 +269,7 @@ class TestContainerHealthDataclass:
             running=True,
             accessible=True,
             docker_sdk_version="6.1.0",
-            container_id="abc123"
+            container_id="abc123",
         )
 
         result = health.to_dict()
@@ -303,7 +289,7 @@ class TestContainerHealthDataclass:
             status=ContainerHealthStatus.HEALTHY,
             running=True,
             accessible=True,
-            docker_sdk_version="6.1.0"
+            docker_sdk_version="6.1.0",
         )
 
         assert health.is_healthy() is True
@@ -315,7 +301,7 @@ class TestContainerHealthDataclass:
             status=ContainerHealthStatus.NOT_RUNNING,
             running=False,
             accessible=False,
-            docker_sdk_version="6.1.0"
+            docker_sdk_version="6.1.0",
         )
 
         assert health.is_healthy() is False
@@ -327,7 +313,7 @@ class TestContainerHealthDataclass:
             status=ContainerHealthStatus.HEALTHY,
             running=True,
             accessible=True,
-            docker_sdk_version="6.1.0"
+            docker_sdk_version="6.1.0",
         )
 
         assert health.status == ContainerHealthStatus.HEALTHY
@@ -345,57 +331,58 @@ class TestValidateContainerFunctionContract:
     def test_validate_container_function_exists(self):
         """validate_container() function must be importable."""
         from iris_devtester.containers.validation import validate_container
+
         assert callable(validate_container)
 
     def test_validate_container_signature(self):
         """validate_container() must have correct signature."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_minimal_level(self):
         """validate_container(level=MINIMAL) must perform fast check."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_standard_level(self):
         """validate_container(level=STANDARD) must check accessibility."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_full_level(self):
         """validate_container(level=FULL) must perform comprehensive check."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_invalid_input_empty_name(self):
         """validate_container() must raise ValueError for empty name."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_invalid_input_none_name(self):
         """validate_container() must raise TypeError for None name."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_timeout_parameter(self):
         """validate_container() must respect timeout parameter."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_performance_sla_minimal(self):
         """validate_container(MINIMAL) must complete in <500ms."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_performance_sla_standard(self):
         """validate_container(STANDARD) must complete in <1000ms."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_validate_container_performance_sla_full(self):
         """validate_container(FULL) must complete in <2000ms."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
 
 class TestContainerValidatorClassContract:
@@ -407,22 +394,23 @@ class TestContainerValidatorClassContract:
     def test_container_validator_class_exists(self):
         """ContainerValidator class must be importable."""
         from iris_devtester.containers.validation import ContainerValidator
+
         assert ContainerValidator is not None
 
     def test_container_validator_caching(self):
         """ContainerValidator must cache validation results."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_container_validator_cache_ttl(self):
         """ContainerValidator must respect cache_ttl parameter."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_container_validator_force_refresh(self):
         """ContainerValidator.validate(force_refresh=True) must bypass cache."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
 
 class TestIRISContainerValidationContract:
@@ -434,19 +422,19 @@ class TestIRISContainerValidationContract:
     def test_iriscontainer_validate_method_exists(self):
         """IRISContainer.validate() method must exist."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_iriscontainer_assert_healthy_method_exists(self):
         """IRISContainer.assert_healthy() method must exist."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_iriscontainer_validate_returns_validation_result(self):
         """IRISContainer.validate() must return ValidationResult."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")
 
     def test_iriscontainer_assert_healthy_raises_on_failure(self):
         """IRISContainer.assert_healthy() must raise exception on failure."""
         # This will fail until implementation
-        pytest.skip("Implementation pending")
+        # pytest.skip("Implementation pending")

@@ -11,7 +11,6 @@ Tests verify:
 - API is usable as documented
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
@@ -51,18 +50,19 @@ class TestCalculateSHA256Method:
         from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
-        assert hasattr(validator, 'calculate_sha256')
+        assert hasattr(validator, "calculate_sha256")
         assert callable(validator.calculate_sha256)
 
     def test_signature_required_params(self):
         """Test calculate_sha256 signature with required parameters."""
-        from iris_devtester.fixtures import FixtureValidator
         import tempfile
+
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
         # Create temp file for testing
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test data")
             temp_path = f.name
 
@@ -76,12 +76,13 @@ class TestCalculateSHA256Method:
 
     def test_signature_optional_chunk_size(self):
         """Test calculate_sha256 accepts optional chunk_size parameter."""
-        from iris_devtester.fixtures import FixtureValidator
         import tempfile
+
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test data")
             temp_path = f.name
 
@@ -110,17 +111,18 @@ class TestValidateChecksumMethod:
         from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
-        assert hasattr(validator, 'validate_checksum')
+        assert hasattr(validator, "validate_checksum")
         assert callable(validator.validate_checksum)
 
     def test_signature_required_params(self):
         """Test validate_checksum signature with required parameters."""
-        from iris_devtester.fixtures import FixtureValidator
         import tempfile
+
+        from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test data")
             temp_path = f.name
 
@@ -136,18 +138,21 @@ class TestValidateChecksumMethod:
 
     def test_raises_checksum_mismatch_error(self):
         """Test that validate_checksum raises ChecksumMismatchError on mismatch."""
-        from iris_devtester.fixtures import FixtureValidator, ChecksumMismatchError
         import tempfile
+
+        from iris_devtester.fixtures import ChecksumMismatchError, FixtureValidator
 
         validator = FixtureValidator()
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test data")
             temp_path = f.name
 
         try:
             # Use wrong checksum
-            wrong_checksum = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            wrong_checksum = (
+                "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            )
 
             with pytest.raises(ChecksumMismatchError) as exc_info:
                 validator.validate_checksum(temp_path, wrong_checksum)
@@ -168,12 +173,17 @@ class TestValidateManifestMethod:
         from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
-        assert hasattr(validator, 'validate_manifest')
+        assert hasattr(validator, "validate_manifest")
         assert callable(validator.validate_manifest)
 
     def test_signature_accepts_manifest(self):
         """Test validate_manifest accepts FixtureManifest object."""
-        from iris_devtester.fixtures import FixtureValidator, FixtureManifest, TableInfo, ValidationResult
+        from iris_devtester.fixtures import (
+            FixtureManifest,
+            FixtureValidator,
+            TableInfo,
+            ValidationResult,
+        )
 
         validator = FixtureValidator()
 
@@ -187,7 +197,7 @@ class TestValidateManifestMethod:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = validator.validate_manifest(manifest)
@@ -203,7 +213,7 @@ class TestValidateFixtureMethod:
         from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
-        assert hasattr(validator, 'validate_fixture')
+        assert hasattr(validator, "validate_fixture")
         assert callable(validator.validate_fixture)
 
     def test_signature_required_params(self):
@@ -235,7 +245,7 @@ class TestRecalculateChecksumsMethod:
         from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
-        assert hasattr(validator, 'recalculate_checksums')
+        assert hasattr(validator, "recalculate_checksums")
         assert callable(validator.recalculate_checksums)
 
     def test_signature_required_params(self):
@@ -257,7 +267,7 @@ class TestGetFixtureSizeMethod:
         from iris_devtester.fixtures import FixtureValidator
 
         validator = FixtureValidator()
-        assert hasattr(validator, 'get_fixture_size')
+        assert hasattr(validator, "get_fixture_size")
         assert callable(validator.get_fixture_size)
 
     def test_signature_required_params(self):
@@ -276,17 +286,20 @@ class TestConstitutionalCompliance:
 
     def test_principle_5_error_messages(self):
         """Test that errors follow Principle #5 (Fail Fast with Guidance)."""
-        from iris_devtester.fixtures import FixtureValidator, ChecksumMismatchError
         import tempfile
+
+        from iris_devtester.fixtures import ChecksumMismatchError, FixtureValidator
 
         validator = FixtureValidator()
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test")
             temp_path = f.name
 
         try:
-            wrong_checksum = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            wrong_checksum = (
+                "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            )
 
             with pytest.raises(ChecksumMismatchError) as exc_info:
                 validator.validate_checksum(temp_path, wrong_checksum)
@@ -311,5 +324,5 @@ class TestConstitutionalCompliance:
         validator2 = FixtureValidator()
 
         # Should not have any connection-related attributes
-        assert not hasattr(validator1, 'connection')
-        assert not hasattr(validator1, '_connection')
+        assert not hasattr(validator1, "connection")
+        assert not hasattr(validator1, "_connection")

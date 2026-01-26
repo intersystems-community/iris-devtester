@@ -10,7 +10,11 @@ import logging
 from typing import Any, Optional
 
 from iris_devtester.config.models import IRISConfig
-from iris_devtester.utils.dbapi_compat import get_connection, get_package_info, DBAPIPackageNotFoundError
+from iris_devtester.utils.dbapi_compat import (
+    DBAPIPackageNotFoundError,
+    get_connection,
+    get_package_info,
+)
 
 logger = logging.getLogger(__name__)
 

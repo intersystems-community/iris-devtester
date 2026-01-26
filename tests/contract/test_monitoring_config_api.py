@@ -10,21 +10,20 @@ IRIS instance. Implementation will be tested in integration tests.
 Constitutional Principle #7: Medical-Grade Reliability - All API contracts validated.
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
 import inspect
+from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
 
 from iris_devtester.containers.monitoring import (
     MonitoringPolicy,
+    ResourceThresholds,
     configure_monitoring,
-    get_monitoring_status,
     disable_monitoring,
     enable_monitoring,
-    ResourceThresholds,
+    get_monitoring_status,
 )
 
 
@@ -87,7 +86,7 @@ class TestGetMonitoringStatusContract:
 
         params = list(sig.parameters.keys())
 
-        assert 'conn' in params
+        assert "conn" in params
 
     def test_returns_tuple_with_bool_and_dict(self):
         """Test function signature returns (bool, dict)."""
@@ -112,7 +111,7 @@ class TestDisableMonitoringContract:
 
         params = list(sig.parameters.keys())
 
-        assert 'conn' in params
+        assert "conn" in params
 
     def test_returns_tuple_with_bool_and_string(self):
         """Test function signature returns (bool, str)."""
@@ -137,7 +136,7 @@ class TestEnableMonitoringContract:
 
         params = list(sig.parameters.keys())
 
-        assert 'conn' in params
+        assert "conn" in params
 
     def test_returns_tuple_with_bool_and_string(self):
         """Test function signature returns (bool, str)."""
@@ -251,9 +250,7 @@ class TestMonitoringAPIErrorHandling:
     def test_resource_thresholds_validation_fails_fast(self):
         """Test ResourceThresholds validation catches configuration errors."""
         # Invalid: enable >= disable (no hysteresis)
-        thresholds = ResourceThresholds(
-            cpu_disable_percent=90.0, cpu_enable_percent=90.0
-        )
+        thresholds = ResourceThresholds(cpu_disable_percent=90.0, cpu_enable_percent=90.0)
 
         with pytest.raises(ValueError) as exc_info:
             thresholds.validate()

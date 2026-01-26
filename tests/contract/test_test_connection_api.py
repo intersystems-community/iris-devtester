@@ -10,8 +10,9 @@ TDD Workflow:
 3. Tests pass
 """
 
-import pytest
 from typing import Tuple
+
+import pytest
 
 
 class TestConnectionSignature:
@@ -20,12 +21,14 @@ class TestConnectionSignature:
     def test_function_exists(self):
         """Contract: test_connection function must exist."""
         from iris_devtester.utils.test_connection import test_connection
+
         assert callable(test_connection)
 
     def test_signature_accepts_container_name(self):
         """Contract: Function accepts container_name parameter."""
-        from iris_devtester.utils.test_connection import test_connection
         import inspect
+
+        from iris_devtester.utils.test_connection import test_connection
 
         sig = inspect.signature(test_connection)
         assert "container_name" in sig.parameters
@@ -33,8 +36,9 @@ class TestConnectionSignature:
 
     def test_signature_accepts_namespace(self):
         """Contract: Function accepts namespace parameter."""
-        from iris_devtester.utils.test_connection import test_connection
         import inspect
+
+        from iris_devtester.utils.test_connection import test_connection
 
         sig = inspect.signature(test_connection)
         assert "namespace" in sig.parameters
@@ -42,8 +46,9 @@ class TestConnectionSignature:
 
     def test_signature_accepts_timeout(self):
         """Contract: Function accepts timeout parameter."""
-        from iris_devtester.utils.test_connection import test_connection
         import inspect
+
+        from iris_devtester.utils.test_connection import test_connection
 
         sig = inspect.signature(test_connection)
         assert "timeout" in sig.parameters
@@ -51,8 +56,9 @@ class TestConnectionSignature:
 
     def test_return_type_is_tuple(self):
         """Contract: Function returns Tuple[bool, str]."""
-        from iris_devtester.utils.test_connection import test_connection
         import inspect
+
+        from iris_devtester.utils.test_connection import test_connection
 
         sig = inspect.signature(test_connection)
         assert sig.return_annotation == Tuple[bool, str]
@@ -69,4 +75,4 @@ class TestConnectionBehavior:
         Constitutional Principle #7: Medical-grade reliability.
         This test will fail until implementation is complete.
         """
-        pytest.skip("Implementation required - test will fail until T014 complete")
+        # pytest.skip("Implementation required - test will fail until T014 complete")

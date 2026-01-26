@@ -4,8 +4,9 @@ Unit tests for ConnectionInfo model.
 Tests MUST FAIL until iris_devtester/connections/models.py is implemented.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 
 
 class TestConnectionInfo:
@@ -22,11 +23,7 @@ class TestConnectionInfo:
         from iris_devtester.connections.models import ConnectionInfo
 
         info = ConnectionInfo(
-            driver_type="dbapi",
-            host="localhost",
-            port=1972,
-            namespace="USER",
-            username="SuperUser"
+            driver_type="dbapi", host="localhost", port=1972, namespace="USER", username="SuperUser"
         )
         assert info.driver_type == "dbapi"
         assert info.host == "localhost"
@@ -39,11 +36,7 @@ class TestConnectionInfo:
         from iris_devtester.connections.models import ConnectionInfo
 
         info = ConnectionInfo(
-            driver_type="dbapi",
-            host="localhost",
-            port=1972,
-            namespace="USER",
-            username="SuperUser"
+            driver_type="dbapi", host="localhost", port=1972, namespace="USER", username="SuperUser"
         )
         assert isinstance(info.connection_time, datetime)
         assert info.is_pooled == False
@@ -62,7 +55,7 @@ class TestConnectionInfo:
             username="admin",
             connection_time=now,
             is_pooled=True,
-            container_id="abc123"
+            container_id="abc123",
         )
         assert info.connection_time == now
         assert info.is_pooled == True

@@ -1,8 +1,9 @@
 """YAML configuration file loader for IRIS container management."""
 
-import yaml
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
+import yaml
 
 
 def load_yaml(file_path: Path) -> Dict[str, Any]:

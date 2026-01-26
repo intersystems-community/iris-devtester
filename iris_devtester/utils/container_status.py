@@ -70,9 +70,7 @@ def get_container_status(
             "{{.Names}}",
         ]
 
-        result = subprocess.run(
-            check_cmd, capture_output=True, text=True, timeout=10
-        )
+        result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
 
         if container_name in result.stdout:
             status_lines.append("Running:    ✓ Yes")
@@ -98,9 +96,7 @@ def get_container_status(
             container_name,
         ]
 
-        result = subprocess.run(
-            health_cmd, capture_output=True, text=True, timeout=10
-        )
+        result = subprocess.run(health_cmd, capture_output=True, text=True, timeout=10)
 
         health_status = result.stdout.strip()
         if health_status and health_status != "<no value>":

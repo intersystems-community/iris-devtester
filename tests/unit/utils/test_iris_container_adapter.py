@@ -1,17 +1,17 @@
 """Unit tests for iris_container_adapter module."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
 
 import docker
-from docker.errors import NotFound, DockerException
+import pytest
+from docker.errors import DockerException, NotFound
 
+from iris_devtester.config.container_config import ContainerConfig
 from iris_devtester.utils.iris_container_adapter import (
     IRISContainerManager,
     translate_docker_error,
 )
-from iris_devtester.config.container_config import ContainerConfig
 
 
 class TestIRISContainerManagerCreateFromConfig:
@@ -113,9 +113,7 @@ class TestIRISContainerManagerCreateFromConfig:
         mock_container.with_bind_ports.assert_any_call(8080, 8080)
 
     @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
-    def test_create_from_config_image_tag_variations(
-        self, mock_iris_container_class
-    ):
+    def test_create_from_config_image_tag_variations(self, mock_iris_container_class):
         """Test different image tag variations."""
         # Arrange
         mock_container = MagicMock()
@@ -136,7 +134,10 @@ class TestIRISContainerManagerCreateFromConfig:
         IRISContainerManager.create_from_config(config)
 
         # Assert
-        assert mock_iris_container_class.call_args[1]["image"] == "intersystemsdc/iris-community:2024.1.0"
+        assert (
+            mock_iris_container_class.call_args[1]["image"]
+            == "intersystemsdc/iris-community:2024.1.0"
+        )
 
     @patch("iris_devtester.utils.iris_container_adapter.IRISContainer")
     def test_create_from_config_with_single_volume(self, mock_iris_container_class):
@@ -152,7 +153,7 @@ class TestIRISContainerManagerCreateFromConfig:
             webserver_port=52773,
             namespace="USER",
             password="SYS",
-            volumes=["./data:/external"]
+            volumes=["./data:/external"],
         )
 
         # Act
@@ -175,7 +176,7 @@ class TestIRISContainerManagerCreateFromConfig:
             webserver_port=52773,
             namespace="USER",
             password="SYS",
-            volumes=["./data:/external", "./config:/opt/config:ro", "./logs:/var/log:rw"]
+            volumes=["./data:/external", "./config:/opt/config:ro", "./logs:/var/log:rw"],
         )
 
         # Act
@@ -202,7 +203,7 @@ class TestIRISContainerManagerCreateFromConfig:
             webserver_port=52773,
             namespace="USER",
             password="SYS",
-            volumes=["./config:/opt/config:ro"]
+            volumes=["./config:/opt/config:ro"],
         )
 
         # Act
@@ -225,7 +226,7 @@ class TestIRISContainerManagerCreateFromConfig:
             webserver_port=52773,
             namespace="USER",
             password="SYS",
-            volumes=[]
+            volumes=[],
         )
 
         # Act
@@ -524,9 +525,7 @@ class TestConstitutionalErrorFormat:
                 assert "What went wrong:" in error_msg, f"Missing 'What' in {error_str}"
                 assert "Why it matters:" in error_msg, f"Missing 'Why' in {error_str}"
                 assert "How to fix it:" in error_msg, f"Missing 'How' in {error_str}"
-                assert (
-                    "Documentation:" in error_msg
-                ), f"Missing 'Docs' in {error_str}"
+                assert "Documentation:" in error_msg, f"Missing 'Docs' in {error_str}"
 
 
 class TestVolumeMountSpecParse:
@@ -608,7 +607,7 @@ class TestContainerPersistenceCheck:
             status="running",
             volume_mounts_verified=True,
             verification_time=2.0,
-            error_details=None
+            error_details=None,
         )
 
         # Assert
@@ -625,7 +624,7 @@ class TestContainerPersistenceCheck:
             status=None,
             volume_mounts_verified=False,
             verification_time=2.0,
-            error_details="Container not found after creation"
+            error_details="Container not found after creation",
         )
 
         # Assert
@@ -643,7 +642,7 @@ class TestContainerPersistenceCheck:
             status="exited",
             volume_mounts_verified=True,
             verification_time=2.0,
-            error_details=None
+            error_details=None,
         )
 
         # Assert
@@ -661,7 +660,7 @@ class TestContainerPersistenceCheck:
             status="running",
             volume_mounts_verified=False,
             verification_time=2.0,
-            error_details=None
+            error_details=None,
         )
 
         # Assert
@@ -679,7 +678,7 @@ class TestContainerPersistenceCheck:
             status=None,
             volume_mounts_verified=False,
             verification_time=2.0,
-            error_details="Container removed by ryuk cleanup service"
+            error_details="Container removed by ryuk cleanup service",
         )
 
         config = ContainerConfig(

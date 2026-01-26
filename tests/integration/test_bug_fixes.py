@@ -66,7 +66,7 @@ class TestBugFix1ImageName:
             webserver_port=48773,
             namespace="USER",
             password="SYS",
-            image_tag="latest"
+            image_tag="latest",
         )
 
         # Act
@@ -78,20 +78,21 @@ class TestBugFix1ImageName:
             docker_container = docker_client.containers.get(container_name)
 
             # Assert - Verify image name
-            image_name = docker_container.attrs['Config']['Image']
+            image_name = docker_container.attrs["Config"]["Image"]
 
             # The image should be intersystemsdc/iris-community:latest (with 'dc' suffix)
-            assert "intersystemsdc/iris-community" in image_name, (
-                f"Expected image to contain 'intersystemsdc/iris-community' but got: {image_name}"
-            )
-            assert "intersystems/iris-community" not in image_name or "dc" in image_name, (
-                f"Image should NOT be 'intersystems/iris-community' (without 'dc')"
-            )
+            assert (
+                "intersystemsdc/iris-community" in image_name
+            ), f"Expected image to contain 'intersystemsdc/iris-community' but got: {image_name}"
+            assert (
+                "intersystems/iris-community" not in image_name or "dc" in image_name
+            ), f"Image should NOT be 'intersystems/iris-community' (without 'dc')"
 
             # Verify container is actually running
-            assert docker_container.status in ["running", "created"], (
-                f"Container should be running but status is: {docker_container.status}"
-            )
+            assert docker_container.status in [
+                "running",
+                "created",
+            ], f"Container should be running but status is: {docker_container.status}"
 
             print(f"✓ Community container using correct image: {image_name}")
 
@@ -116,9 +117,9 @@ class TestBugFix1ImageName:
             # Assert
             assert image is not None, f"Failed to pull image: {expected_image}"
             assert len(image.tags) > 0, "Pulled image has no tags"
-            assert expected_image in image.tags, (
-                f"Expected {expected_image} in tags but got: {image.tags}"
-            )
+            assert (
+                expected_image in image.tags
+            ), f"Expected {expected_image} in tags but got: {image.tags}"
 
             print(f"✓ Successfully pulled and verified image: {expected_image}")
 
@@ -150,7 +151,9 @@ class TestBugFix1ImageName:
         try:
             docker_client.images.pull(wrong_image)
             # If we got here, the image exists (might be cached or created by user)
-            pytest.skip(f"Image {wrong_image} exists (may be local/cached). Bug Fix #1 still verified by other tests.")
+            pytest.skip(
+                f"Image {wrong_image} exists (may be local/cached). Bug Fix #1 still verified by other tests."
+            )
         except docker.errors.NotFound:
             print(f"✓ Confirmed wrong image doesn't exist on Docker Hub: {wrong_image}")
         except docker.errors.ImageNotFound:
@@ -187,7 +190,7 @@ class TestBugFix3VolumeMounting:
                 webserver_port=48774,
                 namespace="USER",
                 password="SYS",
-                volumes=[f"{temp_dir}:/external"]
+                volumes=[f"{temp_dir}:/external"],
             )
 
             # Act
@@ -199,34 +202,34 @@ class TestBugFix3VolumeMounting:
                 docker_container = docker_client.containers.get(container_name)
 
                 # Assert - Verify mount exists
-                mounts = docker_container.attrs['Mounts']
+                mounts = docker_container.attrs["Mounts"]
                 assert len(mounts) > 0, "Container should have at least one mount"
 
                 # Find our mount
                 external_mount = None
                 for mount in mounts:
-                    if mount.get('Destination') == '/external' or '/external' in str(mount):
+                    if mount.get("Destination") == "/external" or "/external" in str(mount):
                         external_mount = mount
                         break
 
-                assert external_mount is not None, (
-                    f"Expected mount to /external but found mounts: {mounts}"
-                )
+                assert (
+                    external_mount is not None
+                ), f"Expected mount to /external but found mounts: {mounts}"
 
                 # Verify mount source matches our temp dir
-                mount_source = external_mount.get('Source', '')
-                assert temp_dir in mount_source or mount_source.endswith(os.path.basename(temp_dir)), (
-                    f"Mount source {mount_source} should contain {temp_dir}"
-                )
+                mount_source = external_mount.get("Source", "")
+                assert temp_dir in mount_source or mount_source.endswith(
+                    os.path.basename(temp_dir)
+                ), f"Mount source {mount_source} should contain {temp_dir}"
 
                 # Verify file is accessible in container
                 exec_result = docker_container.exec_run("cat /external/test.txt")
-                assert exec_result.exit_code == 0, (
-                    f"Failed to read file in container: {exec_result.output.decode()}"
-                )
-                assert "Test content from host" in exec_result.output.decode(), (
-                    f"File content mismatch: {exec_result.output.decode()}"
-                )
+                assert (
+                    exec_result.exit_code == 0
+                ), f"Failed to read file in container: {exec_result.output.decode()}"
+                assert (
+                    "Test content from host" in exec_result.output.decode()
+                ), f"File content mismatch: {exec_result.output.decode()}"
 
                 print(f"✓ Single volume mount verified: {temp_dir} -> /external")
 
@@ -248,8 +251,7 @@ class TestBugFix3VolumeMounting:
         cleanup_containers.append(container_name)
 
         # Create temp directories
-        with tempfile.TemporaryDirectory() as temp_dir1, \
-             tempfile.TemporaryDirectory() as temp_dir2:
+        with tempfile.TemporaryDirectory() as temp_dir1, tempfile.TemporaryDirectory() as temp_dir2:
 
             # Create test files
             (Path(temp_dir1) / "file1.txt").write_text("Content 1")
@@ -262,10 +264,7 @@ class TestBugFix3VolumeMounting:
                 webserver_port=48775,
                 namespace="USER",
                 password="SYS",
-                volumes=[
-                    f"{temp_dir1}:/data1",
-                    f"{temp_dir2}:/data2"
-                ]
+                volumes=[f"{temp_dir1}:/data1", f"{temp_dir2}:/data2"],
             )
 
             # Act
@@ -276,15 +275,15 @@ class TestBugFix3VolumeMounting:
                 docker_container = docker_client.containers.get(container_name)
 
                 # Assert - Verify both mounts exist
-                mounts = docker_container.attrs['Mounts']
-                mount_destinations = [m.get('Destination', '') for m in mounts]
+                mounts = docker_container.attrs["Mounts"]
+                mount_destinations = [m.get("Destination", "") for m in mounts]
 
-                assert '/data1' in mount_destinations or any('/data1' in str(m) for m in mounts), (
-                    f"Expected /data1 mount but found: {mount_destinations}"
-                )
-                assert '/data2' in mount_destinations or any('/data2' in str(m) for m in mounts), (
-                    f"Expected /data2 mount but found: {mount_destinations}"
-                )
+                assert "/data1" in mount_destinations or any(
+                    "/data1" in str(m) for m in mounts
+                ), f"Expected /data1 mount but found: {mount_destinations}"
+                assert "/data2" in mount_destinations or any(
+                    "/data2" in str(m) for m in mounts
+                ), f"Expected /data2 mount but found: {mount_destinations}"
 
                 # Verify files are accessible
                 exec1 = docker_container.exec_run("cat /data1/file1.txt")
@@ -325,7 +324,7 @@ class TestBugFix3VolumeMounting:
                 webserver_port=48776,
                 namespace="USER",
                 password="SYS",
-                volumes=[f"{temp_dir}:/readonly:ro"]
+                volumes=[f"{temp_dir}:/readonly:ro"],
             )
 
             # Act
@@ -336,20 +335,20 @@ class TestBugFix3VolumeMounting:
                 docker_container = docker_client.containers.get(container_name)
 
                 # Assert - Verify mount exists and is read-only
-                mounts = docker_container.attrs['Mounts']
+                mounts = docker_container.attrs["Mounts"]
                 readonly_mount = None
                 for mount in mounts:
-                    if '/readonly' in str(mount.get('Destination', '')):
+                    if "/readonly" in str(mount.get("Destination", "")):
                         readonly_mount = mount
                         break
 
                 assert readonly_mount is not None, f"Expected /readonly mount but found: {mounts}"
 
                 # Verify RW flag is False (read-only)
-                is_readonly = readonly_mount.get('RW', True) == False
-                assert is_readonly or readonly_mount.get('Mode', '') == 'ro', (
-                    f"Mount should be read-only but got: {readonly_mount}"
-                )
+                is_readonly = readonly_mount.get("RW", True) == False
+                assert (
+                    is_readonly or readonly_mount.get("Mode", "") == "ro"
+                ), f"Mount should be read-only but got: {readonly_mount}"
 
                 # Verify file can be read
                 read_result = docker_container.exec_run("cat /readonly/readonly.txt")
@@ -360,9 +359,7 @@ class TestBugFix3VolumeMounting:
                 write_result = docker_container.exec_run(
                     "sh -c 'echo test > /readonly/newfile.txt'"
                 )
-                assert write_result.exit_code != 0, (
-                    "Write should fail on read-only mount"
-                )
+                assert write_result.exit_code != 0, "Write should fail on read-only mount"
 
                 print(f"✓ Read-only volume mount verified: {temp_dir} -> /readonly:ro")
 
@@ -387,7 +384,7 @@ class TestBugFix3VolumeMounting:
             webserver_port=48777,
             namespace="USER",
             password="SYS",
-            volumes=[]  # Empty volumes list
+            volumes=[],  # Empty volumes list
         )
 
         # Act
@@ -434,7 +431,7 @@ class TestBugFixesIntegration:
                 webserver_port=48778,
                 namespace="USER",
                 password="SYS",
-                volumes=[f"{temp_dir}:/production-data"]
+                volumes=[f"{temp_dir}:/production-data"],
             )
 
             # Act
@@ -445,12 +442,12 @@ class TestBugFixesIntegration:
                 docker_container = docker_client.containers.get(container_name)
 
                 # Assert - Verify image name (Bug Fix #1)
-                image_name = docker_container.attrs['Config']['Image']
+                image_name = docker_container.attrs["Config"]["Image"]
                 assert "intersystemsdc/iris-community" in image_name
 
                 # Assert - Verify volume mount (Bug Fix #3)
-                mounts = docker_container.attrs['Mounts']
-                assert any('/production-data' in str(m.get('Destination', '')) for m in mounts)
+                mounts = docker_container.attrs["Mounts"]
+                assert any("/production-data" in str(m.get("Destination", "")) for m in mounts)
 
                 # Assert - Verify data is accessible
                 exec_result = docker_container.exec_run("cat /production-data/data.txt")
@@ -476,8 +473,10 @@ class TestBugFixesIntegration:
         container_name = "test-bug-fixes-yaml"
         cleanup_containers.append(container_name)
 
-        with tempfile.TemporaryDirectory() as temp_dir, \
-             tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as yaml_file:
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as yaml_file,
+        ):
 
             # Create test data
             (Path(temp_dir) / "config.txt").write_text("Config from YAML")
@@ -515,10 +514,12 @@ image_tag: latest
                     docker_container = docker_client.containers.get(container_name)
 
                     # Assert - Verify everything works
-                    assert "intersystemsdc/iris-community" in docker_container.attrs['Config']['Image']
+                    assert (
+                        "intersystemsdc/iris-community" in docker_container.attrs["Config"]["Image"]
+                    )
 
-                    mounts = docker_container.attrs['Mounts']
-                    assert any('/app-config' in str(m.get('Destination', '')) for m in mounts)
+                    mounts = docker_container.attrs["Mounts"]
+                    assert any("/app-config" in str(m.get("Destination", "")) for m in mounts)
 
                     exec_result = docker_container.exec_run("cat /app-config/config.txt")
                     assert exec_result.exit_code == 0

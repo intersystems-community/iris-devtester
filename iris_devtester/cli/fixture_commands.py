@@ -9,23 +9,23 @@ Provides 5 commands:
 - fixture info: Show detailed fixture information
 """
 
-import click
 import sys
 from pathlib import Path
 from typing import Optional
 
-from iris_devtester.fixtures import (
-    FixtureCreator,
-    DATFixtureLoader,
-    FixtureValidator,
-    FixtureManifest,
-    FixtureCreateError,
-    FixtureLoadError,
-    FixtureValidationError,
-)
+import click
 
 # Import IRISContainer for container handling
 from iris_devtester.containers import IRISContainer
+from iris_devtester.fixtures import (
+    DATFixtureLoader,
+    FixtureCreateError,
+    FixtureCreator,
+    FixtureLoadError,
+    FixtureManifest,
+    FixtureValidationError,
+    FixtureValidator,
+)
 
 
 @click.group()
@@ -35,14 +35,24 @@ def fixture():
 
 
 @fixture.command()
-@click.option('--name', required=True, help='Fixture identifier (e.g., "test-entities-100")')
-@click.option('--namespace', required=True, help='Source namespace to export (e.g., "USER_TEST_100")')
-@click.option('--output', required=True, help='Output directory for fixture')
-@click.option('--description', default="", help='Human-readable description')
-@click.option('--version', default="1.0.0", help='Semantic version')
-@click.option('--container', default=None, help='IRIS container name to use for fixture creation')
-@click.option('--verbose', is_flag=True, help='Show detailed progress')
-def create(name: str, namespace: str, output: str, description: str, version: str, container: str, verbose: bool):
+@click.option("--name", required=True, help='Fixture identifier (e.g., "test-entities-100")')
+@click.option(
+    "--namespace", required=True, help='Source namespace to export (e.g., "USER_TEST_100")'
+)
+@click.option("--output", required=True, help="Output directory for fixture")
+@click.option("--description", default="", help="Human-readable description")
+@click.option("--version", default="1.0.0", help="Semantic version")
+@click.option("--container", default=None, help="IRIS container name to use for fixture creation")
+@click.option("--verbose", is_flag=True, help="Show detailed progress")
+def create(
+    name: str,
+    namespace: str,
+    output: str,
+    description: str,
+    version: str,
+    container: str,
+    verbose: bool,
+):
     """Create .DAT fixture by exporting IRIS namespace."""
     try:
         if verbose:
@@ -54,7 +64,9 @@ def create(name: str, namespace: str, output: str, description: str, version: st
                 # Attach to an existing container by name
                 container_obj = IRISContainer.attach(container)
             except Exception as e:
-                click.secho(f"\n❌ Failed to attach to container '{container}': {e}", fg='red', bold=True)
+                click.secho(
+                    f"\n❌ Failed to attach to container '{container}': {e}", fg="red", bold=True
+                )
                 sys.exit(1)
         else:
             # No container specified; start a temporary community container
@@ -63,7 +75,9 @@ def create(name: str, namespace: str, output: str, description: str, version: st
                 # Ensure it's started
                 container_obj.start()
             except Exception as e:
-                click.secho(f"\n❌ Failed to start community IRIS container: {e}", fg='red', bold=True)
+                click.secho(
+                    f"\n❌ Failed to start community IRIS container: {e}", fg="red", bold=True
+                )
                 sys.exit(1)
         creator = FixtureCreator(container=container_obj)
 
@@ -75,7 +89,7 @@ def create(name: str, namespace: str, output: str, description: str, version: st
             namespace=namespace,
             output_dir=output,
             description=description,
-            version=version
+            version=version,
         )
 
         if verbose:
@@ -89,7 +103,7 @@ def create(name: str, namespace: str, output: str, description: str, version: st
         table_count = len(manifest.tables)
         total_rows = sum(t.row_count for t in manifest.tables)
 
-        click.secho(f"\n✅ Fixture created: {manifest.fixture_id}", fg='green', bold=True)
+        click.secho(f"\n✅ Fixture created: {manifest.fixture_id}", fg="green", bold=True)
         click.echo(f"\nLocation: {output}")
         click.echo(f"Tables: {table_count}")
         click.echo(f"Total rows: {total_rows:,}")
@@ -103,35 +117,38 @@ def create(name: str, namespace: str, output: str, description: str, version: st
         sys.exit(0)
 
     except FileExistsError as e:
-        click.secho(f"\n❌ Failed to create fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to create fixture", fg="red", bold=True)
         click.echo(f"\n{str(e)}")
         sys.exit(1)
 
     except FixtureCreateError as e:
-        click.secho(f"\n❌ Failed to create fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to create fixture", fg="red", bold=True)
         click.echo(f"\n{str(e)}")
         sys.exit(3)
 
     except ConnectionError as e:
-        click.secho(f"\n❌ Failed to create fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to create fixture", fg="red", bold=True)
         click.echo(f"\nConnection error: {str(e)}")
         sys.exit(4)
 
     except Exception as e:
-        click.secho(f"\n❌ Failed to create fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to create fixture", fg="red", bold=True)
         click.echo(f"\nUnexpected error: {str(e)}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
 
 @fixture.command()
-@click.option('--fixture', required=True, help='Path to fixture directory')
-@click.option('--namespace', default=None, help='Target namespace (default: use manifest namespace)')
-@click.option('--no-validate', is_flag=True, help='Skip checksum validation (faster, less safe)')
-@click.option('--force', is_flag=True, help='Force reload by deleting existing namespace')
-@click.option('--verbose', is_flag=True, help='Show detailed progress')
+@click.option("--fixture", required=True, help="Path to fixture directory")
+@click.option(
+    "--namespace", default=None, help="Target namespace (default: use manifest namespace)"
+)
+@click.option("--no-validate", is_flag=True, help="Skip checksum validation (faster, less safe)")
+@click.option("--force", is_flag=True, help="Force reload by deleting existing namespace")
+@click.option("--verbose", is_flag=True, help="Show detailed progress")
 def load(fixture: str, namespace: Optional[str], no_validate: bool, force: bool, verbose: bool):
     """Load .DAT fixture into IRIS database."""
     try:
@@ -152,14 +169,16 @@ def load(fixture: str, namespace: Optional[str], no_validate: bool, force: bool,
             fixture_path=fixture,
             target_namespace=namespace,
             validate_checksum=validate_checksum,
-            force_refresh=force
+            force_refresh=force,
         )
 
         # Calculate totals
         table_count = len(result.tables_loaded)
-        total_rows = sum(t.row_count for t in result.manifest.tables if t.name in result.tables_loaded)
+        total_rows = sum(
+            t.row_count for t in result.manifest.tables if t.name in result.tables_loaded
+        )
 
-        click.secho(f"\n✅ Fixture loaded: {result.manifest.fixture_id}", fg='green', bold=True)
+        click.secho(f"\n✅ Fixture loaded: {result.manifest.fixture_id}", fg="green", bold=True)
         click.echo(f"\nNamespace: {result.namespace}")
         click.echo(f"Tables loaded: {table_count}")
         click.echo(f"Total rows: {total_rows:,}")
@@ -178,40 +197,41 @@ def load(fixture: str, namespace: Optional[str], no_validate: bool, force: bool,
         sys.exit(0)
 
     except FileNotFoundError as e:
-        click.secho(f"\n❌ Failed to load fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to load fixture", fg="red", bold=True)
         click.echo(f"\nFixture not found: {str(e)}")
         sys.exit(1)
 
     except FixtureValidationError as e:
-        click.secho(f"\n❌ Failed to load fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to load fixture", fg="red", bold=True)
         click.echo(f"\n{str(e)}")
         sys.exit(2)
 
     except FixtureLoadError as e:
-        click.secho(f"\n❌ Failed to load fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to load fixture", fg="red", bold=True)
         click.echo(f"\n{str(e)}")
         click.echo("\nNote: Namespace mount is atomic (all-or-nothing operation)")
         sys.exit(4)
 
     except ConnectionError as e:
-        click.secho(f"\n❌ Failed to load fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to load fixture", fg="red", bold=True)
         click.echo(f"\nConnection error: {str(e)}")
         sys.exit(5)
 
     except Exception as e:
-        click.secho(f"\n❌ Failed to load fixture", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to load fixture", fg="red", bold=True)
         click.echo(f"\nUnexpected error: {str(e)}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
 
 @fixture.command()
-@click.option('--fixture', required=True, help='Path to fixture directory')
-@click.option('--no-checksums', is_flag=True, help='Skip checksum validation (faster)')
-@click.option('--recalc', is_flag=True, help='Recalculate checksums and update manifest')
-@click.option('--verbose', is_flag=True, help='Show detailed validation results')
+@click.option("--fixture", required=True, help="Path to fixture directory")
+@click.option("--no-checksums", is_flag=True, help="Skip checksum validation (faster)")
+@click.option("--recalc", is_flag=True, help="Recalculate checksums and update manifest")
+@click.option("--verbose", is_flag=True, help="Show detailed validation results")
 def validate(fixture: str, no_checksums: bool, recalc: bool, verbose: bool):
     """Validate fixture integrity (manifest, files, checksums)."""
     try:
@@ -222,7 +242,7 @@ def validate(fixture: str, no_checksums: bool, recalc: bool, verbose: bool):
                 click.echo("Recalculating checksums...")
 
             manifest = validator.recalculate_checksums(fixture)
-            click.secho(f"\n✅ Checksums recalculated", fg='green', bold=True)
+            click.secho(f"\n✅ Checksums recalculated", fg="green", bold=True)
             click.echo(f"\nNew checksum: {manifest.checksum}")
             sys.exit(0)
 
@@ -238,14 +258,14 @@ def validate(fixture: str, no_checksums: bool, recalc: bool, verbose: bool):
         if result.valid:
             manifest = result.manifest
             if manifest is None:
-                click.secho("\n❌ Unexpected error: manifest is None", fg='red', bold=True)
+                click.secho("\n❌ Unexpected error: manifest is None", fg="red", bold=True)
                 sys.exit(1)
             sizes = validator.get_fixture_size(fixture)
 
             table_count = len(manifest.tables)
             total_rows = sum(t.row_count for t in manifest.tables)
 
-            click.secho(f"\n✅ Fixture is valid: {manifest.fixture_id}", fg='green', bold=True)
+            click.secho(f"\n✅ Fixture is valid: {manifest.fixture_id}", fg="green", bold=True)
             click.echo(f"\nFixture: {manifest.fixture_id}")
             click.echo(f"Version: {manifest.version}")
             click.echo(f"Schema: {manifest.schema_version}")
@@ -259,58 +279,61 @@ def validate(fixture: str, no_checksums: bool, recalc: bool, verbose: bool):
                     click.echo(f"  - {table}")
 
             if result.warnings:
-                click.secho(f"\nWarnings ({len(result.warnings)}):", fg='yellow')
+                click.secho(f"\nWarnings ({len(result.warnings)}):", fg="yellow")
                 for warning in result.warnings:
                     click.echo(f"  - {warning}")
 
             sys.exit(0)
 
         else:
-            click.secho(f"\n❌ Fixture validation failed", fg='red', bold=True)
+            click.secho(f"\n❌ Fixture validation failed", fg="red", bold=True)
             click.echo(f"\nErrors ({len(result.errors)}):")
             for error in result.errors:
                 click.echo(f"  - {error}")
 
             if result.warnings:
-                click.secho(f"\nWarnings ({len(result.warnings)}):", fg='yellow')
+                click.secho(f"\nWarnings ({len(result.warnings)}):", fg="yellow")
                 for warning in result.warnings:
                     click.echo(f"  - {warning}")
 
             sys.exit(1)
 
     except FileNotFoundError as e:
-        click.secho(f"\n❌ Fixture not found", fg='red', bold=True)
+        click.secho(f"\n❌ Fixture not found", fg="red", bold=True)
         click.echo(f"\n{str(e)}")
         sys.exit(2)
 
     except Exception as e:
-        click.secho(f"\n❌ Validation failed", fg='red', bold=True)
+        click.secho(f"\n❌ Validation failed", fg="red", bold=True)
         click.echo(f"\nUnexpected error: {str(e)}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
 
 @fixture.command()
-@click.argument('path', default="./fixtures")
-@click.option('--verbose', is_flag=True, help='Show detailed fixture info')
+@click.argument("path", default="./fixtures")
+@click.option("--verbose", is_flag=True, help="Show detailed fixture info")
 def list(path: str, verbose: bool):
     """List available fixtures in directory."""
     try:
         fixtures_dir = Path(path)
 
         if not fixtures_dir.exists():
-            click.secho(f"\n❌ Directory not found: {path}", fg='red')
+            click.secho(f"\n❌ Directory not found: {path}", fg="red")
             sys.exit(1)
 
         # Find all manifest.json files
         manifests = list(fixtures_dir.rglob("manifest.json"))
 
         if not manifests:
-            click.secho(f"\nNo fixtures found in {path}", fg='yellow')
+            click.secho(f"\nNo fixtures found in {path}", fg="yellow")
             click.echo(f"\nTo create a fixture:")
-            click.echo(f"  iris-devtester fixture create --name my-fixture --namespace USER --output {path}/my-fixture")
+            click.echo(
+                f"  iris-devtester fixture create --name my-fixture --namespace USER --output {path}/my-fixture"
+            )
             sys.exit(0)
 
         # Load and display fixtures
@@ -323,13 +346,11 @@ def list(path: str, verbose: bool):
                 manifest = FixtureManifest.from_file(str(manifest_file))
                 fixture_dir = manifest_file.parent
                 sizes = validator.get_fixture_size(str(fixture_dir))
-                total_size += sizes['total_bytes']
+                total_size += sizes["total_bytes"]
 
-                fixtures.append({
-                    'manifest': manifest,
-                    'path': fixture_dir,
-                    'size_mb': sizes['total_mb']
-                })
+                fixtures.append(
+                    {"manifest": manifest, "path": fixture_dir, "size_mb": sizes["total_mb"]}
+                )
             except Exception:
                 # Skip invalid fixtures
                 continue
@@ -337,13 +358,15 @@ def list(path: str, verbose: bool):
         click.echo(f"\nAvailable fixtures in {path}:\n")
 
         for f in fixtures:
-            manifest = f['manifest']
+            manifest = f["manifest"]
             table_count = len(manifest.tables)
             total_rows = sum(t.row_count for t in manifest.tables)
 
-            click.secho(f"  {manifest.fixture_id}", fg='cyan', bold=True)
+            click.secho(f"  {manifest.fixture_id}", fg="cyan", bold=True)
             click.echo(f"    Version: {manifest.version}")
-            click.echo(f"    Tables: {table_count}, Rows: {total_rows:,}, Size: {f['size_mb']:.2f} MB")
+            click.echo(
+                f"    Tables: {table_count}, Rows: {total_rows:,}, Size: {f['size_mb']:.2f} MB"
+            )
             if manifest.description:
                 click.echo(f"    Description: {manifest.description}")
             click.echo(f"    Path: {f['path']}")
@@ -362,14 +385,14 @@ def list(path: str, verbose: bool):
         sys.exit(0)
 
     except Exception as e:
-        click.secho(f"\n❌ Failed to list fixtures", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to list fixtures", fg="red", bold=True)
         click.echo(f"\nError: {str(e)}")
         sys.exit(1)
 
 
 @fixture.command()
-@click.option('--fixture', required=True, help='Path to fixture directory')
-@click.option('--json', 'output_json', is_flag=True, help='Output as JSON')
+@click.option("--fixture", required=True, help="Path to fixture directory")
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON")
 def info(fixture: str, output_json: bool):
     """Show detailed information about fixture."""
     try:
@@ -377,7 +400,7 @@ def info(fixture: str, output_json: bool):
         manifest_file = Path(fixture) / "manifest.json"
 
         if not manifest_file.exists():
-            click.secho(f"\n❌ Fixture not found: {fixture}", fg='red')
+            click.secho(f"\n❌ Fixture not found: {fixture}", fg="red")
             sys.exit(1)
 
         manifest = FixtureManifest.from_file(str(manifest_file))
@@ -385,6 +408,7 @@ def info(fixture: str, output_json: bool):
 
         if output_json:
             import json
+
             data = {
                 "fixture_id": manifest.fixture_id,
                 "version": manifest.version,
@@ -395,13 +419,13 @@ def info(fixture: str, output_json: bool):
                 "namespace": manifest.namespace,
                 "tables": [{"name": t.name, "row_count": t.row_count} for t in manifest.tables],
                 "size": {
-                    "total_mb": sizes['total_mb'],
-                    "manifest_kb": sizes['manifest_kb'],
-                    "dat_mb": sizes['dat_mb']
+                    "total_mb": sizes["total_mb"],
+                    "manifest_kb": sizes["manifest_kb"],
+                    "dat_mb": sizes["dat_mb"],
                 },
                 "features": manifest.features,
                 "known_queries": manifest.known_queries,
-                "location": str(Path(fixture).resolve())
+                "location": str(Path(fixture).resolve()),
             }
             click.echo(json.dumps(data, indent=2))
         else:
@@ -442,15 +466,15 @@ def info(fixture: str, output_json: bool):
         sys.exit(0)
 
     except FileNotFoundError as e:
-        click.secho(f"\n❌ Fixture not found", fg='red')
+        click.secho(f"\n❌ Fixture not found", fg="red")
         click.echo(f"\n{str(e)}")
         sys.exit(1)
 
     except Exception as e:
-        click.secho(f"\n❌ Failed to show fixture info", fg='red', bold=True)
+        click.secho(f"\n❌ Failed to show fixture info", fg="red", bold=True)
         click.echo(f"\nError: {str(e)}")
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fixture()

@@ -29,25 +29,17 @@ def container_group(ctx):
 
 @container_group.command(name="up")
 @click.option(
-    "--config",
-    type=click.Path(exists=True),
-    help="Path to iris-config.yml configuration file"
+    "--config", type=click.Path(exists=True), help="Path to iris-config.yml configuration file"
 )
 @click.option(
     "--detach/--no-detach",
     default=True,
-    help="Run container in background mode (default: detached)"
+    help="Run container in background mode (default: detached)",
 )
 @click.option(
-    "--timeout",
-    type=int,
-    default=60,
-    help="Health check timeout in seconds (default: 60)"
+    "--timeout", type=int, default=60, help="Health check timeout in seconds (default: 60)"
 )
-@click.option(
-    "--cpf",
-    help="Path to CPF merge file or raw CPF content"
-)
+@click.option("--cpf", help="Path to CPF merge file or raw CPF content")
 @click.pass_context
 def up(ctx, config, detach, timeout, cpf):
     """
@@ -122,7 +114,7 @@ def up(ctx, config, detach, timeout, cpf):
                     superserver_port=superserver_port,
                     webserver_port=webserver_port,
                     namespace=container_config.namespace,
-                    password=container_config.password
+                    password=container_config.password,
                 )
                 return
 
@@ -134,7 +126,9 @@ def up(ctx, config, detach, timeout, cpf):
             # Create new container using Docker SDK (Feature 011 - T015: CLI mode persistence)
             click.echo(f"  → Edition: {container_config.edition}")
             click.echo(f"  → Image: {container_config.get_image_name()}")
-            click.echo(f"  → Ports: {container_config.superserver_port}, {container_config.webserver_port}")
+            click.echo(
+                f"  → Ports: {container_config.superserver_port}, {container_config.webserver_port}"
+            )
             if container_config.volumes:
                 click.echo(f"  → Volumes: {len(container_config.volumes)} mount(s)")
 
@@ -151,16 +145,14 @@ def up(ctx, config, detach, timeout, cpf):
             try:
                 existing_container = IRISContainerManager.create_from_config(
                     container_config,
-                    use_testcontainers=False  # CLI mode: manual lifecycle, no ryuk cleanup
+                    use_testcontainers=False,  # CLI mode: manual lifecycle, no ryuk cleanup
                 )
                 click.echo(f"✓ Container '{container_config.container_name}' created and started")
 
                 # Verify container persistence (Feature 011 - T015)
                 click.echo("⏳ Verifying container persistence...")
                 check = verify_container_persistence(
-                    container_config.container_name,
-                    container_config,
-                    wait_seconds=2.0
+                    container_config.container_name, container_config, wait_seconds=2.0
                 )
 
                 if not check.success:
@@ -180,9 +172,7 @@ def up(ctx, config, detach, timeout, cpf):
             click.echo(f"  {msg}")
 
         state = health_checks.wait_for_healthy(
-            existing_container,
-            timeout=timeout,
-            progress_callback=progress_callback
+            existing_container, timeout=timeout, progress_callback=progress_callback
         )
 
         # Enable CallIn service (required for DBAPI)
@@ -215,7 +205,7 @@ def up(ctx, config, detach, timeout, cpf):
             superserver_port=superserver_port,
             webserver_port=webserver_port,
             namespace=container_config.namespace,
-            password=container_config.password
+            password=container_config.password,
         )
 
         # Exit code 0 (success)
@@ -224,7 +214,6 @@ def up(ctx, config, detach, timeout, cpf):
     except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
         raise
     except ValueError as e:
-
 
         # Configuration error (exit code 2)
         progress.print_error(str(e))
@@ -244,13 +233,10 @@ def up(ctx, config, detach, timeout, cpf):
 @click.option(
     "--config",
     type=click.Path(exists=True),
-    help="Path to configuration file (used if creating new container)"
+    help="Path to configuration file (used if creating new container)",
 )
 @click.option(
-    "--timeout",
-    type=int,
-    default=60,
-    help="Health check timeout in seconds (default: 60)"
+    "--timeout", type=int, default=60, help="Health check timeout in seconds (default: 60)"
 )
 @click.pass_context
 def start(ctx, container_name, config, timeout):
@@ -308,15 +294,13 @@ def start(ctx, container_name, config, timeout):
             try:
                 container = IRISContainerManager.create_from_config(
                     container_config,
-                    use_testcontainers=False  # CLI mode: manual lifecycle, no ryuk cleanup
+                    use_testcontainers=False,  # CLI mode: manual lifecycle, no ryuk cleanup
                 )
                 click.echo(f"✓ Container '{container_name}' created and started")
 
                 # Verify container persistence (Feature 011 - T015)
                 check = verify_container_persistence(
-                    container_name,
-                    container_config,
-                    wait_seconds=2.0
+                    container_name, container_config, wait_seconds=2.0
                 )
 
                 if not check.success:
@@ -354,10 +338,7 @@ def start(ctx, container_name, config, timeout):
 @container_group.command(name="stop")
 @click.argument("container_name", required=False, default="iris_db")
 @click.option(
-    "--timeout",
-    type=int,
-    default=30,
-    help="Grace period before force kill (default: 30 seconds)"
+    "--timeout", type=int, default=30, help="Grace period before force kill (default: 30 seconds)"
 )
 @click.pass_context
 def stop(ctx, container_name, timeout):
@@ -405,10 +386,7 @@ def stop(ctx, container_name, timeout):
 @container_group.command(name="restart")
 @click.argument("container_name", required=False, default="iris_db")
 @click.option(
-    "--timeout",
-    type=int,
-    default=60,
-    help="Health check timeout in seconds (default: 60)"
+    "--timeout", type=int, default=60, help="Health check timeout in seconds (default: 60)"
 )
 @click.pass_context
 def restart(ctx, container_name, timeout):
@@ -458,7 +436,7 @@ def restart(ctx, container_name, timeout):
     "--format",
     type=click.Choice(["text", "json"]),
     default="text",
-    help="Output format (default: text)"
+    help="Output format (default: text)",
 )
 @click.pass_context
 def status(ctx, container_name, format):
@@ -508,22 +486,9 @@ def status(ctx, container_name, format):
 
 @container_group.command(name="logs")
 @click.argument("container_name", required=False, default="iris_db")
-@click.option(
-    "--follow", "-f",
-    is_flag=True,
-    help="Stream logs continuously (CTRL+C to exit)"
-)
-@click.option(
-    "--tail",
-    type=int,
-    default=100,
-    help="Number of lines to show (default: 100)"
-)
-@click.option(
-    "--since",
-    type=str,
-    help="Show logs since timestamp (ISO 8601 format)"
-)
+@click.option("--follow", "-f", is_flag=True, help="Stream logs continuously (CTRL+C to exit)")
+@click.option("--tail", type=int, default=100, help="Number of lines to show (default: 100)")
+@click.option("--since", type=str, help="Show logs since timestamp (ISO 8601 format)")
 @click.pass_context
 def logs(ctx, container_name, follow, tail, since):
     """
@@ -586,16 +551,8 @@ def logs(ctx, container_name, follow, tail, since):
 
 @container_group.command(name="remove")
 @click.argument("container_name", required=False, default="iris_db")
-@click.option(
-    "--force", "-f",
-    is_flag=True,
-    help="Force remove running container"
-)
-@click.option(
-    "--volumes", "-v",
-    is_flag=True,
-    help="Remove associated volumes (data loss!)"
-)
+@click.option("--force", "-f", is_flag=True, help="Force remove running container")
+@click.option("--volumes", "-v", is_flag=True, help="Remove associated volumes (data loss!)")
 @click.pass_context
 def remove(ctx, container_name, force, volumes):
     """
@@ -631,9 +588,7 @@ def remove(ctx, container_name, force, volumes):
         # Check if running without --force
         container.reload()
         if container.status == "running" and not force:
-            raise ValueError(
-                "Container is running. Stop it first or use --force to force removal."
-            )
+            raise ValueError("Container is running. Stop it first or use --force to force removal.")
 
         # Remove container
         click.echo(f"⚡ Removing container '{container_name}'...")
@@ -659,21 +614,10 @@ def remove(ctx, container_name, force, volumes):
 
 @container_group.command(name="reset-password")
 @click.argument("container_name")
+@click.option("--user", default="_SYSTEM", help="Username to reset password for (default: _SYSTEM)")
+@click.option("--password", default="SYS", help="New password (default: SYS)")
 @click.option(
-    "--user",
-    default="_SYSTEM",
-    help="Username to reset password for (default: _SYSTEM)"
-)
-@click.option(
-    "--password",
-    default="SYS",
-    help="New password (default: SYS)"
-)
-@click.option(
-    "--port",
-    default=None,
-    type=int,
-    help="IRIS SuperServer port (auto-detected if not specified)"
+    "--port", default=None, type=int, help="IRIS SuperServer port (auto-detected if not specified)"
 )
 @click.pass_context
 def reset_password_cmd(ctx, container_name, user, password, port):
@@ -695,8 +639,8 @@ def reset_password_cmd(ctx, container_name, user, password, port):
         iris-devtester container reset-password my_iris --port 51972
     """
     try:
-        from iris_devtester.utils.password_reset import reset_password
         from iris_devtester.utils.container_port import get_container_port
+        from iris_devtester.utils.password import reset_password
 
         # Auto-detect port if not specified (for random port containers like testcontainers)
         if port is None:
@@ -707,14 +651,13 @@ def reset_password_cmd(ctx, container_name, user, password, port):
             else:
                 port = 1972  # Default fallback
 
-        click.echo(f"⚡ Resetting password for user '{user}' in container '{container_name}' on port {port}...")
+        click.echo(
+            f"⚡ Resetting password for user '{user}' in container '{container_name}' on port {port}..."
+        )
 
         # Call password reset utility
         success, message = reset_password(
-            container_name=container_name,
-            username=user,
-            new_password=password,
-            port=port
+            container_name=container_name, username=user, new_password=password, port=port
         )
 
         if success:
@@ -738,20 +681,10 @@ def reset_password_cmd(ctx, container_name, user, password, port):
 @container_group.command(name="test-connection")
 @click.argument("container_name")
 @click.option(
-    "--namespace",
-    default="USER",
-    help="IRIS namespace to test connection to (default: USER)"
+    "--namespace", default="USER", help="IRIS namespace to test connection to (default: USER)"
 )
-@click.option(
-    "--username",
-    default="_SYSTEM",
-    help="Username for connection (default: _SYSTEM)"
-)
-@click.option(
-    "--password",
-    default="SYS",
-    help="Password for connection (default: SYS)"
-)
+@click.option("--username", default="_SYSTEM", help="Username for connection (default: _SYSTEM)")
+@click.option("--password", default="SYS", help="Password for connection (default: SYS)")
 @click.pass_context
 def test_connection_cmd(ctx, container_name, namespace, username, password):
     """
@@ -774,7 +707,9 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
         from iris_devtester.config import IRISConfig
         from iris_devtester.connections import get_connection
 
-        click.echo(f"⚡ Testing connection to container '{container_name}' namespace '{namespace}'...")
+        click.echo(
+            f"⚡ Testing connection to container '{container_name}' namespace '{namespace}'..."
+        )
 
         # Get container to extract connection details
         container = IRISContainerManager.get_existing(container_name)
@@ -799,7 +734,7 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
             namespace=namespace,
             username=username,
             password=password,
-            driver="auto"
+            driver="auto",
         )
 
         # Try to connect
@@ -835,10 +770,7 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
 @container_group.command(name="enable-callin")
 @click.argument("container_name")
 @click.option(
-    "--timeout",
-    type=int,
-    default=30,
-    help="Timeout in seconds for docker commands (default: 30)"
+    "--timeout", type=int, default=30, help="Timeout in seconds for docker commands (default: 30)"
 )
 @click.pass_context
 def enable_callin(ctx, container_name, timeout):
@@ -861,10 +793,7 @@ def enable_callin(ctx, container_name, timeout):
         click.echo(f"⚡ Enabling CallIn service in container '{container_name}'...")
 
         # Call enable callin utility
-        success, message = enable_callin_service(
-            container_name=container_name,
-            timeout=timeout
-        )
+        success, message = enable_callin_service(container_name=container_name, timeout=timeout)
 
         if success:
             click.echo(f"✓ CallIn service enabled in container '{container_name}'")

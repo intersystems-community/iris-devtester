@@ -12,8 +12,8 @@ Constitutional Principle #4: Zero Configuration Viable
 from iris_devtester.config.auto_discovery import (
     auto_discover_iris,
     discover_docker_iris,
-    discover_native_iris,
     discover_iris_port,
+    discover_native_iris,
 )
 from iris_devtester.containers import IRISContainer
 

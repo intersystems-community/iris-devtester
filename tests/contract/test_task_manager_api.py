@@ -10,21 +10,20 @@ IRIS instance.
 Constitutional Principle #7: Medical-Grade Reliability - All API contracts validated.
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
-from unittest.mock import Mock
 import inspect
+from unittest.mock import Mock
 
 from iris_devtester.containers.monitoring import (
     TaskSchedule,
     create_task,
-    get_task_status,
-    suspend_task,
-    resume_task,
     delete_task,
+    get_task_status,
     list_monitoring_tasks,
+    resume_task,
+    suspend_task,
 )
 
 
@@ -40,8 +39,8 @@ class TestCreateTaskContract:
         # Verify function accepts the parameters (signature check only)
         sig = inspect.signature(create_task)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
-        assert 'schedule' in params
+        assert "conn" in params
+        assert "schedule" in params
 
     def test_returns_string_task_id(self):
         """Test function signature returns str (task ID)."""
@@ -81,8 +80,8 @@ class TestGetTaskStatusContract:
         # Verify function signature
         sig = inspect.signature(get_task_status)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
-        assert 'task_id' in params
+        assert "conn" in params
+        assert "task_id" in params
 
     def test_returns_dict(self):
         """Test function signature returns dict."""
@@ -103,8 +102,8 @@ class TestSuspendTaskContract:
         # Verify function signature
         sig = inspect.signature(suspend_task)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
-        assert 'task_id' in params
+        assert "conn" in params
+        assert "task_id" in params
 
     def test_returns_bool(self):
         """Test function signature returns bool."""
@@ -125,8 +124,8 @@ class TestResumeTaskContract:
         # Verify function signature
         sig = inspect.signature(resume_task)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
-        assert 'task_id' in params
+        assert "conn" in params
+        assert "task_id" in params
 
     def test_returns_bool(self):
         """Test function signature returns bool."""
@@ -147,8 +146,8 @@ class TestDeleteTaskContract:
         # Verify function signature
         sig = inspect.signature(delete_task)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
-        assert 'task_id' in params
+        assert "conn" in params
+        assert "task_id" in params
 
     def test_returns_bool(self):
         """Test function signature returns bool."""
@@ -169,7 +168,7 @@ class TestListMonitoringTasksContract:
         # Verify function signature
         sig = inspect.signature(list_monitoring_tasks)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
+        assert "conn" in params
 
     def test_returns_list(self):
         """Test function signature returns list."""
@@ -267,23 +266,23 @@ class TestTaskManagerAPIConstitutionalCompliance:
         # (Implementation will determine exact behavior)
         # This is a contract test - just verify function signature exists
         sig = inspect.signature(create_task)
-        assert 'conn' in sig.parameters
-        assert 'schedule' in sig.parameters
+        assert "conn" in sig.parameters
+        assert "schedule" in sig.parameters
 
     def test_suspend_task_idempotency(self):
         """Test suspending already-suspended task is safe."""
         # Contract test - verify function signature for idempotent operation
         sig = inspect.signature(suspend_task)
-        assert 'conn' in sig.parameters
-        assert 'task_id' in sig.parameters
+        assert "conn" in sig.parameters
+        assert "task_id" in sig.parameters
         # Implementation should be idempotent (safe to call multiple times)
 
     def test_resume_task_idempotency(self):
         """Test resuming already-active task is safe."""
         # Contract test - verify function signature for idempotent operation
         sig = inspect.signature(resume_task)
-        assert 'conn' in sig.parameters
-        assert 'task_id' in sig.parameters
+        assert "conn" in sig.parameters
+        assert "task_id" in sig.parameters
         # Implementation should be idempotent (safe to call multiple times)
 
 
@@ -349,7 +348,7 @@ class TestTaskScheduleObjectScriptIntegration:
         schedule = TaskSchedule()
         script = schedule.to_objectscript()
 
-        assert '_SYSTEM' in script or "_SYSTEM" in script
+        assert "_SYSTEM" in script or "_SYSTEM" in script
 
 
 if __name__ == "__main__":

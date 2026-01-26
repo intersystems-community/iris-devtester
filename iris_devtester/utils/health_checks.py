@@ -68,7 +68,7 @@ _IRIS_STATE_MESSAGES = {
 def wait_for_healthy(
     container: Container,
     timeout: int = 60,
-    progress_callback: Optional[Callable[[str], None]] = None
+    progress_callback: Optional[Callable[[str], None]] = None,
 ) -> ContainerState:
     """
     Wait for container to be fully healthy using multi-layer validation.
@@ -158,17 +158,13 @@ def wait_for_healthy(
                 output = last_log.get("Output", "No output")
 
                 raise RuntimeError(
-                    f"Container health check failed\n"
-                    f"\n"
-                    f"Health check output:\n{output}"
+                    f"Container health check failed\n" f"\n" f"Health check output:\n{output}"
                 )
 
             time.sleep(2)
 
         if elapsed() >= timeout:
-            raise TimeoutError(
-                f"Container health check did not pass within {timeout} seconds"
-            )
+            raise TimeoutError(f"Container health check did not pass within {timeout} seconds")
     else:
         notify("⚠ No Docker health check defined, skipping Layer 2")
 
@@ -190,10 +186,7 @@ def wait_for_healthy(
     else:
         while elapsed() < timeout:
             try:
-                sock = socket.create_connection(
-                    ("localhost", superserver_host_port),
-                    timeout=2
-                )
+                sock = socket.create_connection(("localhost", superserver_host_port), timeout=2)
                 sock.close()
                 notify(f"✓ IRIS SuperServer port {superserver_host_port} is accessible")
                 break
@@ -201,9 +194,7 @@ def wait_for_healthy(
                 time.sleep(2)
 
         if elapsed() >= timeout:
-            raise TimeoutError(
-                f"IRIS SuperServer port not accessible within {timeout} seconds"
-            )
+            raise TimeoutError(f"IRIS SuperServer port not accessible within {timeout} seconds")
 
     # Layer 4: Wait for IRIS Monitor.State() to be OK
     # This is the official IRIS health check - more reliable than just port check
@@ -346,9 +337,7 @@ def wait_for_port(port: int, host: str = "localhost", timeout: int = 60) -> None
 
         time.sleep(1)
 
-    raise TimeoutError(
-        f"Port {port} on {host} did not become accessible within {timeout} seconds"
-    )
+    raise TimeoutError(f"Port {port} on {host} did not become accessible within {timeout} seconds")
 
 
 def get_container_logs(container: Container, tail: int = 100) -> str:
@@ -390,17 +379,14 @@ def enable_callin_service(container: Container) -> None:
     """
     # Execute ObjectScript to enable CallIn
     objectscript_cmd = (
-        'iris session iris -U%SYS '
-        '"Do ##class(Security.Services).Get(\"%Service_CallIn\", .service) '
-        'Set service.Enabled = 1 '
-        'Do ##class(Security.Services).Modify(\"%Service_CallIn\", .service)"'
+        "iris session iris -U%SYS "
+        '"Do ##class(Security.Services).Get("%Service_CallIn", .service) '
+        "Set service.Enabled = 1 "
+        'Do ##class(Security.Services).Modify("%Service_CallIn", .service)"'
     )
 
     try:
-        exit_code, output = container.exec_run(
-            cmd=["sh", "-c", objectscript_cmd],
-            user="irisowner"
-        )
+        exit_code, output = container.exec_run(cmd=["sh", "-c", objectscript_cmd], user="irisowner")
 
         if exit_code != 0:
             raise RuntimeError(
@@ -454,16 +440,13 @@ def check_iris_monitor_state(container: Container) -> IrisMonitorResult:
     # ObjectScript command to get Monitor state
     # Use $SYSTEM.Monitor.State() which returns 0=OK, 1=Warning, 2=Error, 3=Fatal
     # Note: ##class(%SYSTEM.System).GetInstanceState() does NOT exist in Community Edition
-    objectscript_cmd = '''iris session IRIS -U %SYS << 'EOF'
+    objectscript_cmd = """iris session IRIS -U %SYS << 'EOF'
 Write $SYSTEM.Monitor.State()
 Halt
-EOF'''
+EOF"""
 
     try:
-        exit_code, output = container.exec_run(
-            cmd=["sh", "-c", objectscript_cmd],
-            user="irisowner"
-        )
+        exit_code, output = container.exec_run(cmd=["sh", "-c", objectscript_cmd], user="irisowner")
 
         raw_output = output.decode("utf-8", errors="ignore")
 
@@ -479,7 +462,9 @@ EOF'''
         # -1 means "monitoring not configured" - treat as healthy since container is running
         # The output may contain prompts/banners, so look for the number on its own line
         # Check for -1 first (monitoring unconfigured), then 0-3
-        match = re.search(r'(?:^|\n)(-1)\s*(?:\n|$)', raw_output) or re.search(r'(?:^|\n)([0-3])\s*(?:\n|$)', raw_output)
+        match = re.search(r"(?:^|\n)(-1)\s*(?:\n|$)", raw_output) or re.search(
+            r"(?:^|\n)([0-3])\s*(?:\n|$)", raw_output
+        )
         if match:
             state_value = int(match.group(1))
             # Handle -1 (monitoring unconfigured) as OK since container is running
@@ -518,7 +503,7 @@ EOF'''
 def wait_for_iris_healthy(
     container: Container,
     timeout: int = 60,
-    progress_callback: Optional[Callable[[str], None]] = None
+    progress_callback: Optional[Callable[[str], None]] = None,
 ) -> bool:
     """Wait for IRIS container to reach healthy state.
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class ContainerStatus(str, Enum):
     """Container lifecycle status."""
+
     CREATING = "creating"
     STARTING = "starting"
     RUNNING = "running"
@@ -20,6 +21,7 @@ class ContainerStatus(str, Enum):
 
 class HealthStatus(str, Enum):
     """Docker health check status."""
+
     STARTING = "starting"
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
@@ -54,47 +56,21 @@ class ContainerState(BaseModel):
     """
 
     container_id: str = Field(
-        ...,
-        min_length=64,
-        max_length=64,
-        description="Docker container ID (full hash)"
+        ..., min_length=64, max_length=64, description="Docker container ID (full hash)"
     )
-    container_name: str = Field(
-        ...,
-        description="Container name"
-    )
-    status: ContainerStatus = Field(
-        ...,
-        description="Current lifecycle state"
-    )
+    container_name: str = Field(..., description="Container name")
+    status: ContainerStatus = Field(..., description="Current lifecycle state")
     health_status: HealthStatus = Field(
-        default=HealthStatus.NONE,
-        description="Docker health check status"
+        default=HealthStatus.NONE, description="Docker health check status"
     )
-    created_at: datetime = Field(
-        ...,
-        description="Container creation timestamp"
-    )
-    started_at: Optional[datetime] = Field(
-        default=None,
-        description="Last start timestamp"
-    )
-    finished_at: Optional[datetime] = Field(
-        default=None,
-        description="Last stop timestamp"
-    )
+    created_at: datetime = Field(..., description="Container creation timestamp")
+    started_at: Optional[datetime] = Field(default=None, description="Last start timestamp")
+    finished_at: Optional[datetime] = Field(default=None, description="Last stop timestamp")
     ports: Dict[int, int] = Field(
-        default_factory=dict,
-        description="Port mappings (container -> host)"
+        default_factory=dict, description="Port mappings (container -> host)"
     )
-    image: str = Field(
-        ...,
-        description="Full image reference"
-    )
-    config_source: Optional[Path] = Field(
-        default=None,
-        description="Source config file (if any)"
-    )
+    image: str = Field(..., description="Full image reference")
+    config_source: Optional[Path] = Field(default=None, description="Source config file (if any)")
 
     @field_validator("container_id")
     @classmethod
@@ -223,10 +199,7 @@ class ContainerState(BaseModel):
         Returns:
             True if status is healthy and health_status is healthy
         """
-        return (
-            self.status == ContainerStatus.HEALTHY
-            and self.health_status == HealthStatus.HEALTHY
-        )
+        return self.status == ContainerStatus.HEALTHY and self.health_status == HealthStatus.HEALTHY
 
     def get_uptime_seconds(self) -> Optional[float]:
         """
@@ -274,8 +247,10 @@ class ContainerState(BaseModel):
         if not self.ports:
             return "None"
 
-        port_strs = [f"{container_port}->{host_port}"
-                     for container_port, host_port in sorted(self.ports.items())]
+        port_strs = [
+            f"{container_port}->{host_port}"
+            for container_port, host_port in sorted(self.ports.items())
+        ]
         return ", ".join(port_strs)
 
     def to_text_output(self) -> str:
@@ -331,6 +306,7 @@ class ContainerState(BaseModel):
 
     class Config:
         """Pydantic model configuration."""
+
         json_schema_extra = {
             "example": {
                 "container_id": "a1b2c3d4e5f6" + "0" * 52,  # 64 chars
@@ -342,6 +318,6 @@ class ContainerState(BaseModel):
                 "finished_at": None,
                 "ports": {1972: 1972, 52773: 52773},
                 "image": "intersystems/iris-community:latest",
-                "config_source": None
+                "config_source": None,
             }
         }

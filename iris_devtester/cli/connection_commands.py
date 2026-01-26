@@ -13,45 +13,17 @@ from iris_devtester.utils.iris_container_adapter import IRISContainerManager
 
 @click.command(name="test-connection")
 @click.option(
-    "--config",
-    type=click.Path(exists=True),
-    help="Path to iris-config.yml configuration file"
+    "--config", type=click.Path(exists=True), help="Path to iris-config.yml configuration file"
 )
 @click.option(
-    "--container",
-    type=str,
-    help="Container name to test connection against (default: iris_db)"
+    "--container", type=str, help="Container name to test connection against (default: iris_db)"
 )
-@click.option(
-    "--host",
-    type=str,
-    help="IRIS host (overrides config/container)"
-)
-@click.option(
-    "--port",
-    type=int,
-    help="IRIS SuperServer port (overrides config/container)"
-)
-@click.option(
-    "--namespace",
-    type=str,
-    help="IRIS namespace (default: USER)"
-)
-@click.option(
-    "--username",
-    type=str,
-    help="Username (default: _SYSTEM)"
-)
-@click.option(
-    "--password",
-    type=str,
-    help="Password (default: SYS)"
-)
-@click.option(
-    "--verbose", "-v",
-    is_flag=True,
-    help="Show detailed connection diagnostics"
-)
+@click.option("--host", type=str, help="IRIS host (overrides config/container)")
+@click.option("--port", type=int, help="IRIS SuperServer port (overrides config/container)")
+@click.option("--namespace", type=str, help="IRIS namespace (default: USER)")
+@click.option("--username", type=str, help="Username (default: _SYSTEM)")
+@click.option("--password", type=str, help="Password (default: SYS)")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed connection diagnostics")
 @click.pass_context
 def test_connection(ctx, config, container, host, port, namespace, username, password, verbose):
     """
@@ -108,7 +80,9 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             if docker_container:
                 docker_container.reload()
                 if verbose:
-                    click.echo(f"  → Found container: {container_name} (status: {docker_container.status})")
+                    click.echo(
+                        f"  → Found container: {container_name} (status: {docker_container.status})"
+                    )
 
                 # Get port mapping
                 port_bindings = docker_container.attrs.get("NetworkSettings", {}).get("Ports", {})
@@ -175,12 +149,7 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
                 click.echo(f"  → Connecting to SuperServer {conn_host}:{conn_port}...")
 
             connection_string = f"{conn_host}:{conn_port}/{conn_namespace}"
-            conn = dbapi.connect(
-                connection_string,
-                conn_username,
-                conn_password,
-                timeout=5
-            )
+            conn = dbapi.connect(connection_string, conn_username, conn_password, timeout=5)
 
             if verbose:
                 click.echo("  → Executing test query...")
@@ -204,6 +173,7 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             click.echo(f"  ✗ DBAPI connection failed: {e}")
             if verbose:
                 import traceback
+
                 click.echo(f"\n{traceback.format_exc()}")
 
         # Test JDBC connection
@@ -216,7 +186,9 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             if not jpype.isJVMStarted():
                 if verbose:
                     click.echo("  → Starting JVM...")
-                jpype.startJVM(jpype.getDefaultJVMPath(), "-Djava.class.path=./intersystems-jdbc-3.8.1.jar")
+                jpype.startJVM(
+                    jpype.getDefaultJVMPath(), "-Djava.class.path=./intersystems-jdbc-3.8.1.jar"
+                )
 
             if verbose:
                 click.echo(f"  → Connecting via JDBC to {conn_host}:{conn_port}...")
@@ -226,7 +198,7 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
                 "com.intersystems.jdbc.IRISDriver",
                 jdbc_url,
                 [conn_username, conn_password],
-                "./intersystems-jdbc-3.8.1.jar"
+                "./intersystems-jdbc-3.8.1.jar",
             )
 
             if verbose:
@@ -252,21 +224,26 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             click.echo(f"  ✗ JDBC connection failed: {e}")
             if verbose:
                 import traceback
+
                 click.echo(f"\n{traceback.format_exc()}")
 
         # Summary
-        click.echo("\n" + "="*60)
+        click.echo("\n" + "=" * 60)
         if dbapi_success or jdbc_success:
             click.echo("✓ Connection test PASSED")
             if dbapi_success and jdbc_success:
                 click.echo("  → Both DBAPI and JDBC working")
             elif dbapi_success:
                 click.echo("  → DBAPI working (recommended)")
-                click.echo("  → JDBC not available (install with: pip install iris-devtester[jdbc])")
+                click.echo(
+                    "  → JDBC not available (install with: pip install iris-devtester[jdbc])"
+                )
             else:
                 click.echo("  → JDBC working (slower fallback)")
-                click.echo("  → DBAPI not available (install with: pip install intersystems-irispython)")
-            click.echo("="*60)
+                click.echo(
+                    "  → DBAPI not available (install with: pip install intersystems-irispython)"
+                )
+            click.echo("=" * 60)
             return  # Success - exit with code 0
         else:
             click.echo("✗ Connection test FAILED")
@@ -282,8 +259,10 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             click.echo("     pip install iris-devtester[all]")
             click.echo("  4. Check firewall/network access to port")
             click.echo("\nDocumentation:")
-            click.echo("  https://github.com/intersystems-community/iris-devtester#connection-issues")
-            click.echo("="*60)
+            click.echo(
+                "  https://github.com/intersystems-community/iris-devtester#connection-issues"
+            )
+            click.echo("=" * 60)
             ctx.exit(1)
 
     except ValueError as e:
@@ -295,6 +274,7 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
         progress.print_error(f"Unexpected error: {e}")
         if verbose:
             import traceback
+
             click.echo(f"\n{traceback.format_exc()}")
         ctx.exit(1)
 

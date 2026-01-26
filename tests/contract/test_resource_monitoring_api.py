@@ -10,22 +10,21 @@ IRIS instance.
 Constitutional Principle #1: Automatic Remediation - Auto-disable under pressure.
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
-from unittest.mock import Mock
 import inspect
 from datetime import datetime
+from unittest.mock import Mock
 
+from iris_devtester.containers.monitoring import ResourceThresholds
 from iris_devtester.containers.performance import (
     PerformanceMetrics,
-    get_resource_metrics,
-    check_resource_thresholds,
     auto_disable_monitoring,
     auto_enable_monitoring,
+    check_resource_thresholds,
+    get_resource_metrics,
 )
-from iris_devtester.containers.monitoring import ResourceThresholds
 
 
 class TestGetResourceMetricsContract:
@@ -43,7 +42,7 @@ class TestGetResourceMetricsContract:
 
         params = list(sig.parameters.keys())
 
-        assert 'conn' in params
+        assert "conn" in params
 
     def test_returns_performance_metrics(self):
         """Test function signature returns PerformanceMetrics."""
@@ -86,15 +85,15 @@ class TestAutoDisableMonitoringContract:
         # Verify function signature (contract test)
         sig = inspect.signature(auto_disable_monitoring)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
-        assert 'reason' in params
+        assert "conn" in params
+        assert "reason" in params
 
     def test_auto_enable_idempotency(self):
         """Test calling auto_enable twice is safe."""
         # Verify function signature (contract test)
         sig = inspect.signature(auto_enable_monitoring)
         params = list(sig.parameters.keys())
-        assert 'conn' in params
+        assert "conn" in params
         # Implementation should be idempotent (safe to call multiple times)
 
 

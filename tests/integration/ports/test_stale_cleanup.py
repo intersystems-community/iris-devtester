@@ -33,10 +33,7 @@ def test_cleanup_stale_removes_dead_containers(temp_registry):
     5. Verify container A's assignment kept (still running)
     """
     # Start real container A
-    container_a = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
+    container_a = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
     container_a.start()
 
     try:
@@ -44,6 +41,7 @@ def test_cleanup_stale_removes_dead_containers(temp_registry):
         assignment_b = temp_registry.assign_port("/tmp/test-project-b")
         # Update container name to simulate what IRISContainer would do
         import hashlib
+
         project_hash = hashlib.md5("/tmp/test-project-b".encode()).hexdigest()[:8]
         assignment_b.container_name = f"iris_{project_hash}_{assignment_b.port}"
 
@@ -85,14 +83,8 @@ def test_cleanup_stale_preserves_active_containers(temp_registry):
     3. Verify both assignments preserved (both containers still running)
     """
     # Start two real containers
-    container_a = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
-    container_b = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-b"
-    )
+    container_a = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
+    container_b = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-b")
 
     container_a.start()
     container_b.start()
@@ -129,10 +121,7 @@ def test_cleanup_stale_handles_stopped_containers(temp_registry):
     5. Verify assignment removed (container stopped)
     """
     # Start and stop container normally first
-    container_a = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
+    container_a = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
     container_a.start()
     container_name = container_a.get_container_name()
     port = container_a.get_assigned_port()
@@ -140,8 +129,9 @@ def test_cleanup_stale_handles_stopped_containers(temp_registry):
 
     # Manually re-add assignment to simulate incomplete cleanup scenario
     # (e.g., container was force-killed, port release failed)
-    from iris_devtester.ports.assignment import PortAssignment
     from datetime import datetime
+
+    from iris_devtester.ports.assignment import PortAssignment
 
     stale_assignment = PortAssignment(
         project_path="/tmp/test-project-a",
@@ -149,7 +139,7 @@ def test_cleanup_stale_handles_stopped_containers(temp_registry):
         assigned_at=datetime.now(),
         assignment_type="auto",
         status="active",
-        container_name=container_name
+        container_name=container_name,
     )
 
     data = temp_registry._read_registry()

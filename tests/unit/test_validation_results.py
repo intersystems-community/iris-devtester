@@ -4,8 +4,9 @@ Unit tests for validation result models.
 Tests MUST FAIL until iris_devtester/testing/models.py is implemented.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 
 
 class TestPasswordResetResult:
@@ -22,9 +23,7 @@ class TestPasswordResetResult:
         from iris_devtester.testing.models import PasswordResetResult
 
         result = PasswordResetResult(
-            success=True,
-            new_password="newsecret",
-            environment_updated=True
+            success=True, new_password="newsecret", environment_updated=True
         )
         assert result.success == True
         assert result.new_password == "newsecret"
@@ -35,9 +34,7 @@ class TestPasswordResetResult:
         from iris_devtester.testing.models import PasswordResetResult
 
         result = PasswordResetResult(
-            success=False,
-            error="Container not accessible",
-            remediation_steps=["Step 1", "Step 2"]
+            success=False, error="Container not accessible", remediation_steps=["Step 1", "Step 2"]
         )
         assert result.success == False
         assert result.error == "Container not accessible"
@@ -65,10 +62,7 @@ class TestCleanupAction:
         """Test that CleanupAction requires action_type and target."""
         from iris_devtester.testing.models import CleanupAction
 
-        action = CleanupAction(
-            action_type="drop_table",
-            target="test_users"
-        )
+        action = CleanupAction(action_type="drop_table", target="test_users")
         assert action.action_type == "drop_table"
         assert action.target == "test_users"
         assert action.priority == 0
@@ -77,11 +71,7 @@ class TestCleanupAction:
         """Test that CleanupAction supports priority."""
         from iris_devtester.testing.models import CleanupAction
 
-        action = CleanupAction(
-            action_type="stop_container",
-            target="abc123",
-            priority=10
-        )
+        action = CleanupAction(action_type="stop_container", target="abc123", priority=10)
         assert action.priority == 10
 
 
@@ -98,11 +88,7 @@ class TestTestState:
         """Test that TestState requires test_id, isolation_level, namespace."""
         from iris_devtester.testing.models import TestState
 
-        state = TestState(
-            test_id="test_001",
-            isolation_level="container",
-            namespace="TEST_001"
-        )
+        state = TestState(test_id="test_001", isolation_level="container", namespace="TEST_001")
         assert state.test_id == "test_001"
         assert state.isolation_level == "container"
         assert state.namespace == "TEST_001"
@@ -111,11 +97,7 @@ class TestTestState:
         """Test that TestState has default values."""
         from iris_devtester.testing.models import TestState
 
-        state = TestState(
-            test_id="test_001",
-            isolation_level="namespace",
-            namespace="TEST_001"
-        )
+        state = TestState(test_id="test_001", isolation_level="namespace", namespace="TEST_001")
         assert state.container_id is None
         assert state.connection_info is None
         assert state.cleanup_registered == []
@@ -124,13 +106,9 @@ class TestTestState:
 
     def test_register_cleanup(self):
         """Test that TestState has register_cleanup method."""
-        from iris_devtester.testing.models import TestState, CleanupAction
+        from iris_devtester.testing.models import CleanupAction, TestState
 
-        state = TestState(
-            test_id="test_001",
-            isolation_level="namespace",
-            namespace="TEST_001"
-        )
+        state = TestState(test_id="test_001", isolation_level="namespace", namespace="TEST_001")
 
         action1 = CleanupAction(action_type="drop_table", target="t1", priority=1)
         action2 = CleanupAction(action_type="drop_table", target="t2", priority=10)
@@ -175,10 +153,7 @@ class TestContainerConfig:
         """Test that enterprise edition works with license_key."""
         from iris_devtester.testing.models import ContainerConfig
 
-        config = ContainerConfig(
-            edition="enterprise",
-            license_key="test-license"
-        )
+        config = ContainerConfig(edition="enterprise", license_key="test-license")
         assert config.edition == "enterprise"
         assert config.license_key == "test-license"
 

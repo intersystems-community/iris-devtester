@@ -61,9 +61,7 @@ def test_connection(
             "{{.Names}}",
         ]
 
-        result = subprocess.run(
-            check_cmd, capture_output=True, text=True, timeout=timeout
-        )
+        result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=timeout)
 
         if container_name not in result.stdout:
             return (
@@ -96,7 +94,7 @@ def test_connection(
             container_name,
             "bash",
             "-c",
-            f'''echo "write $HOROLOG" | iris session IRIS -U {namespace}''',
+            f"""echo "write $HOROLOG" | iris session IRIS -U {namespace}""",
         ]
 
         result = subprocess.run(
@@ -128,11 +126,11 @@ def test_connection(
                 "\n"
                 "How to fix it:\n"
                 "  1. List available namespaces:\n"
-                f"     docker exec {container_name} iris session IRIS -U %SYS \"\"\"Do ^%GSIZE\"\"\"\n"
+                f'     docker exec {container_name} iris session IRIS -U %SYS """Do ^%GSIZE"""\n'
                 "\n"
                 "  2. Create the namespace if needed:\n"
                 f"     docker exec {container_name} iris session IRIS -U %SYS\n"
-                f"     Do ##class(Config.Namespaces).Create(\"{namespace}\")\n"
+                f'     Do ##class(Config.Namespaces).Create("{namespace}")\n'
                 "\n"
                 "  3. Or use an existing namespace like 'USER' or '%SYS'\n",
             )

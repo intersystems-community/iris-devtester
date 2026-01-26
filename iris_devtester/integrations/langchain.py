@@ -178,9 +178,7 @@ class LangChainIRISContainer(IRISContainer):
         password = getattr(self, "password", "SYS")
         namespace = getattr(self, "namespace", "USER")
 
-        connection_string = (
-            f"iris://{username}:{password}@{host}:{port}/{namespace}"
-        )
+        connection_string = f"iris://{username}:{password}@{host}:{port}/{namespace}"
 
         return connection_string
 
@@ -247,9 +245,7 @@ class LangChainIRISContainer(IRISContainer):
 
         connection_string = self.get_connection_string()
 
-        logger.info(
-            f"Creating LangChain chat history for session '{session_id}'"
-        )
+        logger.info(f"Creating LangChain chat history for session '{session_id}'")
 
         history = IRISChatMessageHistory(
             connection_string=connection_string,

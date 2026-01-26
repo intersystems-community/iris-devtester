@@ -4,9 +4,10 @@ Unit tests for IRIS-specific wait strategies.
 Tests custom wait strategies for IRIS container readiness.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 import time
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestIRISReadyWaitStrategy:

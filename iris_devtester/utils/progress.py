@@ -284,7 +284,7 @@ def print_connection_info(
     webserver_port: int,
     namespace: str,
     username: str = "_SYSTEM",
-    password: str = "SYS"
+    password: str = "SYS",
 ) -> None:
     """
     Print connection information for IRIS container.

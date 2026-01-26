@@ -11,7 +11,6 @@ Tests verify:
 - API is usable as documented
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
@@ -36,8 +35,8 @@ class TestDATFixtureLoaderClass:
 
     def test_constructor_signature_explicit_config(self):
         """Test that DATFixtureLoader accepts optional connection_config."""
-        from iris_devtester.fixtures import DATFixtureLoader
         from iris_devtester.config import IRISConfig
+        from iris_devtester.fixtures import DATFixtureLoader
 
         config = IRISConfig(host="localhost", port=1972, namespace="USER")
         loader = DATFixtureLoader(connection_config=config)
@@ -59,7 +58,7 @@ class TestValidateFixtureMethod:
         from iris_devtester.fixtures import DATFixtureLoader
 
         loader = DATFixtureLoader()
-        assert hasattr(loader, 'validate_fixture')
+        assert hasattr(loader, "validate_fixture")
         assert callable(loader.validate_fixture)
 
     def test_signature_required_params(self):
@@ -102,7 +101,7 @@ class TestLoadFixtureMethod:
         from iris_devtester.fixtures import DATFixtureLoader
 
         loader = DATFixtureLoader()
-        assert hasattr(loader, 'load_fixture')
+        assert hasattr(loader, "load_fixture")
         assert callable(loader.load_fixture)
 
     def test_signature_required_params(self):
@@ -155,7 +154,7 @@ class TestCleanupFixtureMethod:
         from iris_devtester.fixtures import DATFixtureLoader
 
         loader = DATFixtureLoader()
-        assert hasattr(loader, 'cleanup_fixture')
+        assert hasattr(loader, "cleanup_fixture")
         assert callable(loader.cleanup_fixture)
 
     def test_signature_required_params(self):
@@ -188,7 +187,7 @@ class TestGetConnectionMethod:
         from iris_devtester.fixtures import DATFixtureLoader
 
         loader = DATFixtureLoader()
-        assert hasattr(loader, 'get_connection')
+        assert hasattr(loader, "get_connection")
         assert callable(loader.get_connection)
 
     def test_signature_no_params(self):
@@ -211,26 +210,22 @@ class TestIntegrationWithConnectionManager:
 
     def test_uses_get_connection_from_feature_003(self):
         """Test that DATFixtureLoader uses get_connection from Feature 003."""
-        from iris_devtester.fixtures import DATFixtureLoader
         from iris_devtester.connections import get_connection
+        from iris_devtester.fixtures import DATFixtureLoader
 
         loader = DATFixtureLoader()
 
         # Should use Feature 003's get_connection
         # (Implementation detail check)
-        assert hasattr(loader, 'get_connection')
+        assert hasattr(loader, "get_connection")
 
     def test_accepts_iris_config_from_feature_003(self):
         """Test that DATFixtureLoader accepts IRISConfig from Feature 003."""
-        from iris_devtester.fixtures import DATFixtureLoader
         from iris_devtester.config import IRISConfig
+        from iris_devtester.fixtures import DATFixtureLoader
 
         config = IRISConfig(
-            host="localhost",
-            port=1972,
-            namespace="USER",
-            username="_SYSTEM",
-            password="SYS"
+            host="localhost", port=1972, namespace="USER", username="_SYSTEM", password="SYS"
         )
 
         loader = DATFixtureLoader(connection_config=config)
@@ -248,7 +243,7 @@ class TestConstitutionalCompliance:
 
         # Should use Feature 003 which is DBAPI-first
         # (Integration validation)
-        assert hasattr(loader, 'connection_config')
+        assert hasattr(loader, "connection_config")
 
     def test_principle_4_zero_config(self):
         """Test Principle #4: Zero Configuration Viable."""
@@ -293,7 +288,7 @@ class TestLoadResultDataclass:
 
     def test_loadresult_fields(self):
         """Test that LoadResult has required fields."""
-        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, LoadResult, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -305,7 +300,7 @@ class TestLoadResultDataclass:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = LoadResult(
@@ -313,7 +308,7 @@ class TestLoadResultDataclass:
             manifest=manifest,
             namespace="USER",
             tables_loaded=["Test.Table"],
-            elapsed_seconds=1.5
+            elapsed_seconds=1.5,
         )
 
         assert result.success is True
@@ -324,7 +319,7 @@ class TestLoadResultDataclass:
 
     def test_loadresult_str_method(self):
         """Test that LoadResult has __str__ method."""
-        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, LoadResult, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -336,7 +331,7 @@ class TestLoadResultDataclass:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = LoadResult(
@@ -344,7 +339,7 @@ class TestLoadResultDataclass:
             manifest=manifest,
             namespace="USER",
             tables_loaded=["Test.Table"],
-            elapsed_seconds=1.5
+            elapsed_seconds=1.5,
         )
 
         result_str = str(result)
@@ -353,7 +348,7 @@ class TestLoadResultDataclass:
 
     def test_loadresult_summary_method(self):
         """Test that LoadResult has summary() method."""
-        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, LoadResult, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -365,7 +360,7 @@ class TestLoadResultDataclass:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = LoadResult(
@@ -373,7 +368,7 @@ class TestLoadResultDataclass:
             manifest=manifest,
             namespace="USER",
             tables_loaded=["Test.Table"],
-            elapsed_seconds=1.5
+            elapsed_seconds=1.5,
         )
 
         summary = result.summary()

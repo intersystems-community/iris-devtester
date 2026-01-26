@@ -9,8 +9,9 @@ Tests verify:
 """
 
 import pytest
-from iris_devtester.connections import get_connection, IRISConnection
+
 from iris_devtester.config import IRISConfig
+from iris_devtester.connections import IRISConnection, get_connection
 
 
 class TestModernConnectionManager:
@@ -224,11 +225,13 @@ class TestConnectionManagerIntegration:
         with IRISConnection(config) as conn:
             # Execute query
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     'Connection successful' AS status,
                     CURRENT_TIMESTAMP AS connected_at
-            """)
+            """
+            )
             result = cursor.fetchone()
 
             assert result[0] == "Connection successful"

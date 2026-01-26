@@ -12,8 +12,8 @@ from datetime import datetime
 from typing import Any, Literal, Tuple
 
 from iris_devtester.config.models import IRISConfig
-from iris_devtester.connections.models import ConnectionInfo
 from iris_devtester.connections import dbapi, jdbc
+from iris_devtester.connections.models import ConnectionInfo
 from iris_devtester.utils.dbapi_compat import get_package_info
 
 logger = logging.getLogger(__name__)

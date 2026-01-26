@@ -11,11 +11,10 @@ Tests verify:
 - API is usable as documented
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 
 class TestFixtureCreatorClass:
@@ -36,8 +35,8 @@ class TestFixtureCreatorClass:
 
     def test_constructor_signature_explicit_config(self):
         """Test that FixtureCreator accepts optional connection_config."""
-        from iris_devtester.fixtures import FixtureCreator
         from iris_devtester.config import IRISConfig
+        from iris_devtester.fixtures import FixtureCreator
 
         config = IRISConfig(host="localhost", port=1972, namespace="USER")
         creator = FixtureCreator(connection_config=config)
@@ -59,7 +58,7 @@ class TestCreateFixtureMethod:
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
-        assert hasattr(creator, 'create_fixture')
+        assert hasattr(creator, "create_fixture")
         assert callable(creator.create_fixture)
 
     def test_signature_required_params(self):
@@ -72,9 +71,7 @@ class TestCreateFixtureMethod:
         # (Will fail without IRIS connection)
         with pytest.raises(Exception):
             creator.create_fixture(
-                fixture_id="test",
-                namespace="USER",
-                output_dir="/tmp/test-fixture"
+                fixture_id="test", namespace="USER", output_dir="/tmp/test-fixture"
             )
 
     def test_signature_optional_description(self):
@@ -88,7 +85,7 @@ class TestCreateFixtureMethod:
                 fixture_id="test",
                 namespace="USER",
                 output_dir="/tmp/test-fixture",
-                description="Test fixture"
+                description="Test fixture",
             )
 
     def test_signature_optional_version(self):
@@ -99,10 +96,7 @@ class TestCreateFixtureMethod:
 
         with pytest.raises(Exception):
             creator.create_fixture(
-                fixture_id="test",
-                namespace="USER",
-                output_dir="/tmp/test-fixture",
-                version="2.0.0"
+                fixture_id="test", namespace="USER", output_dir="/tmp/test-fixture", version="2.0.0"
             )
 
     def test_signature_optional_features(self):
@@ -116,7 +110,7 @@ class TestCreateFixtureMethod:
                 fixture_id="test",
                 namespace="USER",
                 output_dir="/tmp/test-fixture",
-                features={"use_case": "testing", "dataset": "sample"}
+                features={"use_case": "testing", "dataset": "sample"},
             )
 
     def test_return_type_is_manifest(self):
@@ -138,7 +132,7 @@ class TestExportNamespaceToDatMethod:
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
-        assert hasattr(creator, 'export_namespace_to_dat')
+        assert hasattr(creator, "export_namespace_to_dat")
         assert callable(creator.export_namespace_to_dat)
 
     def test_signature_required_params(self):
@@ -171,7 +165,7 @@ class TestCalculateChecksumMethod:
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
-        assert hasattr(creator, 'calculate_checksum')
+        assert hasattr(creator, "calculate_checksum")
         assert callable(creator.calculate_checksum)
 
     def test_signature_required_params(self):
@@ -189,12 +183,13 @@ class TestCalculateChecksumMethod:
         """Test that calculate_checksum returns string (sha256:...)."""
         import tempfile
         from pathlib import Path
+
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
         # Create temp file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("test")
             temp_path = f.name
 
@@ -214,7 +209,7 @@ class TestGetNamespaceTablesMethod:
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
-        assert hasattr(creator, 'get_namespace_tables')
+        assert hasattr(creator, "get_namespace_tables")
         assert callable(creator.get_namespace_tables)
 
     def test_signature_required_params(self):
@@ -247,7 +242,7 @@ class TestRefreshFixtureMethod:
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
-        assert hasattr(creator, 'refresh_fixture')
+        assert hasattr(creator, "refresh_fixture")
         assert callable(creator.refresh_fixture)
 
     def test_signature_required_params(self):
@@ -280,7 +275,7 @@ class TestGetConnectionMethod:
         from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
-        assert hasattr(creator, 'get_connection')
+        assert hasattr(creator, "get_connection")
         assert callable(creator.get_connection)
 
     def test_signature_no_params(self):
@@ -302,25 +297,21 @@ class TestIntegrationWithConnectionManager:
 
     def test_uses_get_connection_from_feature_003(self):
         """Test that FixtureCreator uses get_connection from Feature 003."""
-        from iris_devtester.fixtures import FixtureCreator
         from iris_devtester.connections import get_connection
+        from iris_devtester.fixtures import FixtureCreator
 
         creator = FixtureCreator()
 
         # Should use Feature 003's get_connection
-        assert hasattr(creator, 'get_connection')
+        assert hasattr(creator, "get_connection")
 
     def test_accepts_iris_config_from_feature_003(self):
         """Test that FixtureCreator accepts IRISConfig from Feature 003."""
-        from iris_devtester.fixtures import FixtureCreator
         from iris_devtester.config import IRISConfig
+        from iris_devtester.fixtures import FixtureCreator
 
         config = IRISConfig(
-            host="localhost",
-            port=1972,
-            namespace="USER",
-            username="_SYSTEM",
-            password="SYS"
+            host="localhost", port=1972, namespace="USER", username="_SYSTEM", password="SYS"
         )
 
         creator = FixtureCreator(connection_config=config)
@@ -337,7 +328,7 @@ class TestConstitutionalCompliance:
         creator = FixtureCreator()
 
         # Should use Feature 003 which is DBAPI-first
-        assert hasattr(creator, 'connection_config')
+        assert hasattr(creator, "connection_config")
 
     def test_principle_4_zero_config(self):
         """Test Principle #4: Zero Configuration Viable."""
@@ -349,9 +340,10 @@ class TestConstitutionalCompliance:
 
     def test_principle_5_error_messages(self):
         """Test Principle #5: Fail Fast with Guidance."""
-        from iris_devtester.fixtures import FixtureCreator, FixtureCreateError
-        import tempfile
         import os
+        import tempfile
+
+        from iris_devtester.fixtures import FixtureCreateError, FixtureCreator
 
         creator = FixtureCreator()
 
@@ -362,9 +354,7 @@ class TestConstitutionalCompliance:
             # Should raise FileExistsError with guidance
             with pytest.raises(FileExistsError) as exc_info:
                 creator.create_fixture(
-                    fixture_id="test",
-                    namespace="USER",
-                    output_dir=temp_dir  # Already exists
+                    fixture_id="test", namespace="USER", output_dir=temp_dir  # Already exists
                 )
 
             error_msg = str(exc_info.value)
@@ -382,8 +372,8 @@ class TestConstitutionalCompliance:
 
         # Should use SHA256 checksums (medical-grade)
         # Should validate data integrity
-        assert hasattr(creator, 'calculate_checksum')
-        assert hasattr(creator, 'validator')
+        assert hasattr(creator, "calculate_checksum")
+        assert hasattr(creator, "validator")
 
 
 class TestTableInfoDataclass:

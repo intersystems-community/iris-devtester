@@ -36,16 +36,14 @@ def measure_verification_time(operation_name: str = "operation"):
     yield timing
 
     timing["elapsed_seconds"] = time.time() - timing["start_time"]
-    logger.debug(
-        f"Completed {operation_name} in {timing['elapsed_seconds']:.2f}s"
-    )
+    logger.debug(f"Completed {operation_name} in {timing['elapsed_seconds']:.2f}s")
 
 
 def assert_within_timeout(
     elapsed_seconds: float,
     timeout_seconds: float,
     operation_name: str = "operation",
-    grace_period_seconds: float = 0.5
+    grace_period_seconds: float = 0.5,
 ):
     """
     Assert that operation completed within timeout.
@@ -84,8 +82,7 @@ def assert_within_timeout(
 
 
 def simulate_delayed_password_propagation(
-    delay_seconds: float,
-    callback: Optional[Callable] = None
+    delay_seconds: float, callback: Optional[Callable] = None
 ):
     """
     Simulate password propagation delay for testing.
@@ -135,10 +132,7 @@ def calculate_success_rate(successes: int, total: int) -> float:
 
 
 def assert_success_rate_meets_target(
-    successes: int,
-    total: int,
-    target_rate: float,
-    operation_name: str = "operation"
+    successes: int, total: int, target_rate: float, operation_name: str = "operation"
 ):
     """
     Assert that success rate meets or exceeds target.
@@ -169,6 +163,5 @@ def assert_success_rate_meets_target(
         )
 
     logger.info(
-        f"{operation_name} success rate: {actual_rate:.1f}% "
-        f"(meets target {target_rate:.1f}%)"
+        f"{operation_name} success rate: {actual_rate:.1f}% " f"(meets target {target_rate:.1f}%)"
     )

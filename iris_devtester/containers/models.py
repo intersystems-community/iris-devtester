@@ -159,12 +159,7 @@ class ValidationResult:
         return "\n".join(lines).rstrip()
 
     @classmethod
-    def healthy(
-        cls,
-        name: str,
-        container_id: str,
-        validation_time: float
-    ) -> "ValidationResult":
+    def healthy(cls, name: str, container_id: str, validation_time: float) -> "ValidationResult":
         """Factory method for healthy container.
 
         Args:
@@ -182,15 +177,12 @@ class ValidationResult:
             container_id=container_id,
             message=f"Container '{name}' is running and accessible",
             remediation_steps=[],
-            validation_time=validation_time
+            validation_time=validation_time,
         )
 
     @classmethod
     def not_found(
-        cls,
-        name: str,
-        available_containers: List[str],
-        validation_time: float
+        cls, name: str, available_containers: List[str], validation_time: float
     ) -> "ValidationResult":
         """Factory method for container not found.
 
@@ -211,19 +203,15 @@ class ValidationResult:
             remediation_steps=[
                 "1. List all containers:\n   docker ps -a",
                 f"2. Start container if it exists:\n   docker start {name}",
-                f"3. Or create new container:\n   docker run -d --name {name} intersystemsdc/iris-community:latest"
+                f"3. Or create new container:\n   docker run -d --name {name} intersystemsdc/iris-community:latest",
             ],
             available_containers=available_containers,
-            validation_time=validation_time
+            validation_time=validation_time,
         )
 
     @classmethod
     def not_running(
-        cls,
-        name: str,
-        container_id: str,
-        validation_time: float,
-        container_status: str = "exited"
+        cls, name: str, container_id: str, validation_time: float, container_status: str = "exited"
     ) -> "ValidationResult":
         """Factory method for stopped container.
 
@@ -242,19 +230,13 @@ class ValidationResult:
             container_name=name,
             container_id=container_id,
             message=f"Container exists but is not running (status: {container_status}).",
-            remediation_steps=[
-                f"docker start {name}"
-            ],
-            validation_time=validation_time
+            remediation_steps=[f"docker start {name}"],
+            validation_time=validation_time,
         )
 
     @classmethod
     def not_accessible(
-        cls,
-        name: str,
-        container_id: str,
-        error: str,
-        validation_time: float
+        cls, name: str, container_id: str, error: str, validation_time: float
     ) -> "ValidationResult":
         """Factory method for inaccessible container.
 
@@ -276,18 +258,14 @@ class ValidationResult:
             remediation_steps=[
                 f"1. Restart container:\n   docker restart {name}",
                 f"2. Check container logs:\n   docker logs {name} | tail -20",
-                f"3. Enable CallIn service (for IRIS):\n   iris-devtester container enable-callin {name}"
+                f"3. Enable CallIn service (for IRIS):\n   iris-devtester container enable-callin {name}",
             ],
-            validation_time=validation_time
+            validation_time=validation_time,
         )
 
     @classmethod
     def stale_reference(
-        cls,
-        name: str,
-        cached_id: str,
-        current_id: str,
-        validation_time: float
+        cls, name: str, cached_id: str, current_id: str, validation_time: float
     ) -> "ValidationResult":
         """Factory method for stale container reference.
 
@@ -314,17 +292,14 @@ class ValidationResult:
                 "1. Clear cached references and restart:\n"
                 "   # Exit Python session and restart\n"
                 "   # Or recreate IRISContainer context manager",
-                f"2. Verify container is running:\n   docker ps | grep {name}"
+                f"2. Verify container is running:\n   docker ps | grep {name}",
             ],
-            validation_time=validation_time
+            validation_time=validation_time,
         )
 
     @classmethod
     def docker_error(
-        cls,
-        name: str,
-        error: Exception,
-        validation_time: float
+        cls, name: str, error: Exception, validation_time: float
     ) -> "ValidationResult":
         """Factory method for Docker daemon errors.
 
@@ -347,9 +322,9 @@ class ValidationResult:
                 "2. Start Docker Desktop (macOS/Windows)\n"
                 "   # Or start Docker daemon (Linux):\n"
                 "   sudo systemctl start docker",
-                "3. Verify Docker is accessible:\n   docker ps"
+                "3. Verify Docker is accessible:\n   docker ps",
             ],
-            validation_time=validation_time
+            validation_time=validation_time,
         )
 
 
@@ -420,7 +395,7 @@ class ContainerHealth:
             "started_at": self.started_at,
             "port_bindings": self.port_bindings,
             "image": self.image,
-            "docker_sdk_version": self.docker_sdk_version
+            "docker_sdk_version": self.docker_sdk_version,
         }
 
     def is_healthy(self) -> bool:

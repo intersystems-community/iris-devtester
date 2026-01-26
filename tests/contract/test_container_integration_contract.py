@@ -61,10 +61,7 @@ def test_auto_assignment_with_port_registry(temp_registry):
 
     Contract: Port registry integration enables automatic port assignment.
     """
-    container = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/project-a"
-    )
+    container = IRISContainer(port_registry=temp_registry, project_path="/tmp/project-a")
     container.start()
 
     try:

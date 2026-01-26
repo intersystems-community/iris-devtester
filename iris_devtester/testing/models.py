@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
-
 # Schema Definition Models (T014)
 
 
@@ -183,7 +182,9 @@ class PasswordResetResult:
         message = f"Password reset failed: {self.error}\n"
         if self.remediation_steps:
             message += "\nManual remediation steps:\n"
-            message += "\n".join(f"  {i+1}. {step}" for i, step in enumerate(self.remediation_steps))
+            message += "\n".join(
+                f"  {i+1}. {step}" for i, step in enumerate(self.remediation_steps)
+            )
         return message
 
 

@@ -7,32 +7,32 @@ ObjectScript execution, Task Manager integration, and resource monitoring.
 Constitutional Principle #7: Medical-Grade Reliability - Integration tests required.
 """
 
-import pytest
 import time
 from datetime import datetime
+
+import pytest
 
 from iris_devtester.containers.monitoring import (
     MonitoringPolicy,
     ResourceThresholds,
+    TaskSchedule,
     configure_monitoring,
-    get_monitoring_status,
+    create_task,
+    delete_task,
     disable_monitoring,
     enable_monitoring,
-    create_task,
+    get_monitoring_status,
     get_task_status,
-    suspend_task,
-    resume_task,
-    delete_task,
     list_monitoring_tasks,
-    TaskSchedule,
+    resume_task,
+    suspend_task,
 )
 from iris_devtester.containers.performance import (
-    get_resource_metrics,
-    check_resource_thresholds,
     auto_disable_monitoring,
     auto_enable_monitoring,
+    check_resource_thresholds,
+    get_resource_metrics,
 )
-
 
 pytestmark = pytest.mark.integration
 
@@ -40,6 +40,7 @@ pytestmark = pytest.mark.integration
 # DEDICATED CONTAINER for monitoring tests
 # Monitoring tests get their own container to avoid conflicts with DAT fixture tests
 # Constitutional Principle #3: Isolation by Default
+
 
 @pytest.fixture(scope="module")
 def monitoring_container():
@@ -61,7 +62,8 @@ def monitoring_container():
         container.enable_callin_service()
 
         # Unexpire passwords
-        from iris_devtester.utils.unexpire_passwords import unexpire_all_passwords
+        from iris_devtester.utils.password import unexpire_all_passwords
+
         container_name = container.get_container_name()
         unexpire_all_passwords(container_name)
 
@@ -386,9 +388,7 @@ class TestResourceMonitoringIntegration:
         """Test threshold checking under normal load."""
         thresholds = ResourceThresholds()
 
-        should_disable, should_enable, metrics = check_resource_thresholds(
-            iris_conn, thresholds
-        )
+        should_disable, should_enable, metrics = check_resource_thresholds(iris_conn, thresholds)
 
         # Under normal load, should not trigger disable
         assert isinstance(should_disable, bool)
@@ -408,9 +408,7 @@ class TestResourceMonitoringIntegration:
             memory_enable_percent=98.0,
         )
 
-        should_disable, should_enable, metrics = check_resource_thresholds(
-            iris_conn, thresholds
-        )
+        should_disable, should_enable, metrics = check_resource_thresholds(iris_conn, thresholds)
 
         # Should not trigger disable with aggressive thresholds
         assert should_disable is False
@@ -550,9 +548,7 @@ class TestMonitoringPerformance:
         thresholds = ResourceThresholds()
 
         start = time.time()
-        should_disable, should_enable, metrics = check_resource_thresholds(
-            iris_conn, thresholds
-        )
+        should_disable, should_enable, metrics = check_resource_thresholds(iris_conn, thresholds)
         elapsed = time.time() - start
 
         assert metrics is not None

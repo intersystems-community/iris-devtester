@@ -5,8 +5,9 @@ Tests configuration auto-discovery from environment, .env files, Docker, and def
 """
 
 import os
+from unittest.mock import Mock, mock_open, patch
+
 import pytest
-from unittest.mock import Mock, patch, mock_open
 
 
 class TestConfigDiscovery:
@@ -18,13 +19,17 @@ class TestConfigDiscovery:
 
         assert callable(discover_config)
 
-    @patch.dict(os.environ, {
-        "IRIS_HOST": "iris.example.com",
-        "IRIS_PORT": "1973",
-        "IRIS_NAMESPACE": "MYAPP",
-        "IRIS_USERNAME": "admin",
-        "IRIS_PASSWORD": "secret"
-    }, clear=False)
+    @patch.dict(
+        os.environ,
+        {
+            "IRIS_HOST": "iris.example.com",
+            "IRIS_PORT": "1973",
+            "IRIS_NAMESPACE": "MYAPP",
+            "IRIS_USERNAME": "admin",
+            "IRIS_PASSWORD": "secret",
+        },
+        clear=False,
+    )
     def test_discover_from_environment(self):
         """Test discovery from environment variables."""
         from iris_devtester.config.discovery import discover_config
@@ -79,8 +84,8 @@ class TestConfigDiscovery:
 
     def test_explicit_config_overrides_discovery(self):
         """Test that explicit config parameters override discovery."""
-        from iris_devtester.config.discovery import discover_config
         from iris_devtester.config import IRISConfig
+        from iris_devtester.config.discovery import discover_config
 
         explicit = IRISConfig(host="explicit.host", port=9999)
         config = discover_config(explicit_config=explicit)
@@ -96,8 +101,8 @@ class TestConfigPriorityHierarchy:
     @patch("pathlib.Path.exists", return_value=True)
     def test_priority_explicit_over_env(self, mock_exists):
         """Test priority: explicit > env > .env > defaults."""
-        from iris_devtester.config.discovery import discover_config
         from iris_devtester.config import IRISConfig
+        from iris_devtester.config.discovery import discover_config
 
         # Explicit should override everything
         explicit = IRISConfig(host="explicit.host")

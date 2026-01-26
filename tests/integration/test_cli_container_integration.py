@@ -4,9 +4,10 @@ Integration tests for CLI container commands.
 Tests verify CLI commands work end-to-end with real IRIS containers via subprocess.
 """
 
-import pytest
 import subprocess
 import sys
+
+import pytest
 
 
 class TestCLIContainerCommands:

@@ -10,8 +10,9 @@ This example demonstrates:
 Constitutional Principle #2: Choose the Right Tool
 """
 
-from iris_devtester.containers import IRISContainer
 import time
+
+from iris_devtester.containers import IRISContainer
 
 
 def example_dbapi_connection():

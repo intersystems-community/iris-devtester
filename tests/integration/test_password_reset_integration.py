@@ -15,7 +15,8 @@ Tests verify:
 """
 
 import pytest
-from iris_devtester.utils.password_reset import reset_password
+
+from iris_devtester.utils.password import reset_password
 
 
 class TestResetPasswordIntegration:
@@ -46,7 +47,7 @@ class TestResetPasswordIntegration:
             username="_SYSTEM",
             new_password=new_password,
             hostname=host,
-            port=port
+            port=port,
         )
 
         # Assert - function reports success
@@ -59,11 +60,7 @@ class TestResetPasswordIntegration:
 
         # Try to connect with NEW password (host/port already retrieved above)
         conn = get_connection(
-            hostname=host,
-            port=port,
-            namespace="USER",
-            username="_SYSTEM",
-            password=new_password
+            hostname=host, port=port, namespace="USER", username="_SYSTEM", password=new_password
         )
 
         # Verify connection works by executing query
@@ -98,7 +95,7 @@ class TestResetPasswordIntegration:
             username="_SYSTEM",
             new_password=new_password,
             hostname=host,
-            port=port
+            port=port,
         )
 
         # Assert - function reports success
@@ -109,11 +106,7 @@ class TestResetPasswordIntegration:
 
         # This should succeed if password was actually set
         conn = get_connection(
-            hostname=host,
-            port=port,
-            namespace="USER",
-            username="_SYSTEM",
-            password=new_password
+            hostname=host, port=port, namespace="USER", username="_SYSTEM", password=new_password
         )
 
         # Execute simple query
@@ -148,7 +141,7 @@ class TestResetPasswordIntegration:
             username="_SYSTEM",
             new_password=new_password,
             hostname=host,
-            port=port
+            port=port,
         )
 
         # Assert - function reports success
@@ -159,16 +152,16 @@ class TestResetPasswordIntegration:
         import subprocess
 
         query_cmd = [
-            "docker", "exec", "-i", container_name, "bash", "-c",
-            'echo "set sc = ##class(Security.Users).Get(\\"_SYSTEM\\",.prop) write prop(\\"PasswordNeverExpires\\")" | iris session IRIS -U %SYS'
+            "docker",
+            "exec",
+            "-i",
+            container_name,
+            "bash",
+            "-c",
+            'echo "set sc = ##class(Security.Users).Get(\\"_SYSTEM\\",.prop) write prop(\\"PasswordNeverExpires\\")" | iris session IRIS -U %SYS',
         ]
 
-        result = subprocess.run(
-            query_cmd,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        result = subprocess.run(query_cmd, capture_output=True, text=True, timeout=30)
 
         # Verify PasswordNeverExpires=1 in output
         assert "1" in result.stdout, (
@@ -202,7 +195,7 @@ class TestResetPasswordIntegration:
                 username="_SYSTEM",
                 new_password=new_password,
                 hostname=host,
-                port=port
+                port=port,
             )
 
             # Assert each call succeeds
@@ -215,11 +208,7 @@ class TestResetPasswordIntegration:
         port = int(iris_db._container.get_exposed_port(1972))
 
         conn = get_connection(
-            hostname=host,
-            port=port,
-            namespace="USER",
-            username="_SYSTEM",
-            password=new_password
+            hostname=host, port=port, namespace="USER", username="_SYSTEM", password=new_password
         )
 
         cursor = conn.cursor()

@@ -40,7 +40,7 @@ class TestIRISConfig:
             username="admin",
             password="secret",
             driver="dbapi",
-            timeout=60
+            timeout=60,
         )
         assert config.host == "iris.example.com"
         assert config.port == 1973

@@ -29,11 +29,7 @@ class TestColumnDefinition:
         from iris_devtester.testing.models import ColumnDefinition
 
         col = ColumnDefinition(
-            name="username",
-            type="VARCHAR",
-            max_length=50,
-            nullable=False,
-            default="guest"
+            name="username", type="VARCHAR", max_length=50, nullable=False, default="guest"
         )
         assert col.max_length == 50
         assert col.nullable == False
@@ -86,15 +82,12 @@ class TestTableDefinition:
 
     def test_with_columns(self):
         """Test that TableDefinition can have columns."""
-        from iris_devtester.testing.models import TableDefinition, ColumnDefinition
+        from iris_devtester.testing.models import ColumnDefinition, TableDefinition
 
         col1 = ColumnDefinition(name="id", type="INTEGER")
         col2 = ColumnDefinition(name="username", type="VARCHAR", max_length=50)
 
-        table = TableDefinition(
-            name="users",
-            columns={"id": col1, "username": col2}
-        )
+        table = TableDefinition(name="users", columns={"id": col1, "username": col2})
         assert len(table.columns) == 2
         assert "id" in table.columns
         assert "username" in table.columns
@@ -126,9 +119,7 @@ class TestSchemaDefinition:
         table2 = TableDefinition(name="products")
 
         schema = SchemaDefinition(
-            tables={"users": table1, "products": table2},
-            version="2.0.0",
-            description="Test schema"
+            tables={"users": table1, "products": table2}, version="2.0.0", description="Test schema"
         )
         assert len(schema.tables) == 2
         assert schema.version == "2.0.0"
@@ -148,10 +139,7 @@ class TestSchemaMismatch:
         """Test that SchemaMismatch requires table and type."""
         from iris_devtester.testing.models import SchemaMismatch
 
-        mismatch = SchemaMismatch(
-            table="users",
-            type="missing_column"
-        )
+        mismatch = SchemaMismatch(table="users", type="missing_column")
         assert mismatch.table == "users"
         assert mismatch.type == "missing_column"
 
@@ -175,13 +163,10 @@ class TestSchemaValidationResult:
 
     def test_invalid_result(self):
         """Test that SchemaValidationResult can represent invalid schema."""
-        from iris_devtester.testing.models import SchemaValidationResult, SchemaMismatch
+        from iris_devtester.testing.models import SchemaMismatch, SchemaValidationResult
 
         mismatch = SchemaMismatch(table="users", type="missing_column")
-        result = SchemaValidationResult(
-            is_valid=False,
-            mismatches=[mismatch]
-        )
+        result = SchemaValidationResult(is_valid=False, mismatches=[mismatch])
         assert result.is_valid == False
         assert len(result.mismatches) == 1
 

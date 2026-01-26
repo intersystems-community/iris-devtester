@@ -5,8 +5,10 @@ Tests verify CallIn service can be enabled on real IRIS containers
 and that the service configuration persists.
 """
 
-import pytest
 import subprocess
+
+import pytest
+
 from iris_devtester.utils.enable_callin import enable_callin_service
 
 

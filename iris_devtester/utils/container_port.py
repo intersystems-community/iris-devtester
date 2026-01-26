@@ -50,9 +50,7 @@ def get_container_port(
             str(container_port),
         ]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
         if result.returncode == 0 and result.stdout.strip():
             # Parse output like "0.0.0.0:55000" or "0.0.0.0:55000\n:::55000"
@@ -66,9 +64,7 @@ def get_container_port(
             return host_port
         else:
             # No port mapping found - container might use fixed ports or not expose this port
-            logger.debug(
-                f"No port mapping found for {container_name}:{container_port}"
-            )
+            logger.debug(f"No port mapping found for {container_name}:{container_port}")
             return None
 
     except subprocess.TimeoutExpired:

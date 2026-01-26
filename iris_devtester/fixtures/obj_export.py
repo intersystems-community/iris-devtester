@@ -86,24 +86,26 @@ def export_classes(
     """
     qualifiers = "/displaylog" + ("/compile" if compile else "")
 
-    objectscript = f'''
+    objectscript = f"""
 ZN "{namespace}"
 Set sc = $SYSTEM.OBJ.Export("{pattern}", "{output_file}", "{qualifiers}")
 Write $Select(sc=1:1,1:0)
 Halt
-'''
+"""
 
     try:
         container_name = container.get_container_name()
 
         cmd = [
-            "docker", "exec", container_name, "sh", "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF'
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
         ]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         raw_output = result.stdout + result.stderr
         success = result.returncode == 0 and "1" in result.stdout
@@ -173,24 +175,26 @@ def import_classes(
     """
     qualifiers = "/displaylog" + ("/compile" if compile else "")
 
-    objectscript = f'''
+    objectscript = f"""
 ZN "{namespace}"
 Set sc = $SYSTEM.OBJ.Import("{input_file}", "{qualifiers}")
 Write $Select(sc=1:1,1:0)
 Halt
-'''
+"""
 
     try:
         container_name = container.get_container_name()
 
         cmd = [
-            "docker", "exec", container_name, "sh", "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF'
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
         ]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         raw_output = result.stdout + result.stderr
         success = result.returncode == 0 and "1" in result.stdout
@@ -260,23 +264,25 @@ def export_global(
     # Normalize global name (remove leading ^ if present for comparison)
     clean_global = global_name.lstrip("^")
 
-    objectscript = f'''
+    objectscript = f"""
 Set sc = ##class(%Library.Global).Export("{namespace}", "^{clean_global}", "{output_file}")
 Write $Select(sc=1:1,1:0)
 Halt
-'''
+"""
 
     try:
         container_name = container.get_container_name()
 
         cmd = [
-            "docker", "exec", container_name, "sh", "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF'
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
         ]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         raw_output = result.stdout + result.stderr
         success = result.returncode == 0 and "1" in result.stdout
@@ -342,23 +348,25 @@ def import_global(
         ...     if result.success:
         ...         print("Imported global data")
     """
-    objectscript = f'''
+    objectscript = f"""
 Set sc = ##class(%Library.Global).Import("{namespace}", "{input_file}")
 Write $Select(sc=1:1,1:0)
 Halt
-'''
+"""
 
     try:
         container_name = container.get_container_name()
 
         cmd = [
-            "docker", "exec", container_name, "sh", "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF'
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
         ]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         raw_output = result.stdout + result.stderr
         success = result.returncode == 0 and "1" in result.stdout
@@ -422,24 +430,26 @@ def export_package(
         ...     if result.success:
         ...         print(f"Exported package to {result.output_file}")
     """
-    objectscript = f'''
+    objectscript = f"""
 ZN "{namespace}"
 Set sc = $SYSTEM.OBJ.ExportPackage("{package_name}", "{output_file}")
 Write $Select(sc=1:1,1:0)
 Halt
-'''
+"""
 
     try:
         container_name = container.get_container_name()
 
         cmd = [
-            "docker", "exec", container_name, "sh", "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF'
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
         ]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         raw_output = result.stdout + result.stderr
         success = result.returncode == 0 and "1" in result.stdout

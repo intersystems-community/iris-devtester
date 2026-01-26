@@ -136,9 +136,7 @@ class MonitoringPolicy:
 
         # Validate output directory is absolute path
         if not self.output_directory.startswith("/"):
-            raise ValueError(
-                f"Output directory must be absolute path: {self.output_directory}"
-            )
+            raise ValueError(f"Output directory must be absolute path: {self.output_directory}")
 
     def to_objectscript(self) -> str:
         """
@@ -369,8 +367,7 @@ class ResourceThresholds:
             True if monitoring should be disabled
         """
         return (
-            cpu_percent > self.cpu_disable_percent
-            or memory_percent > self.memory_disable_percent
+            cpu_percent > self.cpu_disable_percent or memory_percent > self.memory_disable_percent
         )
 
     def should_enable(self, cpu_percent: float, memory_percent: float) -> bool:
@@ -384,10 +381,7 @@ class ResourceThresholds:
         Returns:
             True if monitoring can be safely re-enabled
         """
-        return (
-            cpu_percent < self.cpu_enable_percent
-            and memory_percent < self.memory_enable_percent
-        )
+        return cpu_percent < self.cpu_enable_percent and memory_percent < self.memory_enable_percent
 
 
 @dataclass
@@ -520,7 +514,7 @@ def configure_monitoring(
         logger.debug(f"Executing ObjectScript to configure policy '{policy.name}'")
 
         # Check if connection has execute_objectscript method (test fixture provides this)
-        if hasattr(conn, 'execute_objectscript'):
+        if hasattr(conn, "execute_objectscript"):
             conn.execute_objectscript(objectscript)
         else:
             # Fallback error for production (until Feature 003)
@@ -800,9 +794,7 @@ def create_task(conn, schedule: TaskSchedule) -> str:
         result = cursor.fetchone()
 
         if not result:
-            raise RuntimeError(
-                f"Task '{schedule.name}' was created but ID could not be retrieved"
-            )
+            raise RuntimeError(f"Task '{schedule.name}' was created but ID could not be retrieved")
 
         task_id = str(result[0])
         logger.info(f"✓ Created Task Manager task: {schedule.name} (ID: {task_id})")
@@ -927,10 +919,7 @@ def suspend_task(conn, task_id: str) -> bool:
 
         # Use SQL UPDATE to suspend the task (works with DBAPI!)
         cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE %SYS.Task SET Suspended = 1 WHERE ID = ?",
-            (task_id,)
-        )
+        cursor.execute("UPDATE %SYS.Task SET Suspended = 1 WHERE ID = ?", (task_id,))
         conn.commit()
 
         # Verify it was updated
@@ -945,23 +934,23 @@ def suspend_task(conn, task_id: str) -> bool:
             schedule = TaskSchedule(task_id=task_id)
             objectscript = schedule.disable()
 
-            if hasattr(conn, 'execute_objectscript'):
+            if hasattr(conn, "execute_objectscript"):
                 conn.execute_objectscript(objectscript)
             else:
                 raise NotImplementedError(
                     "ObjectScript execution not available\n"
                     "\n"
                     "What went wrong:\n"
-                "  This connection does not support ObjectScript execution.\n"
-                "  DBAPI connections are SQL-only.\n"
-                "\n"
-                "How to fix it:\n"
-                "  1. Use a JDBC connection (supports ObjectScript via stored procedures)\n"
-                "  2. Or wait for Feature 003 (Connection Manager) which provides\n"
-                "     hybrid DBAPI/JDBC connections with ObjectScript support\n"
-                "\n"
-                "See: docs/learnings/dbapi-objectscript-limitation.md\n"
-            )
+                    "  This connection does not support ObjectScript execution.\n"
+                    "  DBAPI connections are SQL-only.\n"
+                    "\n"
+                    "How to fix it:\n"
+                    "  1. Use a JDBC connection (supports ObjectScript via stored procedures)\n"
+                    "  2. Or wait for Feature 003 (Connection Manager) which provides\n"
+                    "     hybrid DBAPI/JDBC connections with ObjectScript support\n"
+                    "\n"
+                    "See: docs/learnings/dbapi-objectscript-limitation.md\n"
+                )
 
         logger.info(f"✓ Suspended task: {task_id}")
         return True
@@ -1013,10 +1002,7 @@ def resume_task(conn, task_id: str) -> bool:
 
         # Use SQL UPDATE to resume the task (works with DBAPI!)
         cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE %SYS.Task SET Suspended = 0 WHERE ID = ?",
-            (task_id,)
-        )
+        cursor.execute("UPDATE %SYS.Task SET Suspended = 0 WHERE ID = ?", (task_id,))
         conn.commit()
 
         # Verify it was updated
@@ -1031,7 +1017,7 @@ def resume_task(conn, task_id: str) -> bool:
             schedule = TaskSchedule(task_id=task_id)
             objectscript = schedule.enable()
 
-            if hasattr(conn, 'execute_objectscript'):
+            if hasattr(conn, "execute_objectscript"):
                 conn.execute_objectscript(objectscript)
             else:
                 raise NotImplementedError(
@@ -1047,7 +1033,7 @@ def resume_task(conn, task_id: str) -> bool:
                     "     hybrid DBAPI/JDBC connections with ObjectScript support\n"
                     "\n"
                     "See: docs/learnings/dbapi-objectscript-limitation.md\n"
-            )
+                )
 
         logger.info(f"✓ Resumed task: {task_id}")
         return True
@@ -1096,16 +1082,13 @@ def delete_task(conn, task_id: str) -> bool:
 
         # Use SQL DELETE (works with DBAPI!)
         cursor = conn.cursor()
-        cursor.execute(
-            "DELETE FROM %SYS.Task WHERE ID = ?",
-            (task_id,)
-        )
+        cursor.execute("DELETE FROM %SYS.Task WHERE ID = ?", (task_id,))
         conn.commit()
 
         # Check if anything was deleted
         if cursor.rowcount == 0:
             # Fallback to ObjectScript if SQL didn't work
-            if hasattr(conn, 'execute_objectscript'):
+            if hasattr(conn, "execute_objectscript"):
                 objectscript = f"""
                     set task = ##class(%SYS.Task).%OpenId("{task_id}")
                     if $IsObject(task) {{
@@ -1183,13 +1166,15 @@ def list_monitoring_tasks(conn) -> list:
 
         tasks = []
         for row in results:
-            tasks.append({
-                "task_id": str(row[0]) if row[0] else "",
-                "name": row[1] if row[1] else "",
-                "suspended": bool(row[2]) if row[2] is not None else False,
-                "daily_increment": int(row[3]) if row[3] else 0,
-                "task_class": row[4] if row[4] else "",
-            })
+            tasks.append(
+                {
+                    "task_id": str(row[0]) if row[0] else "",
+                    "name": row[1] if row[1] else "",
+                    "suspended": bool(row[2]) if row[2] is not None else False,
+                    "daily_increment": int(row[3]) if row[3] else 0,
+                    "task_class": row[4] if row[4] else "",
+                }
+            )
 
         logger.info(f"✓ Found {len(tasks)} monitoring task(s)")
         return tasks

@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Optional
 
 from .manifest import (
-    FixtureManifest,
-    ValidationResult,
-    FixtureValidationError,
     ChecksumMismatchError,
+    FixtureManifest,
+    FixtureValidationError,
+    ValidationResult,
 )
 
 
@@ -104,8 +104,7 @@ class FixtureValidator:
         """
         if not expected_checksum.startswith("sha256:"):
             raise ValueError(
-                f"Invalid checksum format: {expected_checksum}. "
-                "Must start with 'sha256:'"
+                f"Invalid checksum format: {expected_checksum}. " "Must start with 'sha256:'"
             )
 
         actual_checksum = self.calculate_sha256(file_path, chunk_size)
@@ -212,9 +211,7 @@ class FixtureValidator:
             # Validate checksum if requested
             if validate_checksum:
                 try:
-                    self.validate_checksum(
-                        str(dat_file), manifest.checksum, chunk_size
-                    )
+                    self.validate_checksum(str(dat_file), manifest.checksum, chunk_size)
                 except ChecksumMismatchError:
                     # Re-raise ChecksumMismatchError - it's a critical failure
                     # that requires immediate attention (Constitutional Principle #5)

@@ -37,10 +37,7 @@ def test_port_persists_across_restarts(temp_registry):
 
     # Run 3 start/stop cycles
     for cycle in range(3):
-        container = IRISContainer(
-            port_registry=temp_registry,
-            project_path=project_path
-        )
+        container = IRISContainer(port_registry=temp_registry, project_path=project_path)
 
         container.start()
         port = container.get_assigned_port()
@@ -48,8 +45,9 @@ def test_port_persists_across_restarts(temp_registry):
         container.stop()
 
     # All cycles should get same port
-    assert len(set(ports_observed)) == 1, \
-        f"Expected same port across all cycles, got: {ports_observed}"
+    assert (
+        len(set(ports_observed)) == 1
+    ), f"Expected same port across all cycles, got: {ports_observed}"
 
     # Verify registry is clean after all stops
     assignments = temp_registry.list_all()
@@ -67,10 +65,7 @@ def test_port_released_after_stop(temp_registry):
     4. Verify container B can get port X (it's been released)
     """
     # Start and stop project A
-    container_a = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-a"
-    )
+    container_a = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-a")
     container_a.start()
     port_a = container_a.get_assigned_port()
     container_a.stop()
@@ -80,10 +75,7 @@ def test_port_released_after_stop(temp_registry):
     assert len(assignments) == 0, "Port should be released after stop"
 
     # Start project B - should be able to reuse port_a
-    container_b = IRISContainer(
-        port_registry=temp_registry,
-        project_path="/tmp/test-project-b"
-    )
+    container_b = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-b")
     container_b.start()
 
     try:

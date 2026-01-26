@@ -6,10 +6,12 @@ Constitutional Principle #7: Medical-Grade Reliability - All parsing paths teste
 """
 
 import json
-import pytest
 from datetime import datetime
-from iris_devtester.containers.performance import PerformanceMetrics
+
+import pytest
+
 from iris_devtester.containers.monitoring import ResourceThresholds
+from iris_devtester.containers.performance import PerformanceMetrics
 
 
 class TestPerformanceMetricsCreation:
@@ -66,9 +68,7 @@ class TestPerformanceMetricsFromObjectScript:
             }
         )
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
 
         assert metrics.cpu_percent == 45.2
         assert metrics.memory_percent == 67.8
@@ -83,9 +83,7 @@ class TestPerformanceMetricsFromObjectScript:
         """Test parsing with only required fields."""
         json_result = json.dumps({"cpu": 30.0, "memory": 40.0})
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=False
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=False)
 
         assert metrics.cpu_percent == 30.0
         assert metrics.memory_percent == 40.0
@@ -98,13 +96,9 @@ class TestPerformanceMetricsFromObjectScript:
 
     def test_parses_partial_json_result(self):
         """Test parsing with some optional fields."""
-        json_result = json.dumps(
-            {"cpu": 55.5, "memory": 72.3, "glorefs": 9999, "locks": 123}
-        )
+        json_result = json.dumps({"cpu": 55.5, "memory": 72.3, "glorefs": 9999, "locks": 123})
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
 
         assert metrics.cpu_percent == 55.5
         assert metrics.memory_percent == 72.3
@@ -118,9 +112,7 @@ class TestPerformanceMetricsFromObjectScript:
         invalid_json = "not valid json"
 
         with pytest.raises(json.JSONDecodeError):
-            PerformanceMetrics.from_objectscript_result(
-                invalid_json, monitoring_enabled=True
-            )
+            PerformanceMetrics.from_objectscript_result(invalid_json, monitoring_enabled=True)
 
     def test_parsing_missing_required_field_raises_error(self):
         """Test missing required fields raise KeyError."""
@@ -128,9 +120,7 @@ class TestPerformanceMetricsFromObjectScript:
         json_result = json.dumps({"cpu": 50.0})
 
         with pytest.raises(KeyError):
-            PerformanceMetrics.from_objectscript_result(
-                json_result, monitoring_enabled=True
-            )
+            PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
 
 
 class TestPerformanceMetricsThresholdChecking:
@@ -265,9 +255,7 @@ class TestPerformanceMetricsRealisticScenarios:
             }
         )
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
         thresholds = ResourceThresholds()
 
         # Should not trigger disable
@@ -288,9 +276,7 @@ class TestPerformanceMetricsRealisticScenarios:
             }
         )
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
         thresholds = ResourceThresholds()
 
         # Should trigger disable
@@ -309,9 +295,7 @@ class TestPerformanceMetricsRealisticScenarios:
             }
         )
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
         thresholds = ResourceThresholds()
 
         # Should trigger disable
@@ -348,9 +332,7 @@ class TestPerformanceMetricsCustomThresholds:
         """Test lower disable thresholds."""
         json_result = json.dumps({"cpu": 75.0, "memory": 80.0})
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
 
         # Default thresholds (90%, 95%) - should not disable
         default_thresholds = ResourceThresholds()
@@ -366,9 +348,7 @@ class TestPerformanceMetricsCustomThresholds:
         """Test higher disable thresholds."""
         json_result = json.dumps({"cpu": 93.0, "memory": 96.0})
 
-        metrics = PerformanceMetrics.from_objectscript_result(
-            json_result, monitoring_enabled=True
-        )
+        metrics = PerformanceMetrics.from_objectscript_result(json_result, monitoring_enabled=True)
 
         # Default thresholds (90%, 95%) - should disable
         default_thresholds = ResourceThresholds()

@@ -10,9 +10,10 @@ TDD Workflow:
 3. All tests pass
 """
 
-import pytest
 import subprocess
 import sys
+
+import pytest
 
 
 class TestResetPasswordCommand:
@@ -23,7 +24,7 @@ class TestResetPasswordCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "reset-password", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         # Command should exist and show help (exit code 0)
         assert result.returncode == 0
@@ -34,7 +35,7 @@ class TestResetPasswordCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "reset-password", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         # Help should mention container_name or similar argument
         assert "container" in result.stdout.lower() or "CONTAINER_NAME" in result.stdout
@@ -44,7 +45,7 @@ class TestResetPasswordCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "reset-password", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert "--user" in result.stdout
 
@@ -53,7 +54,7 @@ class TestResetPasswordCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "reset-password", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert "--password" in result.stdout
 
@@ -66,7 +67,7 @@ class TestEnableCallinCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "enable-callin", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert result.returncode == 0
         assert "callin" in result.stdout.lower()
@@ -76,7 +77,7 @@ class TestEnableCallinCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "enable-callin", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert "container" in result.stdout.lower() or "CONTAINER_NAME" in result.stdout
 
@@ -89,7 +90,7 @@ class TestTestConnectionCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "test-connection", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert result.returncode == 0
         assert "connection" in result.stdout.lower() or "test" in result.stdout.lower()
@@ -99,7 +100,7 @@ class TestTestConnectionCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "test-connection", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert "container" in result.stdout.lower() or "CONTAINER_NAME" in result.stdout
 
@@ -108,7 +109,7 @@ class TestTestConnectionCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "test-connection", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert "--namespace" in result.stdout
 
@@ -121,7 +122,7 @@ class TestStatusCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "status", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert result.returncode == 0
         assert "status" in result.stdout.lower()
@@ -131,6 +132,6 @@ class TestStatusCommand:
         result = subprocess.run(
             [sys.executable, "-m", "iris_devtester.cli", "container", "status", "--help"],
             capture_output=True,
-            text=True
+            text=True,
         )
         assert "container" in result.stdout.lower() or "CONTAINER_NAME" in result.stdout

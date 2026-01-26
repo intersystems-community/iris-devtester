@@ -9,12 +9,12 @@ These tests use real Docker containers to verify:
 NOTE: These tests must run sequentially as they share Docker resources.
 """
 
-import time
 import tempfile
+import time
 from pathlib import Path
 
-import pytest
 import docker
+import pytest
 from docker.errors import DockerException
 
 from iris_devtester.config.container_config import ContainerConfig
@@ -58,9 +58,7 @@ def cleanup_container():
 class TestRyukLifecycle:
     """Test that CLI containers persist without ryuk cleanup (Feature 011 - T004, T005)."""
 
-    def test_cli_container_persists_after_process_exit(
-        self, docker_client, cleanup_container
-    ):
+    def test_cli_container_persists_after_process_exit(self, docker_client, cleanup_container):
         """Test that container created via CLI persists for 60+ seconds (T004)."""
         # Arrange
         container_name = "test-persistence-cli-001"
@@ -76,9 +74,7 @@ class TestRyukLifecycle:
         )
 
         # Act - Create container with use_testcontainers=False (CLI mode)
-        container = IRISContainerManager.create_from_config(
-            config, use_testcontainers=False
-        )
+        container = IRISContainerManager.create_from_config(config, use_testcontainers=False)
 
         # Wait 60 seconds (simulate CLI process exit)
         print(f"Waiting 60 seconds to verify container persists...")
@@ -90,9 +86,7 @@ class TestRyukLifecycle:
         assert fetched_container.status in ["running", "created"]
         print(f"✓ Container persisted after 60 seconds: {fetched_container.status}")
 
-    def test_cli_container_has_no_testcontainers_labels(
-        self, docker_client, cleanup_container
-    ):
+    def test_cli_container_has_no_testcontainers_labels(self, docker_client, cleanup_container):
         """Test that CLI containers don't have testcontainers labels (T005)."""
         # Arrange
         container_name = "test-no-tc-labels-001"
@@ -108,9 +102,7 @@ class TestRyukLifecycle:
         )
 
         # Act - Create container with use_testcontainers=False
-        container = IRISContainerManager.create_from_config(
-            config, use_testcontainers=False
-        )
+        container = IRISContainerManager.create_from_config(config, use_testcontainers=False)
 
         # Assert - No testcontainers labels
         fetched_container = docker_client.containers.get(container_name)
@@ -125,9 +117,7 @@ class TestRyukLifecycle:
 class TestVolumeMountVerification:
     """Test volume mounting for CLI containers (Feature 011 - T006, T007, T008)."""
 
-    def test_single_volume_mount_applied_and_accessible(
-        self, docker_client, cleanup_container
-    ):
+    def test_single_volume_mount_applied_and_accessible(self, docker_client, cleanup_container):
         """Test single volume mount is applied and files are accessible (T006)."""
         # Arrange - Create temp directory with test file
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -148,9 +138,7 @@ class TestVolumeMountVerification:
             )
 
             # Act - Create container
-            container = IRISContainerManager.create_from_config(
-                config, use_testcontainers=False
-            )
+            container = IRISContainerManager.create_from_config(config, use_testcontainers=False)
 
             # Assert - Verify mount in Docker inspection
             fetched_container = docker_client.containers.get(container_name)
@@ -158,9 +146,7 @@ class TestVolumeMountVerification:
             assert len(mounts) >= 1, "No mounts found"
 
             # Find our mount
-            external_mount = next(
-                (m for m in mounts if m["Destination"] == "/external"), None
-            )
+            external_mount = next((m for m in mounts if m["Destination"] == "/external"), None)
             assert external_mount is not None, "Mount /external not found"
             assert temp_dir in external_mount["Source"]
             print(f"✓ Mount found: {external_mount['Source']} → /external")
@@ -174,9 +160,11 @@ class TestVolumeMountVerification:
     def test_multiple_volumes_all_mounted(self, docker_client, cleanup_container):
         """Test that multiple volumes can be mounted simultaneously (T007)."""
         # Arrange - Create 3 temp directories
-        with tempfile.TemporaryDirectory() as temp_dir1, \
-             tempfile.TemporaryDirectory() as temp_dir2, \
-             tempfile.TemporaryDirectory() as temp_dir3:
+        with (
+            tempfile.TemporaryDirectory() as temp_dir1,
+            tempfile.TemporaryDirectory() as temp_dir2,
+            tempfile.TemporaryDirectory() as temp_dir3,
+        ):
 
             # Create test files in each directory
             (Path(temp_dir1) / "file1.txt").write_text("Data 1")
@@ -201,9 +189,7 @@ class TestVolumeMountVerification:
             )
 
             # Act - Create container
-            container = IRISContainerManager.create_from_config(
-                config, use_testcontainers=False
-            )
+            container = IRISContainerManager.create_from_config(config, use_testcontainers=False)
 
             # Assert - All 3 mounts present
             fetched_container = docker_client.containers.get(container_name)
@@ -242,16 +228,12 @@ class TestVolumeMountVerification:
             )
 
             # Act - Create container
-            container = IRISContainerManager.create_from_config(
-                config, use_testcontainers=False
-            )
+            container = IRISContainerManager.create_from_config(config, use_testcontainers=False)
 
             # Assert - Mount has RW=false
             fetched_container = docker_client.containers.get(container_name)
             mounts = fetched_container.attrs["Mounts"]
-            readonly_mount = next(
-                (m for m in mounts if m["Destination"] == "/readonly"), None
-            )
+            readonly_mount = next((m for m in mounts if m["Destination"] == "/readonly"), None)
             assert readonly_mount is not None
             assert readonly_mount["RW"] is False, "Mount should be read-only"
             print(f"✓ Mount is read-only (RW=False)")
@@ -285,9 +267,7 @@ class TestContainerPersistence:
         )
 
         # Act - Create container
-        container = IRISContainerManager.create_from_config(
-            config, use_testcontainers=False
-        )
+        container = IRISContainerManager.create_from_config(config, use_testcontainers=False)
 
         # Call persistence verification
         check = verify_container_persistence(container_name, config)

@@ -10,7 +10,7 @@ For advanced usage, see the legacy manager module.
 """
 
 # Modern DBAPI-only API (recommended)
-from iris_devtester.connections.connection import get_connection, IRISConnection
+from iris_devtester.connections.connection import IRISConnection, get_connection
 
 # Compatibility layer for contract tests
 # -----------------------------------------------------------------
@@ -20,6 +20,7 @@ from iris_devtester.connections.connection import get_connection, IRISConnection
 #   - test_connection (simple health‑check wrapper)
 #   - IRISConnectionManager (class exposing config, driver_type, get_connection, close_all)
 # These are provided as thin wrappers around the modern implementation.
+
 
 # Alias expected by contract tests
 def get_iris_connection(config=None, **kwargs):
@@ -31,14 +32,17 @@ def get_iris_connection(config=None, **kwargs):
     """
     # Check if we are in a contract test (mocking)
     import sys
-    if 'pytest' in sys.modules:
+
+    if "pytest" in sys.modules:
         from unittest.mock import MagicMock
+
         return MagicMock()
 
     # Map legacy keywords to modern get_connection parameters.
-    auto_retry = kwargs.get('auto_remediate', True)
-    max_retries = kwargs.get('retry_attempts', 3)
+    auto_retry = kwargs.get("auto_remediate", True)
+    max_retries = kwargs.get("retry_attempts", 3)
     return get_connection(config=config, auto_retry=auto_retry, max_retries=max_retries)
+
 
 # Reset‑password helper – re‑exported for compatibility with contract tests
 def reset_password_if_needed(config_or_error, **kwargs):
@@ -47,9 +51,9 @@ def reset_password_if_needed(config_or_error, **kwargs):
     If first arg is an exception, calls the modern utility.
     If first arg is a config, attempts remediation and returns result object.
     """
-    from iris_devtester.utils.password_reset import reset_password_if_needed as modern_reset
     from iris_devtester.testing.models import PasswordResetResult as ContractResult
-    from iris_devtester.utils.password_verification import PasswordResetResult as ModernResult
+    from iris_devtester.utils.password import reset_password_if_needed as modern_reset
+    from iris_devtester.utils.password import PasswordResetResult as ModernResult
 
     if isinstance(config_or_error, Exception):
         return modern_reset(config_or_error, **kwargs)
@@ -57,10 +61,8 @@ def reset_password_if_needed(config_or_error, **kwargs):
     # Contract test passes config and expects result object
     # Return an object that satisfies BOTH ModernResult and ContractResult if possible,
     # but specifically ContractResult for the test's isinstance check.
-    return ContractResult(
-        success=True,
-        new_password="SYS"
-    )
+    return ContractResult(success=True, new_password="SYS")
+
 
 # Simple connection test used by CLI / contract tests
 def test_connection(config=None):
@@ -81,6 +83,7 @@ def test_connection(config=None):
     except Exception as e:
         return False, str(e)
 
+
 # Compatibility class – mirrors older ``IRISConnectionManager`` API
 class IRISConnectionManager:
     """Thin wrapper exposing legacy attributes and methods.
@@ -97,6 +100,7 @@ class IRISConnectionManager:
         self.max_retries = max_retries
         # Determine driver type based on available drivers
         from iris_devtester.connections import dbapi, jdbc
+
         if dbapi.is_dbapi_available():
             self.driver_type = "dbapi"
         elif jdbc.is_jdbc_available():
@@ -106,8 +110,7 @@ class IRISConnectionManager:
         self._conn_wrapper = None
 
     def get_connection(self):
-        """Return a live DBAPI connection using the modern ``get_connection``.
-        """
+        """Return a live DBAPI connection using the modern ``get_connection``."""
         if self._conn_wrapper is None:
             self._conn_wrapper = IRISConnection(
                 config=self.config,
@@ -117,8 +120,7 @@ class IRISConnectionManager:
         return self._conn_wrapper.__enter__()
 
     def close_all(self):
-        """Close any open connection managed by this instance.
-        """
+        """Close any open connection managed by this instance."""
         if self._conn_wrapper is not None:
             self._conn_wrapper.__exit__(None, None, None)
             self._conn_wrapper = None
@@ -131,32 +133,25 @@ class IRISConnectionManager:
         self.close_all()
         return False
 
-# Legacy API with JDBC fallback (for compatibility)
-from iris_devtester.connections.models import ConnectionInfo
-from iris_devtester.connections.manager import (
-    get_connection as get_connection_legacy,
-    get_connection_with_info,
-)
+
 from iris_devtester.connections import dbapi, jdbc
 
 # Utilities
-from iris_devtester.connections.auto_discovery import (
-    auto_detect_iris_port,
-    auto_detect_iris_host_and_port,
-)
-from iris_devtester.connections.retry import (
-    retry_with_backoff,
-    create_connection_with_retry,
-)
-
 # Utilities
 from iris_devtester.connections.auto_discovery import (
-    auto_detect_iris_port,
     auto_detect_iris_host_and_port,
+    auto_detect_iris_port,
 )
+from iris_devtester.connections.manager import get_connection as get_connection_legacy
+from iris_devtester.connections.manager import (
+    get_connection_with_info,
+)
+
+# Legacy API with JDBC fallback (for compatibility)
+from iris_devtester.connections.models import ConnectionInfo
 from iris_devtester.connections.retry import (
-    retry_with_backoff,
     create_connection_with_retry,
+    retry_with_backoff,
 )
 
 __all__ = [

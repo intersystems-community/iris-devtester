@@ -12,11 +12,12 @@ Source: docs/learnings/iris-container-readiness.md
 """
 
 import pytest
+
 from iris_devtester.containers import IRISContainer
 from iris_devtester.utils.health_checks import (
+    IrisHealthState,
     check_iris_monitor_state,
     wait_for_iris_healthy,
-    IrisHealthState,
 )
 
 
@@ -74,6 +75,7 @@ class TestWaitForIrisHealthy:
         container = running_iris_container._container
 
         import time
+
         start = time.time()
         success = wait_for_iris_healthy(container, timeout=10)
         elapsed = time.time() - start
@@ -87,6 +89,7 @@ class TestWaitForIrisHealthy:
         container = running_iris_container._container
 
         import time
+
         start = time.time()
         # Short timeout, should return quickly since container is healthy
         success = wait_for_iris_healthy(container, timeout=5)

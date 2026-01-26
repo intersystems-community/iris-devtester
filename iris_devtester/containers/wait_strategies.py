@@ -129,7 +129,18 @@ class IRISReadyWaitStrategy:
     def check_iris_initialized(self, container_name: str) -> bool:
         try:
             result = subprocess.run(
-                ["docker", "exec", container_name, "iris", "session", "IRIS", "-U", "%SYS", "W 1", "Halt"],
+                [
+                    "docker",
+                    "exec",
+                    container_name,
+                    "iris",
+                    "session",
+                    "IRIS",
+                    "-U",
+                    "%SYS",
+                    "W 1",
+                    "Halt",
+                ],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -218,9 +229,7 @@ def wait_for_iris_ready(
         ... else:
         ...     print("Timeout waiting for IRIS")
     """
-    strategy = IRISReadyWaitStrategy(
-        port=port, timeout=timeout, poll_interval=poll_interval
-    )
+    strategy = IRISReadyWaitStrategy(port=port, timeout=timeout, poll_interval=poll_interval)
 
     try:
         return strategy.wait_until_ready(host, port, timeout)

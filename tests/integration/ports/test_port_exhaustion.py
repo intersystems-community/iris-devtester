@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from iris_devtester.containers.iris_container import IRISContainer
-from iris_devtester.ports import PortRegistry, PortExhaustedError
+from iris_devtester.ports import PortExhaustedError, PortRegistry
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def test_port_exhaustion_error(temp_registry_small_range):
             try:
                 container = IRISContainer(
                     port_registry=temp_registry_small_range,
-                    project_path=f"/tmp/test-project-exhaust-{chr(65 + i)}"
+                    project_path=f"/tmp/test-project-exhaust-{chr(65 + i)}",
                 )
                 container.start()
                 containers.append(container)
@@ -64,8 +64,7 @@ def test_port_exhaustion_error(temp_registry_small_range):
 
         # Try to start one more container - should fail
         container_extra = IRISContainer(
-            port_registry=temp_registry_small_range,
-            project_path="/tmp/test-project-exhaust-EXTRA"
+            port_registry=temp_registry_small_range, project_path="/tmp/test-project-exhaust-EXTRA"
         )
 
         with pytest.raises(PortExhaustedError) as exc_info:
@@ -74,10 +73,14 @@ def test_port_exhaustion_error(temp_registry_small_range):
         # Verify error message quality
         error_msg = str(exc_info.value)
         assert "1972-1974" in error_msg, "Error should mention port range"
-        assert "exhausted" in error_msg.lower() or "in use" in error_msg.lower(), \
-            "Error should mention exhaustion"
-        assert "stop" in error_msg.lower() or "release" in error_msg.lower() or "clear" in error_msg.lower(), \
-            "Error should suggest remediation"
+        assert (
+            "exhausted" in error_msg.lower() or "in use" in error_msg.lower()
+        ), "Error should mention exhaustion"
+        assert (
+            "stop" in error_msg.lower()
+            or "release" in error_msg.lower()
+            or "clear" in error_msg.lower()
+        ), "Error should suggest remediation"
 
         # Stop one container to free a port
         containers[0].stop()
@@ -114,8 +117,9 @@ def test_port_exhaustion_with_stale_assignments(temp_registry_small_range):
     only the available ports dynamically.
     """
     import hashlib
-    from iris_devtester.ports.assignment import PortAssignment
     from datetime import datetime
+
+    from iris_devtester.ports.assignment import PortAssignment
 
     # Determine available port count by trying assignments
     available_ports = []
@@ -156,7 +160,9 @@ def test_port_exhaustion_with_stale_assignments(temp_registry_small_range):
     # Run cleanup_stale() - should release all stale assignments
     # (containers don't actually exist since we manually created assignments)
     released = temp_registry_small_range.cleanup_stale()
-    assert len(released) == len(available_ports), f"Should release all {len(available_ports)} stale assignments"
+    assert len(released) == len(
+        available_ports
+    ), f"Should release all {len(available_ports)} stale assignments"
 
     # Now assignment should succeed
     assignment = temp_registry_small_range.assign_port("/tmp/test-project-new")

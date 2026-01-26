@@ -52,55 +52,33 @@ class ContainerConfig(BaseModel):
     """
 
     edition: Literal["community", "enterprise"] = Field(
-        default="community",
-        description="IRIS edition to use"
+        default="community", description="IRIS edition to use"
     )
     container_name: str = Field(
         default="iris_db",
         pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$",
-        description="Container name identifier"
+        description="Container name identifier",
     )
     superserver_port: int = Field(
-        default=1972,
-        ge=1024,
-        le=65535,
-        description="SuperServer port mapping"
+        default=1972, ge=1024, le=65535, description="SuperServer port mapping"
     )
     webserver_port: int = Field(
-        default=52773,
-        ge=1024,
-        le=65535,
-        description="Management Portal port mapping"
+        default=52773, ge=1024, le=65535, description="Management Portal port mapping"
     )
     namespace: str = Field(
-        default="USER",
-        pattern=r"^[A-Z][A-Z0-9%]*$",
-        description="Default IRIS namespace"
+        default="USER", pattern=r"^[A-Z][A-Z0-9%]*$", description="Default IRIS namespace"
     )
-    password: str = Field(
-        default="SYS",
-        min_length=1,
-        description="_SYSTEM user password"
-    )
+    password: str = Field(default="SYS", min_length=1, description="_SYSTEM user password")
     license_key: Optional[str] = Field(
-        default=None,
-        description="License key for Enterprise edition"
+        default=None, description="License key for Enterprise edition"
     )
-    volumes: List[str] = Field(
-        default_factory=list,
-        description="Volume mount strings"
-    )
+    volumes: List[str] = Field(default_factory=list, description="Volume mount strings")
     image: Optional[str] = Field(
-        default=None,
-        description="Full Docker image name (overrides edition/image_tag)"
+        default=None, description="Full Docker image name (overrides edition/image_tag)"
     )
-    image_tag: str = Field(
-        default="latest",
-        description="Docker image tag"
-    )
+    image_tag: str = Field(default="latest", description="Docker image tag")
     cpf_merge: Optional[str] = Field(
-        default=None,
-        description="Path to CPF merge file or raw CPF content"
+        default=None, description="Path to CPF merge file or raw CPF content"
     )
 
     @field_validator("container_name")
@@ -170,7 +148,17 @@ class ContainerConfig(BaseModel):
         config_data = {}
 
         # Map direct fields
-        for field in ["edition", "container_name", "namespace", "password", "license_key", "volumes", "image", "image_tag", "cpf_merge"]:
+        for field in [
+            "edition",
+            "container_name",
+            "namespace",
+            "password",
+            "license_key",
+            "volumes",
+            "image",
+            "image_tag",
+            "cpf_merge",
+        ]:
             if field in yaml_data:
                 config_data[field] = yaml_data[field]
 
@@ -304,6 +292,7 @@ class ContainerConfig(BaseModel):
 
     class Config:
         """Pydantic model configuration."""
+
         json_schema_extra = {
             "example": {
                 "edition": "community",
@@ -314,6 +303,6 @@ class ContainerConfig(BaseModel):
                 "password": "SYS",
                 "license_key": None,
                 "volumes": ["./data:/external"],
-                "image_tag": "latest"
+                "image_tag": "latest",
             }
         }

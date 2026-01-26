@@ -12,16 +12,16 @@ Constitutional Compliance:
 
 import logging
 import time
-from typing import Optional, List
+from typing import List, Optional
 
 import docker
-from docker.errors import DockerException, NotFound, APIError
+from docker.errors import APIError, DockerException, NotFound
 
 from iris_devtester.containers.models import (
+    ContainerHealth,
     ContainerHealthStatus,
     HealthCheckLevel,
     ValidationResult,
-    ContainerHealth,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ def validate_container(
     container_name: str,
     level: HealthCheckLevel = HealthCheckLevel.STANDARD,
     timeout: int = 10,
-    docker_client: Optional[docker.DockerClient] = None
+    docker_client: Optional[docker.DockerClient] = None,
 ) -> ValidationResult:
     """
     Validate Docker container health with progressive checks.
@@ -90,9 +90,7 @@ def validate_container(
         except DockerException as e:
             elapsed = time.time() - start_time
             return ValidationResult.docker_error(
-                name=container_name,
-                error=e,
-                validation_time=elapsed
+                name=container_name, error=e, validation_time=elapsed
             )
 
     # Progressive validation strategy
@@ -105,9 +103,7 @@ def validate_container(
             elapsed = time.time() - start_time
             available = _get_available_containers(docker_client)
             return ValidationResult.not_found(
-                name=container_name,
-                available_containers=available,
-                validation_time=elapsed
+                name=container_name, available_containers=available, validation_time=elapsed
             )
 
         # Step 2: Check running status (MINIMAL level)
@@ -120,23 +116,18 @@ def validate_container(
                 name=container_name,
                 container_id=container.id,
                 validation_time=elapsed,
-                container_status=container.status
+                container_status=container.status,
             )
 
         # MINIMAL check complete
         if level == HealthCheckLevel.MINIMAL:
             elapsed = time.time() - start_time
             return ValidationResult.healthy(
-                name=container_name,
-                container_id=container.id,
-                validation_time=elapsed
+                name=container_name, container_id=container.id, validation_time=elapsed
             )
 
         # Step 3: Check exec accessibility (STANDARD level)
-        is_accessible, access_error = _check_exec_accessibility(
-            container,
-            timeout=timeout
-        )
+        is_accessible, access_error = _check_exec_accessibility(container, timeout=timeout)
 
         if not is_accessible:
             elapsed = time.time() - start_time
@@ -144,23 +135,18 @@ def validate_container(
                 name=container_name,
                 container_id=container.id,
                 error=access_error or "Unknown exec error",
-                validation_time=elapsed
+                validation_time=elapsed,
             )
 
         # STANDARD check complete
         if level == HealthCheckLevel.STANDARD:
             elapsed = time.time() - start_time
             return ValidationResult.healthy(
-                name=container_name,
-                container_id=container.id,
-                validation_time=elapsed
+                name=container_name, container_id=container.id, validation_time=elapsed
             )
 
         # Step 4: IRIS-specific health check (FULL level)
-        is_iris_healthy, iris_error = _check_iris_health(
-            container,
-            timeout=timeout
-        )
+        is_iris_healthy, iris_error = _check_iris_health(container, timeout=timeout)
 
         if not is_iris_healthy:
             elapsed = time.time() - start_time
@@ -168,29 +154,22 @@ def validate_container(
                 name=container_name,
                 container_id=container.id,
                 error=f"IRIS not responsive: {iris_error}",
-                validation_time=elapsed
+                validation_time=elapsed,
             )
 
         # FULL check complete - container is healthy
         elapsed = time.time() - start_time
         return ValidationResult.healthy(
-            name=container_name,
-            container_id=container.id,
-            validation_time=elapsed
+            name=container_name, container_id=container.id, validation_time=elapsed
         )
 
     except DockerException as e:
         elapsed = time.time() - start_time
-        return ValidationResult.docker_error(
-            name=container_name,
-            error=e,
-            validation_time=elapsed
-        )
+        return ValidationResult.docker_error(name=container_name, error=e, validation_time=elapsed)
 
 
 def _get_container_by_name(
-    client: docker.DockerClient,
-    name: str
+    client: docker.DockerClient, name: str
 ) -> Optional[docker.models.containers.Container]:
     """Get container by name.
 
@@ -210,9 +189,7 @@ def _get_container_by_name(
         return None
 
 
-def _get_available_containers(
-    client: docker.DockerClient
-) -> List[str]:
+def _get_available_containers(client: docker.DockerClient) -> List[str]:
     """Get list of available container names.
 
     Args:
@@ -234,8 +211,7 @@ def _get_available_containers(
 
 
 def _check_exec_accessibility(
-    container: docker.models.containers.Container,
-    timeout: int = 10
+    container: docker.models.containers.Container, timeout: int = 10
 ) -> tuple[bool, Optional[str]]:
     """Check if container accepts exec commands.
 
@@ -248,10 +224,7 @@ def _check_exec_accessibility(
     """
     try:
         # Simple echo command to test exec
-        exec_result = container.exec_run(
-            "echo healthy",
-            demux=False
-        )
+        exec_result = container.exec_run("echo healthy", demux=False)
 
         if exec_result.exit_code == 0:
             return True, None
@@ -263,8 +236,7 @@ def _check_exec_accessibility(
 
 
 def _check_iris_health(
-    container: docker.models.containers.Container,
-    timeout: int = 10
+    container: docker.models.containers.Container, timeout: int = 10
 ) -> tuple[bool, Optional[str]]:
     """Check IRIS-specific health (FULL validation level).
 
@@ -281,8 +253,7 @@ def _check_iris_health(
         # Try to execute simple IRIS query
         # This uses the iris session command available in IRIS containers
         exec_result = container.exec_run(
-            "iris session IRIS -U %SYS '##class(%SYSTEM.Process).CurrentDirectory()'",
-            demux=False
+            "iris session IRIS -U %SYS '##class(%SYSTEM.Process).CurrentDirectory()'", demux=False
         )
 
         if exec_result.exit_code == 0:
@@ -312,7 +283,7 @@ class ContainerValidator:
         self,
         container_name: str,
         docker_client: Optional[docker.DockerClient] = None,
-        cache_ttl: int = 5
+        cache_ttl: int = 5,
     ):
         """
         Initialize validator for specific container.
@@ -335,9 +306,7 @@ class ContainerValidator:
         self._cached_health: Optional[ContainerHealth] = None
 
     def validate(
-        self,
-        level: HealthCheckLevel = HealthCheckLevel.STANDARD,
-        force_refresh: bool = False
+        self, level: HealthCheckLevel = HealthCheckLevel.STANDARD, force_refresh: bool = False
     ) -> ValidationResult:
         """
         Validate container health.
@@ -356,9 +325,7 @@ class ContainerValidator:
 
         # Perform validation
         result = validate_container(
-            container_name=self._container_name,
-            level=level,
-            docker_client=self._docker_client
+            container_name=self._container_name, level=level, docker_client=self._docker_client
         )
 
         # Update cache
@@ -419,7 +386,7 @@ class ContainerValidator:
                 started_at=container.attrs.get("State", {}).get("StartedAt"),
                 port_bindings=port_bindings,
                 image=container.image.tags[0] if container.image.tags else None,
-                docker_sdk_version=docker.__version__
+                docker_sdk_version=docker.__version__,
             )
 
             # Cache result

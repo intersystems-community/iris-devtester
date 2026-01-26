@@ -6,6 +6,7 @@ Constitutional Principle #1: Automatic Remediation - Auto-disable under pressure
 """
 
 import pytest
+
 from iris_devtester.containers.monitoring import ResourceThresholds
 
 
@@ -167,9 +168,7 @@ class TestResourceThresholdsDisableLogic:
 
     def test_custom_thresholds_work(self):
         """Test custom disable thresholds."""
-        thresholds = ResourceThresholds(
-            cpu_disable_percent=80.0, memory_disable_percent=85.0
-        )
+        thresholds = ResourceThresholds(cpu_disable_percent=80.0, memory_disable_percent=85.0)
 
         # Below custom thresholds
         assert thresholds.should_disable(cpu_percent=75.0, memory_percent=80.0) is False

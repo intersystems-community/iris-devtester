@@ -8,11 +8,12 @@ Tests cover:
 - LoadResult string representations
 """
 
-import pytest
 import json
 import tempfile
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import pytest
 
 
 class TestTableInfo:
@@ -71,7 +72,7 @@ class TestFixtureManifestSerialization:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         json_str = manifest.to_json()
@@ -101,7 +102,7 @@ class TestFixtureManifestSerialization:
             checksum="sha256:abc123",
             tables=[],
             features={"use_case": "testing", "dataset": "sample"},
-            known_queries=[{"name": "find_all", "sql": "SELECT * FROM Test"}]
+            known_queries=[{"name": "find_all", "sql": "SELECT * FROM Test"}],
         )
 
         json_str = manifest.to_json()
@@ -124,7 +125,7 @@ class TestFixtureManifestSerialization:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[]
+            tables=[],
         )
 
         json_str = manifest.to_json(indent=4)
@@ -205,8 +206,8 @@ class TestFixtureManifestDeserialization:
             checksum="sha256:abc123",
             tables=[
                 TableInfo(name="Table1", row_count=100),
-                TableInfo(name="Table2", row_count=200)
-            ]
+                TableInfo(name="Table2", row_count=200),
+            ],
         )
 
         json_str = original.to_json()
@@ -237,7 +238,7 @@ class TestFixtureManifestFileOperations:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[]
+            tables=[],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -261,7 +262,7 @@ class TestFixtureManifestFileOperations:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[]
+            tables=[],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -284,7 +285,7 @@ class TestFixtureManifestFileOperations:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -321,7 +322,7 @@ class TestFixtureManifestValidation:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = manifest.validate()
@@ -343,7 +344,7 @@ class TestFixtureManifestValidation:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[]
+            tables=[],
         )
 
         result = manifest.validate()
@@ -365,7 +366,7 @@ class TestFixtureManifestValidation:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="invalid_checksum",  # Missing sha256: prefix
-            tables=[]
+            tables=[],
         )
 
         result = manifest.validate()
@@ -389,8 +390,8 @@ class TestFixtureManifestValidation:
             checksum="sha256:abc123",
             tables=[
                 TableInfo(name="Test.Table", row_count=100),
-                TableInfo(name="Test.Table", row_count=200)  # Duplicate
-            ]
+                TableInfo(name="Test.Table", row_count=200),  # Duplicate
+            ],
         )
 
         result = manifest.validate()
@@ -416,9 +417,7 @@ class TestValidationResult:
         from iris_devtester.fixtures import ValidationResult
 
         result = ValidationResult(
-            valid=False,
-            errors=["Error 1", "Error 2"],
-            warnings=["Warning 1"]
+            valid=False, errors=["Error 1", "Error 2"], warnings=["Warning 1"]
         )
 
         assert result.valid is False
@@ -427,7 +426,7 @@ class TestValidationResult:
 
     def test_raise_if_invalid_raises_on_invalid(self):
         """Test that raise_if_invalid raises error for invalid result."""
-        from iris_devtester.fixtures import ValidationResult, FixtureValidationError
+        from iris_devtester.fixtures import FixtureValidationError, ValidationResult
 
         result = ValidationResult(valid=False, errors=["Test error"])
 
@@ -469,7 +468,7 @@ class TestLoadResult:
 
     def test_create_successful_result(self):
         """Test creating successful LoadResult."""
-        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, LoadResult, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -481,7 +480,7 @@ class TestLoadResult:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = LoadResult(
@@ -489,7 +488,7 @@ class TestLoadResult:
             manifest=manifest,
             namespace="USER",
             tables_loaded=["Test.Table"],
-            elapsed_seconds=1.5
+            elapsed_seconds=1.5,
         )
 
         assert result.success is True
@@ -499,7 +498,7 @@ class TestLoadResult:
 
     def test_str_representation_success(self):
         """Test LoadResult string for successful load."""
-        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, LoadResult, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -511,15 +510,11 @@ class TestLoadResult:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[]
+            tables=[],
         )
 
         result = LoadResult(
-            success=True,
-            manifest=manifest,
-            namespace="USER",
-            tables_loaded=[],
-            elapsed_seconds=1.0
+            success=True, manifest=manifest, namespace="USER", tables_loaded=[], elapsed_seconds=1.0
         )
 
         result_str = str(result)
@@ -530,7 +525,7 @@ class TestLoadResult:
 
     def test_summary_includes_table_info(self):
         """Test that summary includes table information."""
-        from iris_devtester.fixtures import LoadResult, FixtureManifest, TableInfo
+        from iris_devtester.fixtures import FixtureManifest, LoadResult, TableInfo
 
         manifest = FixtureManifest(
             fixture_id="test",
@@ -542,7 +537,7 @@ class TestLoadResult:
             namespace="USER",
             dat_file="IRIS.DAT",
             checksum="sha256:abc123",
-            tables=[TableInfo(name="Test.Table", row_count=100)]
+            tables=[TableInfo(name="Test.Table", row_count=100)],
         )
 
         result = LoadResult(
@@ -550,7 +545,7 @@ class TestLoadResult:
             manifest=manifest,
             namespace="USER",
             tables_loaded=["Test.Table"],
-            elapsed_seconds=1.0
+            elapsed_seconds=1.0,
         )
 
         summary = result.summary()

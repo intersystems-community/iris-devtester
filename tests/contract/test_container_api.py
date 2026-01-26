@@ -7,7 +7,6 @@ specs/001-implement-iris-devtester/contracts/container-api.md
 These tests MUST FAIL until implementation is complete.
 """
 
-
 import pytest
 
 pytestmark = pytest.mark.contract
@@ -26,7 +25,7 @@ class TestIRISContainer:
         """Test that IRISContainer has community() class method."""
         from iris_devtester.containers import IRISContainer
 
-        assert hasattr(IRISContainer, 'community')
+        assert hasattr(IRISContainer, "community")
         assert callable(IRISContainer.community)
 
     def test_community_returns_instance(self):
@@ -40,7 +39,7 @@ class TestIRISContainer:
         """Test that IRISContainer has enterprise() class method."""
         from iris_devtester.containers import IRISContainer
 
-        assert hasattr(IRISContainer, 'enterprise')
+        assert hasattr(IRISContainer, "enterprise")
         assert callable(IRISContainer.enterprise)
 
     def test_enterprise_requires_license_key(self):
@@ -63,7 +62,7 @@ class TestIRISContainer:
         from iris_devtester.containers import IRISContainer
 
         container = IRISContainer.community()
-        assert hasattr(container, 'get_connection')
+        assert hasattr(container, "get_connection")
         assert callable(container.get_connection)
 
     def test_has_wait_for_ready_method(self):
@@ -71,7 +70,7 @@ class TestIRISContainer:
         from iris_devtester.containers import IRISContainer
 
         container = IRISContainer.community()
-        assert hasattr(container, 'wait_for_ready')
+        assert hasattr(container, "wait_for_ready")
         assert callable(container.wait_for_ready)
 
     def test_has_reset_password_method(self):
@@ -79,7 +78,7 @@ class TestIRISContainer:
         from iris_devtester.containers import IRISContainer
 
         container = IRISContainer.community()
-        assert hasattr(container, 'reset_password')
+        assert hasattr(container, "reset_password")
         assert callable(container.reset_password)
 
     def test_context_manager_support(self):
@@ -87,8 +86,8 @@ class TestIRISContainer:
         from iris_devtester.containers import IRISContainer
 
         container = IRISContainer.community()
-        assert hasattr(container, '__enter__')
-        assert hasattr(container, '__exit__')
+        assert hasattr(container, "__enter__")
+        assert hasattr(container, "__exit__")
 
 
 class TestIRISReadyWaitStrategy:

@@ -26,11 +26,13 @@ Logging Levels:
 - DEBUG: Fallback attempts (modern → legacy)
 - ERROR: No package available
 """
+
+import importlib.metadata
 import logging
 import time
-import importlib.metadata
 from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Any, Callable
+
 from packaging import version
 
 # Configure module logger
@@ -136,10 +138,22 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
     # Try modern package first (priority per Principle #2)
     # CRITICAL: Use official iris.connect() API, NOT private _DBAPI attribute!
     # See CONSTITUTION.md Principle 8 for empirical evidence that _DBAPI does not exist.
+    modern_available = False
     try:
-        import iris
         import os
         import sys
+
+        import iris
+
+        modern_available = True
+    except ImportError as e:
+        logger.debug(f"Modern package not available, trying legacy: {e}")
+
+    if modern_available:
+        import os
+        import sys
+
+        import iris
 
         # Check if connect method is available
         if not hasattr(iris, "connect"):
@@ -150,17 +164,17 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
             logger.debug("iris.connect() not found, attempting to load ELSDK manually")
 
             # Get iris module directory
-            if hasattr(iris, '__file__') and iris.__file__:
+            if hasattr(iris, "__file__") and iris.__file__:
                 iris_dir = os.path.dirname(iris.__file__)
 
                 # Try both _elsdk_.py (v5.3.0+) and _init_elsdk.py (v5.1.2)
-                for elsdk_file in ['_elsdk_.py', '_init_elsdk.py']:
+                for elsdk_file in ["_elsdk_.py", "_init_elsdk.py"]:
                     elsdk_path = os.path.join(iris_dir, elsdk_file)
                     if os.path.exists(elsdk_path):
                         logger.info(f"Found {elsdk_file}, loading to inject DBAPI interface")
                         try:
-                            with open(elsdk_path, 'r') as f:
-                                elsdk_code = compile(f.read(), elsdk_path, 'exec')
+                            with open(elsdk_path, "r") as f:
+                                elsdk_code = compile(f.read(), elsdk_path, "exec")
                             exec(elsdk_code, iris.__dict__)
 
                             if hasattr(iris, "connect"):
@@ -187,10 +201,8 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
             import_path="iris",
             version=pkg_version,
             connect_function=iris.connect,
-            detection_time_ms=elapsed_ms
+            detection_time_ms=elapsed_ms,
         )
-    except ImportError as e:
-        logger.debug(f"Modern package not available, trying legacy: {e}")
 
     # Fall back to legacy package
     try:
@@ -208,7 +220,7 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
             import_path="iris.irissdk",
             version=pkg_version,
             connect_function=iris.irissdk.connect,
-            detection_time_ms=elapsed_ms
+            detection_time_ms=elapsed_ms,
         )
     except ImportError:
         logger.error("No IRIS DBAPI package detected")
@@ -228,8 +240,9 @@ class DBAPIConnectionAdapter:
         """Initialize adapter with detected package info."""
         self._package_info = detect_dbapi_package()
 
-    def connect(self, hostname: str, port: int, namespace: str,
-                username: str, password: str, **kwargs) -> Any:
+    def connect(
+        self, hostname: str, port: int, namespace: str, username: str, password: str, **kwargs
+    ) -> Any:
         """Create DBAPI connection using detected package.
 
         Args:
@@ -251,7 +264,7 @@ class DBAPIConnectionAdapter:
             namespace=namespace,
             username=username,
             password=password,
-            **kwargs
+            **kwargs,
         )
 
     def get_package_info(self) -> DBAPIPackageInfo:

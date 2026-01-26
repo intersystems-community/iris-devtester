@@ -11,7 +11,7 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from iris_devtester.containers.monitoring import ResourceThresholds
@@ -142,7 +142,9 @@ def get_resource_metrics(conn) -> PerformanceMetrics:
             monitoring_enabled=has_active_task,
         )
 
-        logger.debug(f"✓ Metrics: CPU={metrics.cpu_percent:.1f}% Memory={metrics.memory_percent:.1f}%")
+        logger.debug(
+            f"✓ Metrics: CPU={metrics.cpu_percent:.1f}% Memory={metrics.memory_percent:.1f}%"
+        )
         return metrics
 
     except Exception as e:
@@ -161,9 +163,7 @@ def get_resource_metrics(conn) -> PerformanceMetrics:
         raise RuntimeError(error_msg) from e
 
 
-def check_resource_thresholds(
-    conn, thresholds: "ResourceThresholds"
-) -> tuple:
+def check_resource_thresholds(conn, thresholds: "ResourceThresholds") -> tuple:
     """
     Check if current resources exceed thresholds.
 

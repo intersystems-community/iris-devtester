@@ -6,7 +6,8 @@ Constitutional Principle #7: Medical-Grade Reliability - All error paths tested.
 """
 
 import pytest
-from iris_devtester.containers.monitoring import MonitoringPolicy, CollectionInterval
+
+from iris_devtester.containers.monitoring import CollectionInterval, MonitoringPolicy
 
 
 class TestMonitoringPolicyDefaults:
@@ -175,9 +176,7 @@ class TestMonitoringPolicyObjectScript:
 
     def test_to_objectscript_includes_output_settings(self):
         """Test ObjectScript includes output format and directory."""
-        policy = MonitoringPolicy(
-            output_format="HTML", output_directory="/tmp/iris-performance/"
-        )
+        policy = MonitoringPolicy(output_format="HTML", output_directory="/tmp/iris-performance/")
         script = policy.to_objectscript()
 
         assert 'policy.OutputFormat = "HTML"' in script

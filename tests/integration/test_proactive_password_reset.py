@@ -5,6 +5,7 @@ This verifies Feature 007 fix - password reset happens BEFORE first connection a
 """
 
 import pytest
+
 from iris_devtester.containers import IRISContainer
 
 
@@ -28,9 +29,7 @@ class TestProactivePasswordReset:
         """
         # Create IRIS container with known credentials
         with IRISContainer.community(
-            username="SuperUser",
-            password="SYS",
-            namespace="USER"
+            username="SuperUser", password="SYS", namespace="USER"
         ) as iris:
             # This should trigger proactive password reset in get_connection()
             # Password should be reset BEFORE attempting connection

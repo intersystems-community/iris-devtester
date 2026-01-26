@@ -6,13 +6,14 @@ Tests verify Docker and native IRIS instance detection.
 
 import subprocess
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from iris_devtester.connections.auto_discovery import (
-    auto_detect_iris_port,
-    auto_detect_iris_host_and_port,
     _detect_port_from_docker,
     _detect_port_from_native,
+    auto_detect_iris_host_and_port,
+    auto_detect_iris_port,
 )
 
 
@@ -46,9 +47,7 @@ class TestDockerDetection:
 
         Expected: Detects external port 51773.
         """
-        mock_output = (
-            "iris_db\t0.0.0.0:51773->1972/tcp\n"
-        )
+        mock_output = "iris_db\t0.0.0.0:51773->1972/tcp\n"
 
         with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
@@ -137,10 +136,7 @@ class TestNativeDetection:
 
         Expected: Detects custom port.
         """
-        mock_output = (
-            "Configuration 'IRIS'\n"
-            "    SuperServers: 51972\n"
-        )
+        mock_output = "Configuration 'IRIS'\n" "    SuperServers: 51972\n"
 
         with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
@@ -195,6 +191,7 @@ class TestCombinedAutoDetection:
         native_output = "SuperServers: 51972\n"
 
         with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
+
             def side_effect(*args, **kwargs):
                 cmd = args[0]
                 if cmd[0] == "docker":
@@ -219,6 +216,7 @@ class TestCombinedAutoDetection:
         native_output = "SuperServers: 1972\n"
 
         with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
+
             def side_effect(*args, **kwargs):
                 cmd = args[0]
                 if cmd[0] == "docker":
@@ -274,6 +272,7 @@ class TestCombinedAutoDetection:
         native_output = "SuperServers: 1972\n"
 
         with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
+
             def side_effect(*args, **kwargs):
                 cmd = args[0]
                 if cmd[0] == "docker":

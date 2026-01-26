@@ -167,9 +167,7 @@ class ContainerPersistenceCheck:
 
 
 def verify_container_persistence(
-    container_name: str,
-    config: ContainerConfig,
-    wait_seconds: float = 2.0
+    container_name: str, config: ContainerConfig, wait_seconds: float = 2.0
 ) -> ContainerPersistenceCheck:
     """
     Verify that container persists after creation (Feature 011 - T014).
@@ -214,7 +212,11 @@ def verify_container_persistence(
             status=container.status,
             volume_mounts_verified=volumes_ok,
             verification_time=wait_seconds,
-            error_details=None if volumes_ok else f"Expected {expected_volumes} volumes, found {actual_volumes}"
+            error_details=(
+                None
+                if volumes_ok
+                else f"Expected {expected_volumes} volumes, found {actual_volumes}"
+            ),
         )
 
     except NotFound:
@@ -224,7 +226,7 @@ def verify_container_persistence(
             status=None,
             volume_mounts_verified=False,
             verification_time=wait_seconds,
-            error_details="Container not found after creation (possibly removed by ryuk or failed to start)"
+            error_details="Container not found after creation (possibly removed by ryuk or failed to start)",
         )
 
     except Exception as e:
@@ -234,7 +236,7 @@ def verify_container_persistence(
             status=None,
             volume_mounts_verified=False,
             verification_time=wait_seconds,
-            error_details=f"Verification error: {str(e)}"
+            error_details=f"Verification error: {str(e)}",
         )
 
     finally:
@@ -245,10 +247,7 @@ class IRISContainerManager:
     """Manager for IRIS containers using testcontainers-iris."""
 
     @staticmethod
-    def create_from_config(
-        config: ContainerConfig,
-        use_testcontainers: bool = True
-    ) -> Container:
+    def create_from_config(config: ContainerConfig, use_testcontainers: bool = True) -> Container:
         """
         Create IRIS container from config with dual-mode support (Feature 011 - T012).
 
@@ -287,7 +286,7 @@ class IRISContainerManager:
             username="_SYSTEM",  # IRIS default user
             password=config.password,
             namespace=config.namespace,
-            license_key=config.license_key if config.edition == "enterprise" else None
+            license_key=config.license_key if config.edition == "enterprise" else None,
         )
 
         # Configure container name
@@ -321,34 +320,32 @@ class IRISContainerManager:
         volumes = {}
         for volume_str in config.volumes:
             spec = VolumeMountSpec.parse(volume_str)
-            volumes[spec.host_path] = {
-                'bind': spec.container_path,
-                'mode': spec.mode
-            }
+            volumes[spec.host_path] = {"bind": spec.container_path, "mode": spec.mode}
 
         # IRIS environment variables (Feature 011 - T012)
         # Note: Don't set ISC_DATA_DIRECTORY - let IRIS use its default
         environment = {}
 
         # Add license key for Enterprise edition
-        if config.edition == 'enterprise' and config.license_key:
-            environment['ISC_LICENSE_KEY'] = config.license_key
+        if config.edition == "enterprise" and config.license_key:
+            environment["ISC_LICENSE_KEY"] = config.license_key
 
         if config.cpf_merge:
             import os
             import tempfile
+
             container_path = "/usr/irissys/merge.cpf"
-            environment['ISC_CPF_MERGE_FILE'] = container_path
-            
+            environment["ISC_CPF_MERGE_FILE"] = container_path
+
             cpf_source = config.cpf_merge
             if os.path.exists(cpf_source) and os.path.isfile(cpf_source):
                 host_path = os.path.abspath(cpf_source)
             else:
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.cpf', delete=False) as f:
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".cpf", delete=False) as f:
                     f.write(cpf_source)
                     host_path = f.name
-            
-            volumes[host_path] = {'bind': container_path, 'mode': 'ro'}
+
+            volumes[host_path] = {"bind": container_path, "mode": "ro"}
 
         # Create container without testcontainers labels (prevents ryuk cleanup)
         container = client.containers.create(
@@ -356,11 +353,11 @@ class IRISContainerManager:
             name=config.container_name,
             volumes=volumes or None,
             ports={
-                f'{config.superserver_port}/tcp': config.superserver_port,
-                f'{config.webserver_port}/tcp': config.webserver_port
+                f"{config.superserver_port}/tcp": config.superserver_port,
+                f"{config.webserver_port}/tcp": config.webserver_port,
             },
             environment=environment,
-            detach=True
+            detach=True,
         )
 
         # Start the container
@@ -514,7 +511,11 @@ def translate_docker_error(error: Exception, config: Optional[ContainerConfig]) 
         )
 
     # Image not found
-    if "image not found" in error_str or "manifest unknown" in error_str or "no such image" in error_str:
+    if (
+        "image not found" in error_str
+        or "manifest unknown" in error_str
+        or "no such image" in error_str
+    ):
         image = config.get_image_name() if config else "unknown"
         return ValueError(
             f"Docker image '{image}' not found\n"

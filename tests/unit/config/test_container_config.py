@@ -37,7 +37,7 @@ class TestContainerConfigValidation:
             password="SecurePass123",
             license_key=None,
             volumes=["./data:/external"],
-            image_tag="2024.1"
+            image_tag="2024.1",
         )
         assert config.edition == "community"
         assert config.container_name == "my_iris"
@@ -87,10 +87,7 @@ class TestContainerConfigValidation:
 
     def test_enterprise_edition_with_license_key_is_valid(self):
         """Test that enterprise edition with license_key is valid."""
-        config = ContainerConfig(
-            edition="enterprise",
-            license_key="ABC-123-DEF-456"
-        )
+        config = ContainerConfig(edition="enterprise", license_key="ABC-123-DEF-456")
         assert config.edition == "enterprise"
         assert config.license_key == "ABC-123-DEF-456"
 
@@ -381,20 +378,12 @@ class TestContainerConfigImageName:
 
     def test_get_image_name_enterprise_latest(self):
         """Test image name for enterprise edition with latest tag."""
-        config = ContainerConfig(
-            edition="enterprise",
-            license_key="TEST-KEY",
-            image_tag="latest"
-        )
+        config = ContainerConfig(edition="enterprise", license_key="TEST-KEY", image_tag="latest")
         assert config.get_image_name() == "intersystems/iris:latest"
 
     def test_get_image_name_enterprise_specific_tag(self):
         """Test image name for enterprise edition with specific tag."""
-        config = ContainerConfig(
-            edition="enterprise",
-            license_key="TEST-KEY",
-            image_tag="2024.1"
-        )
+        config = ContainerConfig(edition="enterprise", license_key="TEST-KEY", image_tag="2024.1")
         assert config.get_image_name() == "intersystems/iris:2024.1"
 
 
@@ -406,15 +395,9 @@ class TestContainerConfigVolumeValidation:
         import tempfile
 
         # Create temp directories that exist
-        with tempfile.TemporaryDirectory() as temp_dir1, \
-             tempfile.TemporaryDirectory() as temp_dir2:
+        with tempfile.TemporaryDirectory() as temp_dir1, tempfile.TemporaryDirectory() as temp_dir2:
 
-            config = ContainerConfig(
-                volumes=[
-                    f"{temp_dir1}:/data1",
-                    f"{temp_dir2}:/data2:ro"
-                ]
-            )
+            config = ContainerConfig(volumes=[f"{temp_dir1}:/data1", f"{temp_dir2}:/data2:ro"])
 
             # Should return empty list (no errors)
             errors = config.validate_volume_paths()
@@ -422,12 +405,7 @@ class TestContainerConfigVolumeValidation:
 
     def test_validate_volume_paths_nonexistent(self):
         """Test that validation fails when one host path doesn't exist."""
-        config = ContainerConfig(
-            volumes=[
-                "/nonexistent/path:/data",
-                "/another/missing:/data2:ro"
-            ]
-        )
+        config = ContainerConfig(volumes=["/nonexistent/path:/data", "/another/missing:/data2:ro"])
 
         # Should return error messages for missing paths
         errors = config.validate_volume_paths()
@@ -447,11 +425,7 @@ class TestContainerConfigVolumeValidation:
     def test_validate_volume_paths_multiple_errors(self):
         """Test error messages for multiple invalid paths."""
         config = ContainerConfig(
-            volumes=[
-                "/fake/path1:/data1",
-                "/fake/path2:/data2:rw",
-                "/fake/path3:/data3:ro"
-            ]
+            volumes=["/fake/path1:/data1", "/fake/path2:/data2:rw", "/fake/path3:/data3:ro"]
         )
 
         errors = config.validate_volume_paths()
