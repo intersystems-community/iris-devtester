@@ -11,7 +11,7 @@ Automatically discovers IRIS configuration from multiple sources:
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional, Union
 
 from iris_devtester.config.defaults import (
     DEFAULT_DRIVER,
@@ -56,7 +56,7 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
         return explicit_config
 
     # Start with defaults
-    discovered = {
+    discovered: Dict[str, Any] = {
         "host": DEFAULT_HOST,
         "port": DEFAULT_PORT,
         "namespace": DEFAULT_NAMESPACE,
@@ -91,7 +91,7 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
     return IRISConfig(**discovered)
 
 
-def _load_from_environment() -> dict:
+def _load_from_environment() -> Dict[str, Any]:
     """
     Load configuration from environment variables.
 
@@ -107,7 +107,7 @@ def _load_from_environment() -> dict:
     Returns:
         Dictionary of discovered configuration values
     """
-    config = {}
+    config: Dict[str, Any] = {}
 
     if "IRIS_HOST" in os.environ:
         config["host"] = os.environ["IRIS_HOST"]
@@ -133,7 +133,7 @@ def _load_from_environment() -> dict:
     return config
 
 
-def _load_from_dotenv() -> dict:
+def _load_from_dotenv() -> Dict[str, Any]:
     """
     Load configuration from .env file in current directory.
 
@@ -142,7 +142,7 @@ def _load_from_dotenv() -> dict:
     Returns:
         Dictionary of discovered configuration values
     """
-    config = {}
+    config: Dict[str, Any] = {}
     dotenv_path = Path.cwd() / ".env"
 
     if not dotenv_path.exists():

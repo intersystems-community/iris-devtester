@@ -319,7 +319,7 @@ class ContainerValidator:
             ValidationResult (may be cached).
         """
         # Check cache
-        if not force_refresh and self._is_cache_valid():
+        if not force_refresh and self._is_cache_valid() and self._cached_result is not None:
             logger.debug(f"Using cached validation result for {self._container_name}")
             return self._cached_result
 
@@ -422,7 +422,7 @@ class ContainerValidator:
 
         try:
             container = self._docker_client.containers.get(self._container_name)
-            return container.id
+            return str(container.id) if container.id else None
         except Exception:
             return None
 

@@ -79,8 +79,8 @@ class IRISContainer(IRISBase):
         self._callin_enabled = False
         self._password_preconfigured = False
         self._is_attached = False
-        self._container_name = kwargs.get("name")
-        self._config = None
+        self._container_name: Optional[str] = kwargs.get("name")
+        self._config: Optional[IRISConfig] = None
 
         # Standard attributes used by fixtures
         # IMPORTANT: self.port must remain the INTERNAL container port (1972)
@@ -91,8 +91,8 @@ class IRISContainer(IRISBase):
         self._mapped_port: Optional[int] = None  # Host-side mapped port
 
         # Pre-configuration fields (Feature 001)
-        self._preconfigure_password = None
-        self._preconfigure_username = None
+        self._preconfigure_password: Optional[str] = None
+        self._preconfigure_username: Optional[str] = None
 
     @classmethod
     def community(cls, image: Optional[str] = None, **kwargs) -> "IRISContainer":
@@ -130,7 +130,7 @@ class IRISContainer(IRISBase):
         # Priority 2: Get from actual Docker container (after start)
         try:
             if hasattr(self, "_container") and self._container is not None:
-                return self._container.name
+                return str(self._container.name)
         except Exception:
             pass
 
@@ -138,7 +138,7 @@ class IRISContainer(IRISBase):
         try:
             parent_name = super().get_container_name()
             if parent_name and parent_name != "iris_db":
-                return parent_name
+                return str(parent_name)
         except Exception:
             pass
 
@@ -231,18 +231,19 @@ class IRISContainer(IRISBase):
                 namespace=self._namespace,
                 container_name=self.get_container_name(),
             )
+        config = self._config
         try:
             # Get host and mapped port from testcontainers
             # IMPORTANT: self.port must remain 1972 (internal port) for get_exposed_port() to work
             self.host = self.get_container_host_ip()
             self._mapped_port = int(self.get_exposed_port(1972))  # Use internal port to get mapping
-            self._config.host = self.host
-            self._config.port = (
+            config.host = self.host
+            config.port = (
                 self._mapped_port
             )  # Config uses the host-mapped port for connections
-        except:
+        except Exception:
             pass
-        return self._config
+        return config
 
     def get_mapped_port(self, internal_port: int = 1972) -> int:
         """Get the host-side mapped port for a given internal container port.

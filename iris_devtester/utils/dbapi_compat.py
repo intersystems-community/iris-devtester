@@ -31,7 +31,7 @@ import importlib.metadata
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from packaging import version
 
@@ -236,6 +236,8 @@ class DBAPIConnectionAdapter:
     Implements singleton pattern for zero overhead.
     """
 
+    _package_info: DBAPIPackageInfo
+
     def __init__(self):
         """Initialize adapter with detected package info."""
         self._package_info = detect_dbapi_package()
@@ -277,7 +279,7 @@ class DBAPIConnectionAdapter:
 
 
 # Global singleton adapter (cached for performance)
-_adapter: DBAPIConnectionAdapter | None = None
+_adapter: Optional[DBAPIConnectionAdapter] = None
 
 
 def _get_adapter() -> DBAPIConnectionAdapter:

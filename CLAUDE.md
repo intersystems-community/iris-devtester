@@ -55,7 +55,7 @@ pytest
 iris_devtester/
 ├── connections/    # Connection management (DBAPI/JDBC)
 ├── containers/     # Testcontainers wrapper
-├── fixtures/       # DAT fixture management (Feature 004)
+├── fixtures/       # GOF fixture management (Feature 004)
 ├── testing/        # pytest fixtures & utilities
 ├── config/         # Configuration discovery
 └── utils/          # Helpers
@@ -112,7 +112,7 @@ Optional (install with `[all]`):
 
 Look at `~/ws/rag-templates/` for:
 - Connection patterns: `common/iris_connection_manager.py`
-- Password reset: `tests/utils/iris_password_reset.py`
+- Password utilities: `iris_devtester/utils/password.py` (consolidated module)
 - Testing utilities: `tests/utils/`, `tests/fixtures/`
 - pytest fixtures: `tests/conftest.py` (Feature 028 sections)
 
@@ -347,15 +347,14 @@ twine upload dist/*
 - **Source**: `~/ws/rag-templates/` - Working implementation
 - **Specification**: `.specify/feature-request.md` - What to build
 
-## Feature 004: DAT Fixture Management
+## Feature 004: GOF Fixture Management
 
-**Status**: Planned (design phase complete)
-**Branch**: `004-dat-fixtures`
+**Status**: Implemented
 **Docs**: `specs/004-dat-fixtures/`
 
 ### Quick Overview
 
-Provides fast, reproducible test fixtures by exporting IRIS tables to .DAT files with checksum validation.
+Provides fast, reproducible test fixtures using GOF (Globals Output Format) for data and XML for class definitions.
 
 **Performance**: 10-100x faster than programmatic test data creation
 - Load 10K rows in <10s (vs ~50 minutes programmatically)
@@ -367,24 +366,22 @@ Provides fast, reproducible test fixtures by exporting IRIS tables to .DAT files
 
 ```
 iris_devtester/fixtures/
-├── __init__.py           # Public API: DATFixtureLoader, FixtureCreator
-├── loader.py             # DATFixtureLoader class (loads .DAT files)
-├── creator.py            # FixtureCreator class (exports to .DAT)
+├── __init__.py           # Public API: GOFFixtureLoader, FixtureCreator
+├── loader.py             # GOFFixtureLoader class (loads .gof files)
+├── creator.py            # FixtureCreator class (exports to .gof)
 ├── validator.py          # FixtureValidator class (checksum validation)
 ├── manifest.py           # FixtureManifest dataclass + schema
-└── pytest_plugin.py      # pytest integration (@pytest.mark.dat_fixture)
+└── obj_export.py         # ObjectScript export utilities
 ```
 
 ### CLI Commands
  
- ```bash
- # Create fixture from tables
--iris-devtester fixture create --name test-100 --tables RAG.Entities --output ./fixtures/test-100
-+iris-devtester fixture create --container iris_db --name test-100 --namespace USER --output ./fixtures/test-100
+```bash
+# Create fixture from namespace
+iris-devtester fixture create --container iris_db --name test-100 --namespace USER --output ./fixtures/test-100
  
- # Validate fixture integrity
- iris-devtester fixture validate --fixture ./fixtures/test-100
-
+# Validate fixture integrity
+iris-devtester fixture validate --fixture ./fixtures/test-100
 
 # Load fixture into IRIS
 iris-devtester fixture load --fixture ./fixtures/test-100
@@ -399,7 +396,7 @@ iris-devtester fixture info --fixture ./fixtures/test-100
 ### Python API
 
 ```python
-from iris_devtester.fixtures import DATFixtureLoader, FixtureCreator
+from iris_devtester.fixtures import GOFFixtureLoader, FixtureCreator
 
 # Create fixture from namespace
 creator = FixtureCreator(container=iris_container)
@@ -410,7 +407,7 @@ manifest = creator.create_fixture(
 )
 
 # Load fixture into new namespace
-loader = DATFixtureLoader(container=iris_container)
+loader = GOFFixtureLoader(container=iris_container)
 target_ns = iris_container.get_test_namespace(prefix="TARGET")
 result = loader.load_fixture(
     fixture_path="./fixtures/test-100",
@@ -425,11 +422,11 @@ loader.cleanup_fixture(target_ns, delete_namespace=True)
 ### pytest Integration
 
 ```python
-# Use pytest fixtures for DAT fixture management
+# Use pytest fixtures for GOF fixture management
 @pytest.fixture
 def loaded_fixture(iris_container):
-    """Load DAT fixture for tests."""
-    loader = DATFixtureLoader(container=iris_container)
+    """Load GOF fixture for tests."""
+    loader = GOFFixtureLoader(container=iris_container)
     target_ns = iris_container.get_test_namespace(prefix="TEST")
 
     result = loader.load_fixture(
@@ -443,18 +440,18 @@ def loaded_fixture(iris_container):
     loader.cleanup_fixture(target_ns, delete_namespace=True)
 
 def test_entity_count(loaded_fixture):
-    """Test using loaded DAT fixture."""
+    """Test using loaded GOF fixture."""
     assert loaded_fixture.success
-    assert len(loaded_fixture.tables_loaded) > 0
+    assert len(result.tables_loaded) > 0
 ```
 
 ### Key Design Decisions
 
-1. **ObjectScript via DBAPI**: Use `$SYSTEM.OBJ.Export()` and `$SYSTEM.OBJ.Load()` for .DAT operations
-2. **SHA256 checksums**: Cryptographic validation for medical-grade reliability
-3. **Transaction-based loading**: Atomic all-or-nothing with automatic rollback
-4. **Dataclasses for manifest**: Zero dependencies, simple validation
-5. **Flat directory structure**: Git-friendly, easy to inspect
+1. **GOF Format**: Uses `%Library.Global.Export()` for globals (not .DAT)
+2. **XML for Classes**: Uses `$SYSTEM.OBJ.ExportAllClasses()` for class definitions
+3. **SHA256 checksums**: Cryptographic validation for medical-grade reliability
+4. **Transaction-based loading**: Atomic all-or-nothing with automatic rollback
+5. **Dataclasses for manifest**: Zero dependencies, simple validation
 
 ### Constitutional Compliance
 
@@ -469,7 +466,6 @@ def test_entity_count(loaded_fixture):
 - Plan: `specs/004-dat-fixtures/plan.md`
 - Research: `specs/004-dat-fixtures/research.md`
 - Data Model: `specs/004-dat-fixtures/data-model.md`
-- Contracts: `specs/004-dat-fixtures/contracts/`
 - Quickstart: `specs/004-dat-fixtures/quickstart.md`
 
 ---
@@ -633,39 +629,36 @@ Available containers:
 
 ## Feature 015: Password Reset Reliability on macOS
 
-**Status**: Planning Complete (Phase 1 complete, ready for /tasks)
-**Branch**: `015-fix-iris-devtester`
+**Status**: Implemented (Consolidated into password.py)
 **Docs**: `specs/015-fix-iris-devtester/`
-**Priority**: CRITICAL - Blocks all iris-devtester usage on macOS
 
 ### Quick Overview
 
-Fixes critical macOS-specific password reset bug where `reset_password()` returns success (exit code 0) but connections fail with "Access Denied". Root cause is timing race condition - the current `time.sleep(2)` is insufficient for macOS Docker Desktop networking delays (4-6 seconds).
+Fixed critical macOS-specific password reset bug where `reset_password()` returns success (exit code 0) but connections fail with "Access Denied". Root cause was timing race condition - the original `time.sleep(2)` was insufficient for macOS Docker Desktop networking delays (4-6 seconds).
 
-**Solution**: Add connection-based verification with exponential backoff retry logic (adaptive to system speed).
+**Solution**: Added connection-based verification with exponential backoff retry logic (adaptive to system speed).
 
 **Performance**: 
 - macOS average: 3.2s verification time (99.5% success rate)
 - Linux average: 1.1s verification time (100% success rate)
 - Timeout: 10s hard limit (NFR-004)
 
-### Module Structure
+### Module Structure (Consolidated)
 
 ```
 iris_devtester/utils/
-├── password_reset.py         # MODIFIED: Add verification + retry logic
-└── password_verification.py  # NEW: Connection verification utilities
+└── password.py               # Consolidated: reset, verification, unexpire utilities
 
 iris_devtester/containers/
-└── iris_container.py          # MODIFIED: Enhanced get_connection() wait logic
+└── iris_container.py          # Enhanced get_connection() wait logic
 
 tests/
 ├── contract/
-│   ├── test_reset_verification_contract.py   # NEW: 5 verification contract tests
-│   └── test_retry_logic_contract.py          # NEW: 7 retry logic contract tests
+│   ├── test_reset_verification_contract.py   # Verification contract tests
+│   └── test_retry_logic_contract.py          # Retry logic contract tests
 └── integration/
-    ├── test_password_reset_macos.py          # NEW: macOS-specific timing tests
-    └── test_password_reset_timing.py         # NEW: Cross-platform benchmarks
+    ├── test_password_reset_macos.py          # macOS-specific timing tests
+    └── test_password_reset_timing.py         # Cross-platform benchmarks
 ```
 
 ### Data Entities (from data-model.md)
@@ -706,9 +699,9 @@ class ConnectionVerificationResult:
 
 ### Python API
 
-**Basic Usage (Unchanged)**:
+**Basic Usage**:
 ```python
-from iris_devtester.utils.password_reset import reset_password
+from iris_devtester.utils.password import reset_password
 
 # Verification happens automatically
 success, message = reset_password(
@@ -723,22 +716,22 @@ if success:
 
 **Advanced Usage (With Custom Config)**:
 ```python
-from iris_devtester.utils.password_reset import reset_password_verified
-from iris_devtester.utils.password_verification import VerificationConfig
+from iris_devtester.utils.password import (
+    reset_password_if_needed,
+    verify_password,
+    VerificationConfig,
+)
 
 # Custom config for slow systems
 config = VerificationConfig(max_retries=5, timeout=15.0)
 
-result = reset_password_verified(
+# Verify password works
+success, msg = verify_password(
     container_name="iris_db",
     username="SuperUser",
-    new_password="SYS",
+    password="SYS",
     config=config
 )
-
-print(f"Success: {result.success}")
-print(f"Attempts: {result.verification_attempts}")
-print(f"Elapsed: {result.elapsed_seconds:.2f}s")
 ```
 
 **Automatic in IRISContainer**:
@@ -747,7 +740,7 @@ from iris_devtester.containers import IRISContainer
 
 # get_connection() now includes verification
 with IRISContainer.community() as iris:
-    conn = iris.get_connection()  # ✅ Verifies password works before returning
+    conn = iris.get_connection()  # Verifies password works before returning
 ```
 
 ### Key Functional Requirements

@@ -13,12 +13,12 @@ import logging
 import re
 import subprocess
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
-def discover_iris_port(test_ports: list[int] = None) -> Optional[int]:
+def discover_iris_port(test_ports: Optional[List[int]] = None) -> Optional[int]:
     """
     Auto-discover IRIS SuperServer port from running instances.
 
