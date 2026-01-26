@@ -1,0 +1,48 @@
+skills:
+  - name: container
+    description: Start, stop, and manage IRIS containers.
+    triggers:
+      claude: /container
+      cursor: [container, iris, docker]
+      copilot: Manage IRIS container
+    capabilities:
+      - start
+      - stop
+      - status
+      - logs
+      - reset-password
+      - enable-callin
+
+  - name: connection
+    description: Establish and troubleshoot database connections.
+    triggers:
+      claude: /connection
+      cursor: [connection, dbapi, jdbc]
+      copilot: Connect to IRIS
+    capabilities:
+      - test-connection
+      - retry-logic
+      - troubleshooting
+
+  - name: fixture
+    description: Create, load, and validate test fixtures.
+    triggers:
+      claude: /fixture
+      cursor: [fixture, test data, dat]
+      copilot: Manage test fixtures
+    capabilities:
+      - create
+      - load
+      - validate
+      - list
+
+  - name: troubleshooting
+    description: Diagnose and fix common IRIS/Docker issues.
+    triggers:
+      claude: /troubleshoot
+      cursor: [error, fail, issue]
+      copilot: Fix IRIS error
+    capabilities:
+      - diagnose-auth
+      - diagnose-connectivity
+      - diagnose-docker

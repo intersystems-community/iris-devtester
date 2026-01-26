@@ -1,0 +1,28 @@
+methods:
+  - name: with_cpf_merge
+    owner: IRISContainer
+    parameters:
+      - name: path_or_content
+        type: string
+        description: Absolute path to a .cpf file OR raw CPF string content.
+    returns:
+      type: IRISContainer
+      description: Self for method chaining.
+    lifecycle:
+      pre_start: Creates temporary file if content provided.
+      on_start: Mounts volume and sets ISC_CPF_MERGE_FILE env var.
+      post_stop: Cleans up temporary file.
+
+presets:
+  - name: CPFPreset.ENABLE_CALLIN
+    sections:
+      - [Security.Services]
+    parameters:
+      "%Service_CallIn": "1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+
+  - name: CPFPreset.CI_OPTIMIZED
+    sections:
+      - [config]
+    parameters:
+      globals: "0,0,256,0,0,0"
+      gmheap: "64000"

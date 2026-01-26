@@ -65,12 +65,15 @@ docs/.doctrees/
 # IRIS specific
 iris.key
 *.lck
+*.jar
 
 # Logs
 *.log
 
+# Temp/scratch files
+*_temp.md
+Demo_*.md
+
 # Agent/Development artifacts
-.specify/
-specs/
-.cursorrules
-CONSTITUTION.md
+.sisyphus/
+.benchmarks/

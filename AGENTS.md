@@ -61,10 +61,10 @@ from iris_devtester.connections.dbapi import create_dbapi_connection
 ### Naming Conventions
 | Type | Convention | Example |
 |------|------------|---------|
-| Modules | snake_case | `password_reset.py` |
+| Modules | snake_case | `password.py`, `connection.py` |
 | Classes | PascalCase | `IRISContainer`, `ConnectionConfig` |
 | Functions | snake_case | `get_connection()`, `reset_password()` |
-| Constants | UPPER_SNAKE | `HAS_TESTCONTAINERS_IRIS` |
+| Constants | UPPER_SNAKE | `HAS_TESTCONTAINERS` |
 | Private | leading underscore | `_name`, `_container` |
 | Test files | `test_*.py` | `test_connection_info.py` |
 | Test functions | `test_*` | `test_basic_connection()` |
@@ -152,11 +152,11 @@ iris_devtester/
 ├── config/         # IRISConfig, discovery, YAML loading
 ├── connections/    # DBAPI connection management
 ├── containers/     # IRISContainer wrapper, validation
-├── fixtures/       # DAT fixture loading/creation
+├── fixtures/       # GOF fixture loading/creation
 ├── integrations/   # LangChain integration
 ├── ports/          # Port registry for parallel tests
 ├── testing/        # pytest fixtures, helpers
-└── utils/          # password_reset, enable_callin, etc.
+└── utils/          # password, enable_callin, etc.
 
 tests/
 ├── unit/           # No Docker, fast (<1s each)
@@ -281,14 +281,3 @@ The repository exposes core functionality as "Skills" to help AI agents work aut
 - [CONSTITUTION.md](CONSTITUTION.md) - 8 core principles
 - [docs/learnings/](docs/learnings/) - Codified lessons
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues
-
-## Active Technologies
-- Markdown (primary), Python 3.9+ (for snippet examples) + None (skills are static documentation) (019-agent-skills)
-- File system (git) (019-agent-skills)
-- Python 3.9+ + `testcontainers`, `testcontainers-iris`, `docker`, `pydantic` (020-fix-pgwire-issues)
-- N/A (Infrastructure layer) (020-fix-pgwire-issues)
-- Python 3.9+ + estcontainers-iris-python, docker, pydantic (001-preconfigure-passwords)
-- N/A (container configuration only) (001-preconfigure-passwords)
-
-## Recent Changes
-- 019-agent-skills: Added Markdown (primary), Python 3.9+ (for snippet examples) + None (skills are static documentation)

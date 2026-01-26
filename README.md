@@ -11,13 +11,13 @@
 
 IRIS DevTester is a comprehensive Python package that provides **automatic, reliable, production-tested** infrastructure for InterSystems IRIS development. It handles connectivity, container lifecycles, and test data management, codifying years of experience into a reusable toolkit.
 
-## The Problem It Solves
+## Problems It Solves
 
-- ❌ **Auto-Remediation**: Fixes "Password change required" and expired accounts automatically.
-- ❌ **Port Management**: Eliminates conflicts when running tests in parallel.
-- ❌ **Isolation**: Ensures every test gets a clean, isolated database instance.
-- ❌ **Performance**: DBAPI-first connection pooling is 3x faster than traditional JDBC.
-- ❌ **Data Refresh**: High-speed DAT fixture loading (10-100x faster than SQL inserts).
+- **Auto-Remediation**: Fixes "Password change required" and expired accounts automatically
+- **Port Management**: Eliminates conflicts when running tests in parallel
+- **Isolation**: Ensures every test gets a clean, isolated database instance
+- **Performance**: DBAPI-first connection pooling is 3x faster than traditional JDBC
+- **Data Refresh**: High-speed GOF fixture loading (10-100x faster than SQL inserts)
 
 ## Quick Start
 

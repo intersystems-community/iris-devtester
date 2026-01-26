@@ -1,0 +1,24 @@
+skills:
+  - name: iris-devtester-onboarding
+    level: 1
+    description: Initial setup and project integration for iris-devtester.
+    triggers: [install, setup, integrate, incorporate, conftest]
+    sections: [installation, pytest-integration, ci-cd-config]
+
+  - name: iris-devtester-operations
+    level: 2
+    description: Routine database testing operations.
+    triggers: [container, connection, start, stop, healthy, health-check]
+    sections: [container-management, connection-patterns]
+
+  - name: iris-devtester-advanced
+    level: 3
+    description: Complex data handling and performance testing.
+    triggers: [fixture, dat, export, load, performance, benchmark]
+    sections: [fixture-management, performance-monitoring]
+
+  - name: iris-devtester-debugging
+    level: 4
+    description: Autonomous troubleshooting and ObjectScript interaction.
+    triggers: [error, fail, troubleshoot, debug, objectscript, remediation]
+    sections: [autonomous-debugging, objectscript-patterns]
