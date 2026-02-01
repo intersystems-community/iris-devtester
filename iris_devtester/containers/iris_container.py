@@ -94,24 +94,106 @@ class IRISContainer(IRISBase):
         self._preconfigure_username: Optional[str] = None
 
     @classmethod
-    def community(cls, image: Optional[str] = None, **kwargs) -> "IRISContainer":
-        """Create a Community Edition container."""
+    def community(
+        cls, image: Optional[str] = None, version: str = "latest", **kwargs
+    ) -> "IRISContainer":
+        """
+        Create a Community Edition container.
+
+        Auto-detects architecture (ARM64 vs x86) and pulls the appropriate image.
+
+        Args:
+            image: Docker image to use. If None, auto-detects based on architecture.
+            version: Image version tag. Options: 'latest', '2025.1', '2025.2', etc.
+        """
         if image is None:
             import platform as platform_module
 
             if platform_module.machine() == "arm64":
-                image = "containers.intersystems.com/intersystems/iris-community:2025.1"
+                # ARM64 (Apple Silicon) - use official InterSystems registry
+                tag = version if version != "latest" else "2025.1"
+                image = f"containers.intersystems.com/intersystems/iris-community:{tag}"
             else:
-                image = "intersystemsdc/iris-community:latest"
+                # x86_64 - use Docker Hub community image
+                image = f"intersystemsdc/iris-community:{version}"
         return cls(image=image, **kwargs)
 
     @classmethod
-    def enterprise(cls, license_key: str, image: Optional[str] = None, **kwargs) -> "IRISContainer":
-        """Create an Enterprise Edition container."""
+    def enterprise(
+        cls, license_key: Optional[str] = None, image: Optional[str] = None, **kwargs
+    ) -> "IRISContainer":
+        """
+        Create an Enterprise Edition container.
+
+        Args:
+            license_key: Path to iris.key file. If None, checks IRIS_LICENSE_KEY env var.
+            image: Docker image to use. Defaults to containers.intersystems.com/intersystems/iris:latest
+
+        Raises:
+            ValueError: If no license key is provided or found in environment.
+        """
+        import os
+
+        if license_key is None:
+            license_key = os.environ.get("IRIS_LICENSE_KEY")
+
+        if license_key is None:
+            raise ValueError(
+                "Enterprise edition requires a license key.\n"
+                "\n"
+                "Provide license_key parameter or set IRIS_LICENSE_KEY environment variable:\n"
+                "  IRISContainer.enterprise(license_key='/path/to/iris.key')\n"
+                "  # or\n"
+                "  export IRIS_LICENSE_KEY=/path/to/iris.key"
+            )
+
+        if not os.path.exists(license_key):
+            raise ValueError(
+                f"License key file not found: {license_key}\n"
+                "\n"
+                "Verify the license key path exists and is readable."
+            )
+
         if image is None:
             image = "containers.intersystems.com/intersystems/iris:latest"
+
         container = cls(image=image, **kwargs)
+        # Mount license key into container
+        container._license_key_path = license_key
         return container
+
+    @classmethod
+    def light(
+        cls, image: Optional[str] = None, version: str = "latest", **kwargs
+    ) -> "IRISContainer":
+        """
+        Create a Light Edition container optimized for CI/CD.
+
+        Light edition is ~85% smaller than full Community edition (~580MB vs ~3.5GB).
+        It removes Interoperability, Management Portal, DeepSee, and web components.
+        DBAPI, JDBC, and ODBC connectivity are fully supported.
+
+        Args:
+            image: Docker image to use. Defaults to caretdev/iris-community-light.
+            version: Image version tag. Options: 'latest', 'latest-em' (LTS), '2025.1', etc.
+
+        Best for:
+            - CI/CD pipelines
+            - Microservices
+            - Automated testing
+            - SQL-only workloads
+
+        Not supported:
+            - Interoperability/Ensemble
+            - Management Portal
+            - DeepSee/BI
+            - CSP/REST web framework
+        """
+        if image is None:
+            # Use latest-em for LTS stability, or allow version override
+            tag = version if version != "latest" else "latest-em"
+            image = f"caretdev/iris-community-light:{tag}"
+        return cls(image=image, **kwargs)
 
     def with_name(self, name: str) -> "IRISContainer":
         """Set the container name."""

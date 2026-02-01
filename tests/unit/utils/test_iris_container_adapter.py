@@ -75,7 +75,7 @@ class TestIRISContainerManagerCreateFromConfig:
 
         # Assert
         mock_iris_container_class.assert_called_once_with(
-            image="intersystems/iris:2024.1",
+            image="containers.intersystems.com/intersystems/iris:2024.1",
             port=1972,
             username="_SYSTEM",
             password="SYS",

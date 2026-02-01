@@ -51,7 +51,7 @@ class ContainerConfig(BaseModel):
         ... )
     """
 
-    edition: Literal["community", "enterprise"] = Field(
+    edition: Literal["community", "enterprise", "light"] = Field(
         default="community", description="IRIS edition to use"
     )
     container_name: str = Field(
@@ -245,15 +245,21 @@ class ContainerConfig(BaseModel):
         return cls()
 
     def get_image_name(self) -> str:
+        """Get the Docker image name based on edition and configuration."""
         if self.image:
             return self.image
 
         if self.edition == "community":
-
-            # Bug Fix #1: Community images use 'intersystemsdc/' prefix on Docker Hub
+            # Community images use 'intersystemsdc/' prefix on Docker Hub
             return f"intersystemsdc/iris-community:{self.image_tag}"
+        elif self.edition == "light":
+            # Light edition: caretdev/iris-community-light (85% smaller)
+            # Use latest-em for LTS stability
+            tag = self.image_tag if self.image_tag != "latest" else "latest-em"
+            return f"caretdev/iris-community-light:{tag}"
         else:
-            return f"intersystems/iris:{self.image_tag}"
+            # Enterprise edition
+            return f"containers.intersystems.com/intersystems/iris:{self.image_tag}"
 
     def validate_volume_paths(self) -> List[str]:
         """

@@ -43,9 +43,17 @@ def test_connection():
         assert cursor.fetchone()[0] == 1
 ```
 
-## Container API
+## Container Editions
 
-### Basic Usage
+Three canonical container editions are available:
+
+| Edition | Size | Use Case | Image |
+|---------|------|----------|-------|
+| **Community** | ~972MB | Development, testing | `intersystemsdc/iris-community` |
+| **Enterprise** | ~1GB+ | Production testing | `containers.intersystems.com/intersystems/iris` |
+| **Light** | **~580MB** | CI/CD pipelines | `caretdev/iris-community-light` |
+
+### Python API
 ```python
 from iris_devtester.containers import IRISContainer
 
@@ -53,10 +61,41 @@ from iris_devtester.containers import IRISContainer
 with IRISContainer.community() as iris:
     conn = iris.get_connection()
 
+# Light Edition (85% smaller, for CI/CD)
+with IRISContainer.light() as iris:
+    conn = iris.get_connection()
+
 # Enterprise Edition (requires license)
 with IRISContainer.enterprise(license_key="/path/to/iris.key") as iris:
     conn = iris.get_connection()
+
+# Specify version
+with IRISContainer.community(version="2025.1") as iris:
+    conn = iris.get_connection()
 ```
+
+### CLI Usage
+```bash
+# Community (default)
+iris-devtester container up
+
+# Light edition for CI/CD
+iris-devtester container up --edition light
+
+# Enterprise edition with license
+iris-devtester container up --edition enterprise --license /path/to/iris.key
+
+# List running IRIS containers
+iris-devtester container list
+```
+
+### Light Edition Details
+
+The Light edition removes components unnecessary for SQL-only workloads:
+- **Removed**: Interoperability/Ensemble, Management Portal, DeepSee/BI, CSP/REST
+- **Kept**: SQL engine, DBAPI, JDBC, ODBC, SQLAlchemy-IRIS support
+
+Perfect for microservices, automated testing, and Python/SQL pipelines.
 
 ### Builder Methods
 ```python
