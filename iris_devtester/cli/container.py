@@ -831,7 +831,7 @@ def remove(ctx, container_name, force, volumes):
 
 
 @container_group.command(name="reset-password")
-@click.argument("container_name")
+@click.argument("container_name", required=False, default="iris_db")
 @click.option("--user", default="_SYSTEM", help="Username to reset password for (default: _SYSTEM)")
 @click.option("--password", default="SYS", help="New password (default: SYS)")
 @click.option(
@@ -897,7 +897,7 @@ def reset_password_cmd(ctx, container_name, user, password, port):
 
 
 @container_group.command(name="test-connection")
-@click.argument("container_name")
+@click.argument("container_name", required=False, default="iris_db")
 @click.option(
     "--namespace", default="USER", help="IRIS namespace to test connection to (default: USER)"
 )
@@ -986,7 +986,7 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
 
 
 @container_group.command(name="enable-callin")
-@click.argument("container_name")
+@click.argument("container_name", required=False, default="iris_db")
 @click.option(
     "--timeout", type=int, default=30, help="Timeout in seconds for docker commands (default: 30)"
 )
