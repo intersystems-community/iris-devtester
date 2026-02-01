@@ -33,6 +33,39 @@ class TestIRISContainer:
         assert hasattr(IRISContainer, "enterprise")
         assert callable(IRISContainer.enterprise)
 
+    def test_light_class_method_exists(self):
+        """Test that .light() class method exists."""
+        from iris_devtester.containers import IRISContainer
+
+        assert hasattr(IRISContainer, "light")
+        assert callable(IRISContainer.light)
+
+    def test_light_creates_container_with_correct_image(self):
+        """Test that .light() returns a container with caretdev image."""
+        from iris_devtester.containers import IRISContainer
+
+        container = IRISContainer.light()
+
+        assert container is not None
+        assert isinstance(container, IRISContainer)
+        assert "caretdev/iris-community-light" in container.image
+
+    def test_light_accepts_version_parameter(self):
+        """Test that .light() accepts version parameter."""
+        from iris_devtester.containers import IRISContainer
+
+        container = IRISContainer.light(version="2025.1")
+
+        assert "2025.1" in container.image
+
+    def test_community_accepts_version_parameter(self):
+        """Test that .community() accepts version parameter."""
+        from iris_devtester.containers import IRISContainer
+
+        container = IRISContainer.community(version="2025.2")
+
+        assert "2025.2" in container.image
+
     def test_community_creates_container_object(self):
         """Test that .community() returns a container instance."""
         from iris_devtester.containers import IRISContainer
@@ -123,12 +156,23 @@ class TestIRISContainerConfiguration:
         assert IRISContainer.community is not None
 
     def test_enterprise_requires_license_key(self):
-        """Test that enterprise() requires license key."""
+        """Test that enterprise() raises error without license key."""
+        import pytest
+
         from iris_devtester.containers import IRISContainer
 
         # Enterprise edition should require license
-        # Implementation will validate this
-        assert IRISContainer.enterprise is not None
+        with pytest.raises(ValueError, match="Enterprise edition requires a license key"):
+            IRISContainer.enterprise()
+
+    def test_enterprise_validates_license_file_exists(self):
+        """Test that enterprise() validates license file exists."""
+        import pytest
+
+        from iris_devtester.containers import IRISContainer
+
+        with pytest.raises(ValueError, match="License key file not found"):
+            IRISContainer.enterprise(license_key="/nonexistent/path/iris.key")
 
     def test_container_supports_custom_image(self):
         """Test that container supports custom IRIS images."""

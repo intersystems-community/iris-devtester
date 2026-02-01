@@ -38,6 +38,19 @@ def container_group(ctx):
     help="Container name (default: iris_db)",
 )
 @click.option(
+    "--edition",
+    type=click.Choice(["community", "enterprise", "light"], case_sensitive=False),
+    default="community",
+    help="IRIS edition: community (default), enterprise (requires license), light (minimal for CI/CD)",
+)
+@click.option(
+    "--license",
+    "license_key",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to iris.key license file (required for enterprise edition)",
+)
+@click.option(
     "--detach/--no-detach",
     default=True,
     help="Run container in background mode (default: detached)",
@@ -47,7 +60,7 @@ def container_group(ctx):
 )
 @click.option("--cpf", help="Path to CPF merge file or raw CPF content")
 @click.pass_context
-def up(ctx, config, name, detach, timeout, cpf):
+def up(ctx, config, name, edition, license_key, detach, timeout, cpf):
     """
     Create and start IRIS container from configuration.
 
@@ -64,17 +77,17 @@ def up(ctx, config, name, detach, timeout, cpf):
         # Zero-config (uses Community edition defaults)
         iris-devtester container up
 
+        # Light edition for CI/CD (85% smaller, faster startup)
+        iris-devtester container up --edition light
+
+        # Enterprise edition with license
+        iris-devtester container up --edition enterprise --license /path/to/iris.key
+
         # With custom container name
         iris-devtester container up --name my-test-db
 
         # With custom configuration including volumes
         iris-devtester container up --config iris-config.yml
-
-        # Example iris-config.yml with volumes:
-        # edition: community
-        # volumes:
-        #   - ./workspace:/external/workspace
-        #   - ./config:/opt/config:ro
 
         # Foreground mode (see logs)
         iris-devtester container up --no-detach
@@ -98,6 +111,32 @@ def up(ctx, config, name, detach, timeout, cpf):
         if name:
             container_config.container_name = name
             click.echo(f"  → Container name: {name}")
+
+        # Override edition if provided via --edition
+        if edition:
+            edition_lower = edition.lower()
+            container_config.edition = edition_lower
+
+            # Set appropriate image based on edition
+            if edition_lower == "light":
+                # Light edition: caretdev/iris-community-light (85% smaller)
+                container_config.image_tag = "latest-em"
+                click.echo(
+                    click.style(f"  → Edition: light", fg="cyan")
+                    + " (minimal for CI/CD, ~580MB vs ~3.5GB)"
+                )
+            elif edition_lower == "enterprise":
+                if not license_key:
+                    raise click.ClickException(
+                        "Enterprise edition requires --license option.\n"
+                        "\n"
+                        "Usage: iris-devtester container up --edition enterprise --license /path/to/iris.key"
+                    )
+                container_config.license_key = license_key
+                click.echo(f"  → Edition: enterprise")
+                click.echo(f"  → License: {license_key}")
+            else:
+                click.echo(f"  → Edition: community")
 
         if cpf:
             container_config.cpf_merge = cpf
@@ -269,6 +308,141 @@ def up(ctx, config, name, detach, timeout, cpf):
     except Exception as e:
         # Docker error or other failure (exit code 1)
         progress.print_error(f"Failed to create container: {e}")
+        ctx.exit(1)
+
+
+@container_group.command(name="list")
+@click.option(
+    "--all", "-a", "show_all", is_flag=True, help="Show all containers (including stopped)"
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"], case_sensitive=False),
+    default="table",
+    help="Output format (default: table)",
+)
+@click.pass_context
+def list_containers(ctx, show_all, output_format):
+    """
+    List IRIS containers.
+
+    Shows all IRIS containers managed by iris-devtester, with their status,
+    edition, ports, and age.
+
+    \b
+    Examples:
+        # List running containers
+        iris-devtester container list
+
+        # List all containers (including stopped)
+        iris-devtester container list --all
+
+        # JSON output for scripting
+        iris-devtester container list --format json
+    """
+    from datetime import datetime
+
+    import docker
+
+    try:
+        client = docker.from_env()
+
+        # Find IRIS containers (by image name patterns)
+        iris_patterns = [
+            "iris-community",
+            "intersystems/iris",
+            "caretdev/iris",
+            "intersystemsdc/iris",
+        ]
+
+        containers = client.containers.list(all=show_all)
+        iris_containers = []
+
+        for container in containers:
+            image_name = (
+                container.image.tags[0] if container.image.tags else str(container.image.id)[:12]
+            )
+
+            # Check if this is an IRIS container
+            is_iris = any(pattern in image_name.lower() for pattern in iris_patterns)
+            if not is_iris:
+                continue
+
+            # Determine edition from image name
+            if "light" in image_name.lower():
+                edition = "light"
+            elif "community" in image_name.lower():
+                edition = "community"
+            else:
+                edition = "enterprise"
+
+            # Get port mappings
+            ports = container.attrs.get("NetworkSettings", {}).get("Ports", {})
+            port_str = "-"
+            if ports and ports.get("1972/tcp"):
+                host_port = ports["1972/tcp"][0]["HostPort"]
+                port_str = f"{host_port}->1972"
+
+            # Calculate age
+            created = container.attrs.get("Created", "")
+            age_str = "unknown"
+            if created:
+                try:
+                    # Parse ISO format timestamp
+                    created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                    now = datetime.now(created_dt.tzinfo)
+                    delta = now - created_dt
+                    if delta.days > 0:
+                        age_str = f"{delta.days}d"
+                    elif delta.seconds > 3600:
+                        age_str = f"{delta.seconds // 3600}h"
+                    else:
+                        age_str = f"{delta.seconds // 60}m"
+                except Exception:
+                    pass
+
+            iris_containers.append(
+                {
+                    "name": container.name,
+                    "edition": edition,
+                    "status": container.status,
+                    "ports": port_str,
+                    "age": age_str,
+                    "image": image_name,
+                }
+            )
+
+        if output_format == "json":
+            import json as json_module
+
+            click.echo(json_module.dumps(iris_containers, indent=2))
+        else:
+            # Table format
+            if not iris_containers:
+                click.echo("No IRIS containers found.")
+                if not show_all:
+                    click.echo("Use --all to include stopped containers.")
+            else:
+                # Print header
+                click.echo(f"{'NAME':<20} {'EDITION':<12} {'STATUS':<10} {'PORTS':<15} {'AGE':<6}")
+                click.echo("-" * 65)
+
+                for c in iris_containers:
+                    status_color = "green" if c["status"] == "running" else "yellow"
+                    click.echo(
+                        f"{c['name']:<20} "
+                        f"{c['edition']:<12} "
+                        f"{click.style(c['status'], fg=status_color):<19} "
+                        f"{c['ports']:<15} "
+                        f"{c['age']:<6}"
+                    )
+
+    except docker.errors.DockerException as e:
+        progress.print_error(f"Docker error: {e}")
+        ctx.exit(1)
+    except Exception as e:
+        progress.print_error(f"Error listing containers: {e}")
         ctx.exit(1)
 
 

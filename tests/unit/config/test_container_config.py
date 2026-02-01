@@ -379,12 +379,23 @@ class TestContainerConfigImageName:
     def test_get_image_name_enterprise_latest(self):
         """Test image name for enterprise edition with latest tag."""
         config = ContainerConfig(edition="enterprise", license_key="TEST-KEY", image_tag="latest")
-        assert config.get_image_name() == "intersystems/iris:latest"
+        assert config.get_image_name() == "containers.intersystems.com/intersystems/iris:latest"
 
     def test_get_image_name_enterprise_specific_tag(self):
         """Test image name for enterprise edition with specific tag."""
         config = ContainerConfig(edition="enterprise", license_key="TEST-KEY", image_tag="2024.1")
-        assert config.get_image_name() == "intersystems/iris:2024.1"
+        assert config.get_image_name() == "containers.intersystems.com/intersystems/iris:2024.1"
+
+    def test_get_image_name_light_latest(self):
+        """Test image name for light edition with latest tag."""
+        config = ContainerConfig(edition="light", image_tag="latest")
+        # Light uses latest-em for LTS stability
+        assert config.get_image_name() == "caretdev/iris-community-light:latest-em"
+
+    def test_get_image_name_light_specific_tag(self):
+        """Test image name for light edition with specific tag."""
+        config = ContainerConfig(edition="light", image_tag="2025.1")
+        assert config.get_image_name() == "caretdev/iris-community-light:2025.1"
 
 
 class TestContainerConfigVolumeValidation:
