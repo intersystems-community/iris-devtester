@@ -43,6 +43,50 @@ def test_connection():
         assert cursor.fetchone()[0] == 1
 ```
 
+## Container API
+
+### Basic Usage
+```python
+from iris_devtester.containers import IRISContainer
+
+# Community Edition (auto-detects ARM64 vs x86)
+with IRISContainer.community() as iris:
+    conn = iris.get_connection()
+
+# Enterprise Edition (requires license)
+with IRISContainer.enterprise(license_key="/path/to/iris.key") as iris:
+    conn = iris.get_connection()
+```
+
+### Builder Methods
+```python
+# Set a custom container name (for debugging, logs, multiple containers)
+iris = IRISContainer.community().with_name("my-test-db")
+
+# Set credentials
+iris = IRISContainer.community().with_credentials("_SYSTEM", "MyPassword")
+
+# Pre-configure password (set via IRIS_PASSWORD env var at startup)
+iris = IRISContainer.community().with_preconfigured_password("MyPassword")
+
+# Chain multiple options
+with IRISContainer.community() \
+    .with_name("integration-test-db") \
+    .with_credentials("_SYSTEM", "TestPass123") as iris:
+    conn = iris.get_connection()
+```
+
+### Constructor Parameters
+```python
+IRISContainer(
+    image="intersystemsdc/iris-community:latest",  # Docker image
+    username="SuperUser",                           # Default username
+    password="SYS",                                 # Default password
+    namespace="USER",                               # Default namespace
+    name="my-container",                            # Container name (alternative to with_name)
+)
+```
+
 ## Key Features
 
 - **🔐 Automatic Password Management**: Remediates security flags using official system APIs.

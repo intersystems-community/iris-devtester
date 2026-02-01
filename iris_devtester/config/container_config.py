@@ -3,9 +3,9 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from iris_devtester.config.yaml_loader import load_yaml
 
@@ -122,7 +122,7 @@ class ContainerConfig(BaseModel):
         return self
 
     @classmethod
-    def from_yaml(cls, file_path: str | Path) -> "ContainerConfig":
+    def from_yaml(cls, file_path: Union[str, Path]) -> "ContainerConfig":
         """
         Load configuration from YAML file.
 
@@ -290,10 +290,8 @@ class ContainerConfig(BaseModel):
 
         return errors
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "edition": "community",
                 "container_name": "iris_db",
@@ -306,3 +304,4 @@ class ContainerConfig(BaseModel):
                 "image_tag": "latest",
             }
         }
+    )

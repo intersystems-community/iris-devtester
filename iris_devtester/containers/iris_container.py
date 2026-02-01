@@ -1,10 +1,9 @@
 import logging
-import os
 import subprocess
 import time
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import Any, Optional
 
-from iris_devtester.config import IRISConfig, discover_config
+from iris_devtester.config import IRISConfig
 from iris_devtester.connections import get_connection
 
 logger = logging.getLogger(__name__)
@@ -185,7 +184,7 @@ class IRISContainer(IRISBase):
             if is_enabled:
                 self._callin_enabled = True
             return is_enabled
-        except:
+        except Exception:
             return False
 
     def get_test_namespace(self, prefix: str = "TEST") -> str:
@@ -238,9 +237,7 @@ class IRISContainer(IRISBase):
             self.host = self.get_container_host_ip()
             self._mapped_port = int(self.get_exposed_port(1972))  # Use internal port to get mapping
             config.host = self.host
-            config.port = (
-                self._mapped_port
-            )  # Config uses the host-mapped port for connections
+            config.port = self._mapped_port  # Config uses the host-mapped port for connections
         except Exception:
             pass
         return config

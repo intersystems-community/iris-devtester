@@ -7,7 +7,7 @@ Provides atomic file-based persistence with file locking for concurrent safety.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from filelock import FileLock, Timeout
 
@@ -89,7 +89,7 @@ class PortRegistry:
                     # Manual port assignment
                     self._validate_port_available(assignments, preferred_port, project_path)
                     port = preferred_port
-                    assignment_type = "manual"
+                    assignment_type: Literal["auto", "manual"] = "manual"
                 else:
                     # Auto-assignment
                     port = self._find_available_port(assignments)

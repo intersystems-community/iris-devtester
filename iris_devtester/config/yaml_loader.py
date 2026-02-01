@@ -28,7 +28,7 @@ def load_yaml(file_path: Path) -> Dict[str, Any]:
             config = yaml.safe_load(f)
             if config is None:
                 return {}
-            return config
+            return dict(config)
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Invalid YAML syntax in {file_path}: {e}")
 

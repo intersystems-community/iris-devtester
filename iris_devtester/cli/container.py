@@ -32,6 +32,12 @@ def container_group(ctx):
     "--config", type=click.Path(exists=True), help="Path to iris-config.yml configuration file"
 )
 @click.option(
+    "--name",
+    type=str,
+    default=None,
+    help="Container name (default: iris_db)",
+)
+@click.option(
     "--detach/--no-detach",
     default=True,
     help="Run container in background mode (default: detached)",
@@ -41,7 +47,7 @@ def container_group(ctx):
 )
 @click.option("--cpf", help="Path to CPF merge file or raw CPF content")
 @click.pass_context
-def up(ctx, config, detach, timeout, cpf):
+def up(ctx, config, name, detach, timeout, cpf):
     """
     Create and start IRIS container from configuration.
 
@@ -57,6 +63,9 @@ def up(ctx, config, detach, timeout, cpf):
     Examples:
         # Zero-config (uses Community edition defaults)
         iris-devtester container up
+
+        # With custom container name
+        iris-devtester container up --name my-test-db
 
         # With custom configuration including volumes
         iris-devtester container up --config iris-config.yml
@@ -85,6 +94,11 @@ def up(ctx, config, detach, timeout, cpf):
                 container_config = ContainerConfig.default()
                 click.echo("⚡ Creating container from zero-config defaults")
 
+        # Override container name if provided via --name
+        if name:
+            container_config.container_name = name
+            click.echo(f"  → Container name: {name}")
+
         if cpf:
             container_config.cpf_merge = cpf
             click.echo(f"  → CPF Merge: {cpf[:50]}...")
@@ -95,6 +109,36 @@ def up(ctx, config, detach, timeout, cpf):
         if existing_container:
             # Container exists - check if running
             existing_container.reload()
+
+            # Warn if using default name and container already exists
+            # (user might be connecting to wrong container from different project)
+            if container_config.container_name == "iris_db" and not name:
+                existing_image = (
+                    existing_container.image.tags[0] if existing_container.image.tags else "unknown"
+                )
+                click.echo("")
+                click.echo(
+                    click.style(
+                        "⚠️  WARNING: Using default container name 'iris_db'", fg="yellow", bold=True
+                    )
+                )
+                click.echo(
+                    click.style(
+                        f"   A container with this name already exists (image: {existing_image})",
+                        fg="yellow",
+                    )
+                )
+                click.echo(
+                    click.style(
+                        "   If this is from a different project, use --name to avoid conflicts:",
+                        fg="yellow",
+                    )
+                )
+                click.echo(
+                    click.style("   iris-devtester container up --name my-project-db", fg="cyan")
+                )
+                click.echo("")
+
             if existing_container.status == "running":
                 click.echo(f"✓ Container '{container_config.container_name}' is already running")
 
@@ -808,9 +852,6 @@ def enable_callin(ctx, container_name, timeout):
     except (ImportError, ModuleNotFoundError) as e:
         progress.print_error(f"enable_callin utility not available: {e}")
         ctx.exit(1)
-    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
-        # Let Click handle these - don't catch them
-        raise
     except Exception as e:
         progress.print_error(f"Failed to enable CallIn: {e}")
         ctx.exit(1)

@@ -3,9 +3,9 @@
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Literal, Optional
+from typing import Dict, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ContainerStatus(str, Enum):
@@ -304,10 +304,8 @@ class ContainerState(BaseModel):
             "config_source": str(self.config_source) if self.config_source else None,
         }
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "container_id": "a1b2c3d4e5f6" + "0" * 52,  # 64 chars
                 "container_name": "iris_db",
@@ -316,8 +314,9 @@ class ContainerState(BaseModel):
                 "created_at": "2025-01-10T14:30:00Z",
                 "started_at": "2025-01-10T14:30:15Z",
                 "finished_at": None,
-                "ports": {1972: 1972, 52773: 52773},
+                "ports": {"1972": 1972, "52773": 52773},
                 "image": "intersystems/iris-community:latest",
                 "config_source": None,
             }
         }
+    )

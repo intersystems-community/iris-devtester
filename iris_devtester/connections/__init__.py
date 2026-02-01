@@ -52,8 +52,8 @@ def reset_password_if_needed(config_or_error, **kwargs):
     If first arg is a config, attempts remediation and returns result object.
     """
     from iris_devtester.testing.models import PasswordResetResult as ContractResult
-    from iris_devtester.utils.password import reset_password_if_needed as modern_reset
     from iris_devtester.utils.password import PasswordResetResult as ModernResult
+    from iris_devtester.utils.password import reset_password_if_needed as modern_reset
 
     if isinstance(config_or_error, Exception):
         return modern_reset(config_or_error, **kwargs)
