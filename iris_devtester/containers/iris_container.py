@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from iris_devtester.config import IRISConfig
 from iris_devtester.connections import get_connection
+from iris_devtester.containers.models import HealthCheckLevel, ValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,9 @@ class IRISContainer(IRISBase):
     Enhanced IRIS container with automatic connection and password management.
     """
 
+    # Custom kwargs that should NOT be passed to parent/Docker SDK
+    _CUSTOM_KWARGS = {"port_registry", "preferred_port", "project_path"}
+
     def __init__(
         self,
         image: str = "intersystemsdc/iris-community:latest",
@@ -69,6 +73,12 @@ class IRISContainer(IRISBase):
     ):
         if not HAS_TESTCONTAINERS:
             logger.warning("testcontainers not installed. Functionality will be limited.")
+
+        # Extract custom kwargs before passing to parent
+        self._port_registry = kwargs.pop("port_registry", None)
+        self._preferred_port = kwargs.pop("preferred_port", None)
+        self._project_path = kwargs.pop("project_path", None)
+        self._port_assignment = None  # Will be set in start() if port_registry is used
 
         super().__init__(image=image, **kwargs)
         self._username = username
@@ -198,8 +208,72 @@ class IRISContainer(IRISBase):
     def with_name(self, name: str) -> "IRISContainer":
         """Set the container name."""
         self._container_name = name
-        if hasattr(self, "with_kwargs"):
-            self.with_kwargs(name=name)
+        # Use parent's _name attribute directly - do NOT use with_kwargs(name=...)
+        # as that causes duplicate 'name' kwarg in Docker's run() call
+        # (parent passes both name=self._name and **self._kwargs to run())
+        self._name = name
+        return self
+
+    def with_cpf_merge(self, cpf_content_or_path: str) -> "IRISContainer":
+        """Configure CPF merge for IRIS startup customization.
+
+        CPF merge allows customizing IRIS configuration at startup time
+        using a merge file that is applied during container initialization.
+        This enables features like:
+        - Enabling CallIn service automatically
+        - Setting memory configuration
+        - Pre-configuring users and security settings
+
+        Args:
+            cpf_content_or_path: Either a CPF merge content string or a
+                path to a CPF merge file. If the string contains newlines
+                or CPF section markers like "[Actions]", it's treated as
+                content. Otherwise, it's treated as a file path.
+
+        Returns:
+            Self for method chaining.
+
+        Examples:
+            >>> # From preset content
+            >>> iris = IRISContainer.community().with_cpf_merge(CPFPreset.ENABLE_CALLIN)
+
+            >>> # From file path
+            >>> iris = IRISContainer.community().with_cpf_merge("/path/to/merge.cpf")
+        """
+        import os
+        import tempfile
+
+        # Determine if it's content or a file path
+        is_content = "\n" in cpf_content_or_path or "[" in cpf_content_or_path
+
+        if is_content:
+            # Write content to a temporary file
+            # Note: The temp file needs to persist until container is started
+            if not hasattr(self, "_cpf_temp_files"):
+                self._cpf_temp_files = []
+
+            fd, temp_path = tempfile.mkstemp(suffix=".cpf", prefix="iris_merge_")
+            os.write(fd, cpf_content_or_path.encode("utf-8"))
+            os.close(fd)
+            self._cpf_temp_files.append(temp_path)
+            host_path = temp_path
+        else:
+            # Treat as file path
+            host_path = os.path.abspath(cpf_content_or_path)
+            if not os.path.exists(host_path):
+                raise FileNotFoundError(f"CPF merge file not found: {host_path}")
+
+        # Container path for the merge file
+        container_path = "/tmp/merge.cpf"
+
+        # Mount the CPF file into the container
+        if hasattr(self, "with_volume_mapping"):
+            self.with_volume_mapping(host_path, container_path, "ro")
+
+        # Set the environment variable to tell IRIS to use the merge file
+        if hasattr(self, "with_env"):
+            self.with_env("ISC_CPF_MERGE_FILE", container_path)
+
         return self
 
     def get_container_name(self) -> str:
@@ -304,14 +378,19 @@ class IRISContainer(IRISBase):
         self.execute_objectscript(script, namespace="%SYS")
 
     def get_config(self) -> IRISConfig:
-        """Get connection configuration."""
-        if self._config is None:
-            self._config = IRISConfig(
-                username=self._username,
-                password=self._password,
-                namespace=self._namespace,
-                container_name=self.get_container_name(),
-            )
+        """Get connection configuration.
+
+        Note: Credentials are always read fresh from _username/_password
+        to support credential updates after container start.
+        """
+        # Always create fresh config to pick up any credential changes
+        # (e.g., conftest may update _username/_password after start())
+        self._config = IRISConfig(
+            username=self._username,
+            password=self._password,
+            namespace=self._namespace,
+            container_name=self.get_container_name(),
+        )
         config = self._config
         try:
             # Get host and mapped port from testcontainers
@@ -379,11 +458,24 @@ class IRISContainer(IRISBase):
         return self
 
     def start(self) -> "IRISContainer":
-        """Start container with pre-config support."""
+        """Start container with pre-config support and port registry integration."""
         if self._preconfigure_password:
             self.with_env("IRIS_PASSWORD", self._preconfigure_password)
         if self._preconfigure_username:
             self.with_env("IRIS_USERNAME", self._preconfigure_username)
+
+        # Port registry integration: assign port before starting
+        if self._port_registry is not None and self._project_path is not None:
+            from iris_devtester.ports import PortAssignment
+
+            self._port_assignment = self._port_registry.assign_port(
+                project_path=self._project_path,
+                preferred_port=self._preferred_port,
+            )
+            # Configure container to use the assigned port
+            # Note: testcontainers uses with_bind_ports() for port mapping
+            if hasattr(self, "with_bind_ports"):
+                self.with_bind_ports(1972, self._port_assignment.port)
 
         super().start()
         # Ensure host/port are updated after start
@@ -391,8 +483,66 @@ class IRISContainer(IRISBase):
         self._password_preconfigured = True
         return self
 
+    def get_assigned_port(self) -> Optional[int]:
+        """
+        Get the port assigned by the port registry.
+
+        Returns:
+            The assigned port number, or None if no port registry was used.
+        """
+        if hasattr(self, "_port_assignment") and self._port_assignment is not None:
+            return self._port_assignment.port
+        return None
+
+    def get_project_path(self) -> Optional[str]:
+        """
+        Get the project path associated with this container.
+
+        Returns:
+            The project path, or None if no port registry was used.
+        """
+        return self._project_path
+
     def wait_for_ready(self, timeout: int = 60) -> bool:
         """Wait for IRIS to be ready."""
         # Simple wait for prototype
         time.sleep(15)
         return True
+
+    def validate(self, level: HealthCheckLevel = HealthCheckLevel.STANDARD) -> ValidationResult:
+        """Validate this container's health status.
+
+        Args:
+            level: Validation depth level (MINIMAL, STANDARD, or FULL).
+
+        Returns:
+            ValidationResult with success status, details, and remediation steps.
+
+        Examples:
+            >>> with IRISContainer.community() as iris:
+            ...     result = iris.validate()
+            ...     assert result.success is True
+        """
+        # Import here to avoid circular import
+        from iris_devtester.containers.validation import validate_container
+
+        container_name = self.get_container_name()
+        return validate_container(container_name=container_name, level=level)
+
+    def assert_healthy(self, level: HealthCheckLevel = HealthCheckLevel.STANDARD) -> None:
+        """Assert that this container is healthy, raising RuntimeError if not.
+
+        Args:
+            level: Validation depth level (MINIMAL, STANDARD, or FULL).
+
+        Raises:
+            RuntimeError: If container validation fails, with structured error
+                message including "What went wrong" and "How to fix it" sections.
+
+        Examples:
+            >>> with IRISContainer.community() as iris:
+            ...     iris.assert_healthy()  # No exception = healthy
+        """
+        result = self.validate(level=level)
+        if not result.success:
+            raise RuntimeError(result.format_message())

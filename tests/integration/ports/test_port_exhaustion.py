@@ -18,8 +18,8 @@ def temp_registry_small_range():
     """Temporary registry with small port range for testing exhaustion."""
     with tempfile.TemporaryDirectory() as tmpdir:
         registry_path = Path(tmpdir) / "test-registry.json"
-        # Use small range (1972-1974) to make exhaustion testable
-        yield PortRegistry(registry_path=registry_path, port_range=(1972, 1974))
+        # Use small range (31972-31974) to make exhaustion testable and avoid conflicts
+        yield PortRegistry(registry_path=registry_path, port_range=(31972, 31974))
 
 
 def test_port_exhaustion_error(temp_registry_small_range):
@@ -72,7 +72,7 @@ def test_port_exhaustion_error(temp_registry_small_range):
 
         # Verify error message quality
         error_msg = str(exc_info.value)
-        assert "1972-1974" in error_msg, "Error should mention port range"
+        assert "31972-31974" in error_msg, "Error should mention port range"
         assert (
             "exhausted" in error_msg.lower() or "in use" in error_msg.lower()
         ), "Error should mention exhaustion"
@@ -90,7 +90,7 @@ def test_port_exhaustion_error(temp_registry_small_range):
         # Now extra container should be able to start
         container_extra.start()
         port_extra = container_extra.get_assigned_port()
-        assert 1972 <= port_extra <= 1974, f"Port {port_extra} should be in range"
+        assert 31972 <= port_extra <= 31974, f"Port {port_extra} should be in range"
 
         containers.append(container_extra)
 
@@ -146,7 +146,7 @@ def test_port_exhaustion_with_stale_assignments(temp_registry_small_range):
             # All available ports filled
             break
 
-    # Verify we filled at least 2 ports (range is 1972-1974, docker may use 1972)
+    # Verify we filled at least 2 ports (range is 31972-31974)
     assert len(available_ports) >= 2, "Should have at least 2 available ports"
 
     # Verify all available ports assigned
@@ -166,5 +166,5 @@ def test_port_exhaustion_with_stale_assignments(temp_registry_small_range):
 
     # Now assignment should succeed
     assignment = temp_registry_small_range.assign_port("/tmp/test-project-new")
-    assert 1972 <= assignment.port <= 1974, "Should get port in range"
+    assert 31972 <= assignment.port <= 31974, "Should get port in range"
     assert assignment.port in available_ports, "Should reuse one of the freed ports"

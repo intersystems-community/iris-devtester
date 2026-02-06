@@ -15,10 +15,11 @@ from iris_devtester.ports import PortRegistry
 
 @pytest.fixture
 def temp_registry():
-    """Temporary registry for testing."""
+    """Temporary registry for testing with high port range to avoid conflicts."""
     with tempfile.TemporaryDirectory() as tmpdir:
         registry_path = Path(tmpdir) / "test-registry.json"
-        yield PortRegistry(registry_path=registry_path)
+        # Use high port range (31972-31981) to avoid conflicts with other containers
+        yield PortRegistry(registry_path=registry_path, port_range=(31972, 31981))
 
 
 def test_cleanup_stale_removes_dead_containers(temp_registry):

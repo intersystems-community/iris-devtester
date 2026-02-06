@@ -1,17 +1,23 @@
-"""IRIS .DAT Fixture Management.
+"""IRIS Fixture Management.
 
 This module provides tools for creating, loading, and validating IRIS database
-fixtures stored as .DAT files. Fixtures enable fast, reproducible test data
-setup by exporting database namespaces to version-controlled files.
+fixtures. Fixtures enable fast, reproducible test data setup by exporting
+database namespaces to version-controlled files.
 
 Key Features:
-- Create fixtures from IRIS namespaces (entire database backup)
-- Load fixtures via namespace mounting (<1 second)
+- Create fixtures from IRIS namespaces (globals + class definitions)
+- Load fixtures via global import (<1 second for most fixtures)
 - Validate fixture integrity with SHA256 checksums
 - CLI commands for fixture management
 
+Fixture Format:
+    Fixtures are stored as directories containing:
+    - manifest.json: Metadata, checksums, and table information
+    - globals.gof: Global data in IRIS %GOF format
+    - classes.xml: Class definitions (optional, for SQL tables)
+
 Example:
-    >>> from iris_devtester.fixtures import DATFixtureLoader, FixtureCreator
+    >>> from iris_devtester.fixtures import FixtureLoader, FixtureCreator
     >>>
     >>> # Create fixture from existing namespace
     >>> creator = FixtureCreator(container=iris_container)
@@ -22,7 +28,7 @@ Example:
     ... )
     >>>
     >>> # Load fixture into new namespace
-    >>> loader = DATFixtureLoader(container=iris_container)
+    >>> loader = FixtureLoader(container=iris_container)
     >>> target_ns = iris_container.get_test_namespace(prefix="LOADED")
     >>> result = loader.load_fixture(
     ...     fixture_path="./fixtures/test-data",
@@ -35,7 +41,7 @@ pytest Integration:
 
         @pytest.fixture
         def loaded_fixture(iris_container):
-            loader = DATFixtureLoader(container=iris_container)
+            loader = FixtureLoader(container=iris_container)
             target_ns = iris_container.get_test_namespace(prefix="TEST")
             result = loader.load_fixture(
                 fixture_path="./fixtures/test-data",
@@ -53,7 +59,7 @@ pytest Integration:
 __version__ = "0.1.0"
 
 from .creator import FixtureCreator
-from .loader import DATFixtureLoader
+from .loader import FixtureLoader
 
 # Import data models and exceptions
 from .manifest import (
@@ -83,6 +89,9 @@ from .obj_export import (
 # Import validator, loader, and creator
 from .validator import FixtureValidator
 
+# Backward compatibility alias
+DATFixtureLoader = FixtureLoader
+
 # Public API
 __all__ = [
     # Data models
@@ -98,8 +107,10 @@ __all__ = [
     "ChecksumMismatchError",
     # Classes
     "FixtureValidator",
-    "DATFixtureLoader",
+    "FixtureLoader",
     "FixtureCreator",
+    # Backward compatibility
+    "DATFixtureLoader",
     # $SYSTEM.OBJ utilities (Feature 017)
     "ExportResult",
     "ImportResult",

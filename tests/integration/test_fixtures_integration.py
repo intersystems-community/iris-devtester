@@ -1,4 +1,4 @@
-"""Integration tests for .DAT fixture management.
+"""Integration tests for IRIS fixture management.
 
 These tests require a running IRIS instance and test the complete
 roundtrip workflow: create → validate → load → verify.
@@ -19,8 +19,8 @@ import pytest
 from iris_devtester.connections import get_connection
 from iris_devtester.fixtures import (
     ChecksumMismatchError,
-    DATFixtureLoader,
     FixtureCreator,
+    FixtureLoader,
     FixtureValidationError,
     FixtureValidator,
 )
@@ -112,7 +112,7 @@ class TestFixtureRoundtrip:
         target_namespace = iris_container.get_test_namespace(prefix="TARGET")
 
         # Pass container for docker exec RESTORE operations
-        loader = DATFixtureLoader(container=iris_container)
+        loader = FixtureLoader(container=iris_container)
 
         load_result = loader.load_fixture(
             fixture_path=str(fixture_path),
@@ -126,16 +126,20 @@ class TestFixtureRoundtrip:
         assert len(load_result.tables_loaded) > 0
 
         # Step 5: Verify data in target namespace using SQL (DBAPI)
-        # Get fresh connection to target namespace
-        # Update config to connect to target namespace
-        original_namespace = iris_container._config.namespace
-        iris_container._config.namespace = target_namespace
+        # Get fresh connection to target namespace using proper config
+        from iris_devtester.config import IRISConfig
+        from iris_devtester.connections import get_connection
 
-        target_conn = iris_container.get_connection()
+        target_config = IRISConfig(
+            host=iris_container.get_container_host_ip(),
+            port=int(iris_container.get_exposed_port(1972)),
+            namespace=target_namespace,
+            username="testuser",
+            password="testpassword",
+            container_name=iris_container.get_container_name(),
+        )
+        target_conn = get_connection(target_config)
         cursor = target_conn.cursor()
-
-        # Restore original namespace config
-        iris_container._config.namespace = original_namespace
 
         # Count rows
         cursor.execute("SELECT COUNT(*) FROM TestData")
@@ -159,12 +163,20 @@ class TestFixtureRoundtrip:
 class TestChecksumMismatch:
     """Test T013: Checksum mismatch detection."""
 
-    def test_detect_corrupted_dat_file(self, iris_container, test_namespace, temp_fixture_dir):
+    def test_detect_corrupted_dat_file(
+        self, iris_container, test_namespace, iris_connection, temp_fixture_dir
+    ):
         """Test that corrupted .DAT file is detected via checksum mismatch."""
         # Use test_namespace from fixture (already created)
         source_namespace = test_namespace
 
-        # Create fixture (empty namespace is fine for checksum testing)
+        # Create test data (required for valid manifest)
+        cursor = iris_connection.cursor()
+        cursor.execute("CREATE TABLE ChecksumTest (ID INT PRIMARY KEY)")
+        cursor.execute("INSERT INTO ChecksumTest VALUES (1)")
+        cursor.close()
+
+        # Create fixture with table data
         creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-checksum"
 
@@ -191,10 +203,18 @@ class TestChecksumMismatch:
         assert "What went wrong" in str(exc_info.value)
         assert "How to fix it" in str(exc_info.value)
 
-    def test_skip_checksum_validation(self, iris_container, test_namespace, temp_fixture_dir):
+    def test_skip_checksum_validation(
+        self, iris_container, test_namespace, iris_connection, temp_fixture_dir
+    ):
         """Test that checksum validation can be skipped for performance."""
         # Use test_namespace from fixture
         source_namespace = test_namespace
+
+        # Create test data (required for valid manifest)
+        cursor = iris_connection.cursor()
+        cursor.execute("CREATE TABLE SkipTest (ID INT PRIMARY KEY)")
+        cursor.execute("INSERT INTO SkipTest VALUES (1)")
+        cursor.close()
 
         creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-skip"
@@ -219,10 +239,18 @@ class TestChecksumMismatch:
 class TestAtomicOperations:
     """Test T014: Atomic namespace mounting (all-or-nothing)."""
 
-    def test_load_is_atomic(self, iris_container, test_namespace, temp_fixture_dir):
+    def test_load_is_atomic(
+        self, iris_container, test_namespace, iris_connection, temp_fixture_dir
+    ):
         """Test that fixture loading is atomic (all-or-nothing operation)."""
         # Use test_namespace from fixture (already created)
         source_namespace = test_namespace
+
+        # Create test data (required for valid manifest)
+        cursor = iris_connection.cursor()
+        cursor.execute("CREATE TABLE AtomicTest (ID INT PRIMARY KEY)")
+        cursor.execute("INSERT INTO AtomicTest VALUES (1)")
+        cursor.close()
 
         # Create fixture from source namespace
         creator = FixtureCreator(container=iris_container)
@@ -233,7 +261,7 @@ class TestAtomicOperations:
         )
 
         # Load fixture should succeed
-        loader = DATFixtureLoader(container=iris_container)
+        loader = FixtureLoader(container=iris_container)
         target_namespace = iris_container.get_test_namespace(prefix="ATOMIC_TARGET")
 
         result = loader.load_fixture(
@@ -246,12 +274,20 @@ class TestAtomicOperations:
         # Cleanup
         iris_container.delete_namespace(target_namespace)
 
-    def test_cleanup_removes_namespace(self, iris_container, test_namespace, temp_fixture_dir):
+    def test_cleanup_removes_namespace(
+        self, iris_container, test_namespace, iris_connection, temp_fixture_dir
+    ):
         """Test that cleanup properly removes namespace."""
         # Use test_namespace from fixture as source
         source_namespace = test_namespace
 
-        # Create fixture (empty namespace is fine for cleanup testing)
+        # Create test data (required for valid manifest)
+        cursor = iris_connection.cursor()
+        cursor.execute("CREATE TABLE CleanupTest (ID INT PRIMARY KEY)")
+        cursor.execute("INSERT INTO CleanupTest VALUES (1)")
+        cursor.close()
+
+        # Create fixture with table data
         creator = FixtureCreator(container=iris_container)
         fixture_path = Path(temp_fixture_dir) / "test-cleanup"
 
@@ -260,7 +296,7 @@ class TestAtomicOperations:
         )
 
         # Load into target namespace
-        loader = DATFixtureLoader(container=iris_container)
+        loader = FixtureLoader(container=iris_container)
         target_namespace = iris_container.get_test_namespace(prefix="CLEANUP_TARGET")
 
         loader.load_fixture(fixture_path=str(fixture_path), target_namespace=target_namespace)
@@ -315,9 +351,11 @@ class TestErrorScenarios:
 
     def test_load_nonexistent_fixture(self):
         """Test loading nonexistent fixture fails gracefully."""
-        loader = DATFixtureLoader()
+        from iris_devtester.fixtures.manifest import FixtureLoadError
 
-        with pytest.raises(FileNotFoundError):
+        loader = FixtureLoader()
+
+        with pytest.raises(FixtureLoadError):
             loader.load_fixture(fixture_path="/nonexistent/path")
 
 

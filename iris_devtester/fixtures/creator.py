@@ -17,7 +17,12 @@ from .validator import FixtureValidator
 
 class FixtureCreator:
     """
-    Creates .DAT fixtures by exporting IRIS namespaces.
+    Creates IRIS fixtures by exporting namespace globals and class definitions.
+
+    Fixture Format:
+        - globals.gof: Global data in IRIS %GOF format
+        - classes.xml: Class definitions for SQL tables
+        - manifest.json: Metadata and checksums
     """
 
     def __init__(
@@ -64,7 +69,12 @@ class FixtureCreator:
         from iris_devtester.config import discover_config
         from iris_devtester.connections import get_connection as get_conn_factory
 
-        base_config = self.connection_config or discover_config()
+        # Use container's config if available, otherwise fall back to discovery
+        base_config = self.connection_config
+        if base_config is None and self.container is not None:
+            base_config = self.container.get_config()
+        if base_config is None:
+            base_config = discover_config()
         ns_config = dataclasses.replace(base_config, namespace=namespace)
 
         ns_connection = get_conn_factory(ns_config)
@@ -223,7 +233,12 @@ class FixtureCreator:
                 get_connection as get_modern_connection,
             )
 
-            self._connection = get_modern_connection(self.connection_config)
+            # If container is provided but no explicit connection_config, use container's config
+            config = self.connection_config
+            if config is None and self.container is not None:
+                config = self.container.get_config()
+
+            self._connection = get_modern_connection(config)
         return self._connection
 
     def _get_iris_version(self) -> str:

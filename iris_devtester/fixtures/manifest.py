@@ -1,7 +1,13 @@
 """Fixture manifest data models and validation.
 
-This module defines the data structures for IRIS .DAT fixture manifests,
+This module defines the data structures for IRIS fixture manifests,
 including FixtureManifest, TableInfo, ValidationResult, and LoadResult.
+
+Fixture Format:
+    Fixtures are stored as directories containing:
+    - manifest.json: Metadata, checksums, and table information
+    - globals.gof: Global data in IRIS %GOF format
+    - classes.xml: Class definitions (optional, for SQL tables)
 """
 
 import json
@@ -46,7 +52,6 @@ class TableInfo:
     """
     Information about a single table in a fixture.
 
-    Note: All tables are stored in a single IRIS.DAT file.
     This class tracks which tables are included in the fixture.
 
     Attributes:
@@ -69,11 +74,12 @@ class TableInfo:
 @dataclass
 class FixtureManifest:
     """
-    Manifest describing a .DAT fixture.
+    Manifest describing an IRIS fixture.
 
     A fixture is a directory containing:
     - manifest.json (this schema)
-    - IRIS.DAT (single database file containing all tables)
+    - globals.gof (global data in %GOF format)
+    - classes.xml (optional, class definitions for SQL tables)
 
     Example manifest.json:
     {
@@ -93,6 +99,9 @@ class FixtureManifest:
         }
       ]
     }
+
+    Note: The dat_file field is kept for backward compatibility but the actual
+    data is stored in globals.gof (GOF format).
     """
 
     # Required fields

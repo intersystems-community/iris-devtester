@@ -21,8 +21,23 @@ def container_group(ctx):
     """
     Container lifecycle management commands.
 
-    Manage IRIS containers from the command line with zero-config support.
-    Supports both Community and Enterprise editions.
+    \b
+    Manage IRIS database containers for testing and development.
+    Supports Community, Enterprise, and Light editions.
+
+    \b
+    EDITIONS:
+      community    Full IRIS Community Edition (~3.5GB, all features)
+      light        Minimal CI/CD image (~580MB, SQL/DBAPI only)
+      enterprise   Licensed IRIS (requires --license iris.key)
+
+    \b
+    QUICK START:
+      up              Create and start a container
+      list            Show running containers
+      status          Check container health
+      test-connection Verify database connectivity
+      stop/remove     Clean up containers
     """
     pass
 
@@ -44,6 +59,12 @@ def container_group(ctx):
     help="IRIS edition: community (default), enterprise (requires license), light (minimal for CI/CD)",
 )
 @click.option(
+    "--image",
+    type=str,
+    default=None,
+    help="Custom Docker image (overrides --edition). Example: myregistry/iris:2024.1",
+)
+@click.option(
     "--license",
     "license_key",
     type=click.Path(exists=True),
@@ -60,37 +81,31 @@ def container_group(ctx):
 )
 @click.option("--cpf", help="Path to CPF merge file or raw CPF content")
 @click.pass_context
-def up(ctx, config, name, edition, license_key, detach, timeout, cpf):
+def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf):
     """
     Create and start IRIS container from configuration.
 
     Similar to docker-compose up. Creates a new container or starts existing one.
     Supports zero-config mode - works without any configuration file.
 
-    Container Lifecycle (Feature 011):
+    \b
+    Container Lifecycle:
       - Containers persist until explicitly removed with 'container remove'
       - Volume mounts are verified during creation
       - No automatic cleanup when CLI exits
 
     \b
     Examples:
-        # Zero-config (uses Community edition defaults)
         iris-devtester container up
-
-        # Light edition for CI/CD (85% smaller, faster startup)
         iris-devtester container up --edition light
-
-        # Enterprise edition with license
-        iris-devtester container up --edition enterprise --license /path/to/iris.key
-
-        # With custom container name
+        iris-devtester container up --edition enterprise --license ./iris.key
+        iris-devtester container up --image myregistry/iris:2024.1
         iris-devtester container up --name my-test-db
-
-        # With custom configuration including volumes
         iris-devtester container up --config iris-config.yml
 
-        # Foreground mode (see logs)
-        iris-devtester container up --no-detach
+    \b
+    NOTE: For multi-container setups (sharding, mirroring, clusters),
+    use docker-compose instead. This tool manages single containers.
     """
     try:
         # Load configuration
@@ -112,8 +127,12 @@ def up(ctx, config, name, edition, license_key, detach, timeout, cpf):
             container_config.container_name = name
             click.echo(f"  → Container name: {name}")
 
-        # Override edition if provided via --edition
-        if edition:
+        # Override image if provided via --image (takes precedence over --edition)
+        if image:
+            container_config.image = image
+            click.echo(f"  → Image: {image} (custom)")
+        # Override edition if provided via --edition (only if --image not set)
+        elif edition:
             edition_lower = edition.lower()
             container_config.edition = edition_lower
 

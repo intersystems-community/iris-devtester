@@ -12,7 +12,7 @@ from .manifest import FixtureLoadError, FixtureManifest, FixtureValidationError,
 logger = logging.getLogger(__name__)
 
 
-class DATFixtureLoader:
+class FixtureLoader:
 
     def __init__(self, container: Optional[IRISContainer] = None, **kwargs):
         self.container = container
@@ -45,14 +45,17 @@ class DATFixtureLoader:
     ) -> LoadResult:
         start_time = time.time()
 
+        # Validate fixture exists BEFORE starting a container (Fail Fast)
+        manifest = self._load_manifest(fixture_path)
+
         if not self.container:
             self.container = IRISContainer.community()
             self.container.start()
             self._owns_container = True
 
         try:
-            manifest = self._load_manifest(fixture_path)
             namespace = target_namespace or manifest.namespace
+            # Note: manifest already loaded above (fail-fast before container start)
 
             dat_file_path = Path(fixture_path) / "IRIS.DAT"
             if not dat_file_path.exists():

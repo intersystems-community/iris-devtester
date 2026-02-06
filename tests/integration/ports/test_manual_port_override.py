@@ -15,10 +15,11 @@ from iris_devtester.ports import PortConflictError, PortRegistry
 
 @pytest.fixture
 def temp_registry():
-    """Temporary registry for testing."""
+    """Temporary registry for testing with high port range to avoid conflicts."""
     with tempfile.TemporaryDirectory() as tmpdir:
         registry_path = Path(tmpdir) / "test-registry.json"
-        yield PortRegistry(registry_path=registry_path)
+        # Use high port range (31972-31981) to avoid conflicts with other containers
+        yield PortRegistry(registry_path=registry_path, port_range=(31972, 31981))
 
 
 def test_manual_port_preference(temp_registry):
@@ -26,20 +27,20 @@ def test_manual_port_preference(temp_registry):
     Test that preferred_port parameter allows manual port selection.
 
     Scenario:
-    1. Start container A with preferred_port=1975
-    2. Verify port 1975 assigned
+    1. Start container A with preferred_port=31975
+    2. Verify port 31975 assigned
     3. Start container B without preference
-    4. Verify container B gets different port (not 1975)
+    4. Verify container B gets different port (not 31975)
     """
     # Container A with manual port preference
     container_a = IRISContainer(
-        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=1975
+        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=31975
     )
     container_a.start()
 
     try:
         port_a = container_a.get_assigned_port()
-        assert port_a == 1975, "Should get preferred port 1975"
+        assert port_a == 31975, "Should get preferred port 31975"
 
         # Container B without preference (auto-assign)
         container_b = IRISContainer(port_registry=temp_registry, project_path="/tmp/test-project-b")
@@ -47,8 +48,8 @@ def test_manual_port_preference(temp_registry):
 
         try:
             port_b = container_b.get_assigned_port()
-            assert port_b != 1975, "Container B should get different port"
-            assert 1972 <= port_b <= 1981, f"Port {port_b} should be in range"
+            assert port_b != 31975, "Container B should get different port"
+            assert 31972 <= port_b <= 31981, f"Port {port_b} should be in range"
 
         finally:
             container_b.stop()
@@ -62,21 +63,21 @@ def test_manual_port_conflict_detection(temp_registry):
     Test that PortConflictError is raised when preferred port already in use.
 
     Scenario:
-    1. Start container A on port 1975
-    2. Try to start container B with preferred_port=1975
+    1. Start container A on port 31975
+    2. Try to start container B with preferred_port=31975
     3. Verify PortConflictError raised
     4. Verify error message includes conflict details
     """
-    # Container A gets port 1975
+    # Container A gets port 31975
     container_a = IRISContainer(
-        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=1975
+        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=31975
     )
     container_a.start()
 
     try:
         # Container B tries to get same port - should fail
         container_b = IRISContainer(
-            port_registry=temp_registry, project_path="/tmp/test-project-b", preferred_port=1975
+            port_registry=temp_registry, project_path="/tmp/test-project-b", preferred_port=31975
         )
 
         with pytest.raises(PortConflictError) as exc_info:
@@ -84,7 +85,7 @@ def test_manual_port_conflict_detection(temp_registry):
 
         # Verify error message quality
         error_msg = str(exc_info.value)
-        assert "1975" in error_msg, "Error should mention conflicting port"
+        assert "31975" in error_msg, "Error should mention conflicting port"
         assert "test-project-a" in error_msg, "Error should mention conflicting project"
         assert (
             "already" in error_msg.lower() or "conflict" in error_msg.lower()
@@ -99,29 +100,29 @@ def test_manual_port_idempotency(temp_registry):
     Test that same project with same preferred port gets that port consistently.
 
     Scenario:
-    1. Start container A with preferred_port=1975
+    1. Start container A with preferred_port=31975
     2. Stop container A
-    3. Restart container A with preferred_port=1975
-    4. Verify port 1975 assigned again (idempotent)
+    3. Restart container A with preferred_port=31975
+    4. Verify port 31975 assigned again (idempotent)
     """
     # First start
     container_1 = IRISContainer(
-        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=1975
+        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=31975
     )
     container_1.start()
     port_1 = container_1.get_assigned_port()
-    assert port_1 == 1975, "First start should get preferred port"
+    assert port_1 == 31975, "First start should get preferred port"
     container_1.stop()
 
     # Second start (same project, same preference)
     container_2 = IRISContainer(
-        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=1975
+        port_registry=temp_registry, project_path="/tmp/test-project-a", preferred_port=31975
     )
     container_2.start()
 
     try:
         port_2 = container_2.get_assigned_port()
-        assert port_2 == 1975, "Second start should get same preferred port"
+        assert port_2 == 31975, "Second start should get same preferred port"
 
     finally:
         container_2.stop()
@@ -155,10 +156,10 @@ def test_manual_port_persists_until_released(temp_registry):
     Test that manual port assignment persists until explicitly released.
 
     Scenario:
-    1. Start container A with preferred_port=1975
+    1. Start container A with preferred_port=31975
     2. Stop container A (releases port)
     3. Start container A again without preference (auto-assign)
-    4. Verify container A gets first available port (not necessarily 1975)
+    4. Verify container A gets first available port (not necessarily 31975)
 
     Note: Port release happens in stop(), so the second start gets a new assignment.
     This is correct behavior - ports are released immediately on stop() to allow reuse.
@@ -167,12 +168,12 @@ def test_manual_port_persists_until_released(temp_registry):
     container_1 = IRISContainer(
         port_registry=temp_registry,
         project_path="/tmp/test-project-manual-persist",
-        preferred_port=1975,
+        preferred_port=31975,
     )
     container_1.start()
     port_1 = container_1.get_assigned_port()
-    assert port_1 == 1975, "First start should get manual port"
-    container_1.stop()  # RELEASES port 1975
+    assert port_1 == 31975, "First start should get manual port"
+    container_1.stop()  # RELEASES port 31975
 
     # Verify port was released
     assignments = temp_registry.list_all()
@@ -189,8 +190,8 @@ def test_manual_port_persists_until_released(temp_registry):
     try:
         port_2 = container_2.get_assigned_port()
         # Port was released, so new assignment from available pool
-        assert 1972 <= port_2 <= 1981, "Should get port in auto-assignment range"
-        # Port may or may not be 1975 (depends on Docker bound ports)
+        assert 31972 <= port_2 <= 31981, "Should get port in auto-assignment range"
+        # Port may or may not be 31975 (depends on Docker bound ports)
 
     finally:
         container_2.stop()

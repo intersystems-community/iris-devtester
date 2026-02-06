@@ -1,7 +1,13 @@
-"""IRIS .DAT Fixture Validator.
+"""IRIS Fixture Validator.
 
 This module provides the FixtureValidator class for validating fixture
 integrity including manifest structure, file existence, and SHA256 checksums.
+
+Fixture Format:
+    Fixtures are stored as directories containing:
+    - manifest.json: Metadata, checksums, and table information
+    - globals.gof: Global data in IRIS %GOF format
+    - classes.xml: Class definitions (optional, for SQL tables)
 """
 
 import hashlib
@@ -18,11 +24,11 @@ from .manifest import (
 
 class FixtureValidator:
     """
-    Validates .DAT fixture integrity.
+    Validates fixture integrity.
 
     This is a stateless validator that checks:
     - Manifest structure and required fields
-    - File existence (manifest.json, IRIS.DAT)
+    - File existence (manifest.json, globals.gof)
     - SHA256 checksum matching
     - Fixture size statistics
 

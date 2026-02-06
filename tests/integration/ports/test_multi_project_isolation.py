@@ -16,10 +16,11 @@ from iris_devtester.ports import PortRegistry
 
 @pytest.fixture
 def temp_registry():
-    """Temporary registry for testing."""
+    """Temporary registry for testing with high port range to avoid conflicts."""
     with tempfile.TemporaryDirectory() as tmpdir:
         registry_path = Path(tmpdir) / "test-registry.json"
-        yield PortRegistry(registry_path=registry_path)
+        # Use high port range (31972-31981) to avoid conflicts with other containers
+        yield PortRegistry(registry_path=registry_path, port_range=(31972, 31981))
 
 
 def test_multi_project_isolation(temp_registry):
@@ -50,8 +51,8 @@ def test_multi_project_isolation(temp_registry):
         port_b = container_b.get_assigned_port()
 
         assert port_a != port_b, "Projects must have unique ports"
-        assert 1972 <= port_a <= 1981, f"Port {port_a} out of range"
-        assert 1972 <= port_b <= 1981, f"Port {port_b} out of range"
+        assert 31972 <= port_a <= 31981, f"Port {port_a} out of range"
+        assert 31972 <= port_b <= 31981, f"Port {port_b} out of range"
 
         # Verify registry tracking
         assignments = temp_registry.list_all()

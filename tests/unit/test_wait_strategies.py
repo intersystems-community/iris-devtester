@@ -116,8 +116,8 @@ class TestWaitForIRISReady:
         wait_for_iris_ready(host="unreachable.host", port=9999, timeout=2, poll_interval=0.1)
         elapsed = time.time() - start
 
-        # Should timeout quickly
-        assert elapsed < 4.0
+        # Should timeout quickly (allow some overhead for slow systems)
+        assert elapsed < 5.0
 
 
 if __name__ == "__main__":

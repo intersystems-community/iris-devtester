@@ -96,6 +96,10 @@ class TestStartWithPreconfig:
             container._preconfigure_password = "TestPass"
             container._preconfigure_username = None
             container._password_preconfigured = False
+            container._port_registry = None  # Port registry attributes
+            container._preferred_port = None
+            container._project_path = None
+            container._port_assignment = None
             container.with_env = MagicMock(return_value=container)
             container.get_config = MagicMock()
 
@@ -115,6 +119,10 @@ class TestStartWithPreconfig:
             container._preconfigure_password = "TestPass"
             container._preconfigure_username = "TestUser"
             container._password_preconfigured = False
+            container._port_registry = None  # Port registry attributes
+            container._preferred_port = None
+            container._project_path = None
+            container._port_assignment = None
             container.with_env = MagicMock(return_value=container)
             container.get_config = MagicMock()
 

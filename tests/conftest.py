@@ -111,17 +111,29 @@ def iris_db_both_editions(request):
             image = "intersystemsdc/iris-community:latest"
         iris_container = IRISContainer.community(image=image, username="test", password="test")
     else:
+        import platform as platform_module
+
         license_key = os.environ.get("IRIS_LICENSE_KEY")
         if not license_key:
             import pathlib
 
             key_file = pathlib.Path(__file__).parent.parent / "iris.key"
             if key_file.exists():
-                license_key = key_file.read_text().strip()
+                license_key = str(key_file)  # Pass path, not contents!
         if not license_key:
             pytest.skip("IRIS_LICENSE_KEY not set")
+
+        # Use ARM64-compatible image on Apple Silicon
+        if platform_module.machine() == "arm64":
+            enterprise_image = "containers.intersystems.com/intersystems/iris:2025.1"
+        else:
+            enterprise_image = "containers.intersystems.com/intersystems/iris:latest"
+
         iris_container = IRISContainer.enterprise(
-            license_key=license_key, username="SuperUser", password="SYS"
+            license_key=license_key,
+            image=enterprise_image,
+            username="SuperUser",
+            password="SYS",
         )
 
     iris_container.with_name(name)

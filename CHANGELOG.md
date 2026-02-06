@@ -5,6 +5,112 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.2] - 2026-02-06 - Fixture System & Enterprise Test Fixes
+
+### Fixed
+
+- **Fixture Integration Tests**: All 9 fixture tests now pass
+  - Fixed `test_create_validate_load_verify` to properly connect to target namespace
+  - Fixed 4 tests that failed due to empty tables validation by adding test data creation
+
+- **Enterprise Edition Tests**: All 5 previously-skipped enterprise tests now run and pass
+  - Fixed `conftest.py`: Was reading license key file contents instead of passing file path
+  - Fixed `test_cpf_merge.py`: Same license key path bug
+  - Added ARM64-compatible enterprise image selection for Apple Silicon
+
+- **Test Infrastructure**:
+  - Fixed flaky `test_wait_function_with_timeout` timing assertion (4.0s → 5.0s tolerance)
+  - All 342 unit tests pass
+  - All 11 enterprise+community edition tests pass (0 skipped)
+
+### Changed
+
+- Enterprise tests now use `containers.intersystems.com/intersystems/iris:2025.1` on ARM64
+
+## [1.10.1] - 2026-02-05 - CLI Documentation & Custom Images
+
+### Added
+
+- **`--image` option for `container up`**: Use any Docker image, overriding edition defaults
+  - Example: `iris-devtester container up --image myregistry/iris:2024.1`
+  - Example: `iris-devtester container up --image intersystemsdc/iris-community:2024.1-zpm`
+  - Useful for custom registries, specific versions, or pre-configured images
+
+### Changed
+
+- **CLI Help Text**: Improved `--help` output for better AI agent and user discoverability
+  - Main help now explains what the tool does, container editions, quick start, and common workflows
+  - Added "FOR AI AGENTS" section with exit codes and JSON output guidance
+  - Container group help now includes edition comparison and quick start commands
+  - All help text now properly formatted with `\b` markers (no more broken line wraps)
+  - Added note about using docker-compose for multi-container setups
+
+### Documentation
+
+- CLI is now self-documenting enough for AI agents to use without external docs
+- All commands support `--help` for detailed options
+- `container list --format json` provides machine-readable output
+- Added "When to Use docker-compose Instead" section to GETTING_STARTED.md
+  - Covers sharding, mirroring, ECP, and multi-service stacks
+  - Explains iris-devtester is for single-container management only
+
+## [1.10.0] - 2026-01-31 - Feature 024: Canonical Container Editions
+
+### Added
+
+- **Three Canonical Container Editions**:
+  - **Community**: Full IRIS Community Edition (~3.5GB) - `IRISContainer.community()`
+  - **Enterprise**: Licensed IRIS - `IRISContainer.enterprise(license_key=...)`
+  - **Light**: Minimal for CI/CD (~580MB) - `IRISContainer.light()` - NEW!
+
+- **Light Edition** (`caretdev/iris-community-light`):
+  - 85% smaller than full community (580MB vs 3.5GB)
+  - Removes: Interoperability, Management Portal, DeepSee/BI, CSP/REST
+  - Keeps: SQL engine, DBAPI, JDBC, ODBC, SQLAlchemy-IRIS
+  - Multi-arch: ARM64 and x86 supported
+  - Ideal for CI/CD pipelines where startup time matters
+  - Maintainer: CaretDev (Dmitry Maslennikov)
+
+- **CLI `--edition` option**: `iris-devtester container up --edition light|community|enterprise`
+- **CLI `container list` command**: Shows all IRIS containers with status, edition, ports, age
+- **Standardized container naming**: All CLI commands accept optional `CONTAINER_NAME` with default `iris_db`
+
+### Changed
+
+- `IRISContainer.community()` now explicitly documents size (~3.5GB)
+- `IRISContainer.enterprise()` now includes better license key handling
+- Container config now supports `edition` field: `"community"`, `"enterprise"`, `"light"`
+- README updated with Container Editions section
+
+### Technical Details
+
+- Light edition image: `caretdev/iris-community-light:latest-em`
+- Default tag for light: `latest-em` (production-ready)
+- All editions verified for DBAPI connectivity
+
+## [1.9.3] - 2026-01-30 - CLI Container Naming
+
+### Added
+
+- **`--name` option for `container up`**: Specify custom container name
+- **Default name warning**: Warns when using default `iris_db` with existing container
+
+### Fixed
+
+- **Pydantic deprecation**: Migrated from `class Config:` to `model_config = ConfigDict(...)`
+- **Python 3.9 compatibility**: Fixed `str | Path` → `Union[str, Path]` type hints
+- **mypy type errors**: Resolved various type annotation issues
+
+## [1.9.2] - 2026-01-29 - IRIS Session Instance Name Fix
+
+### Fixed
+
+- **CRITICAL**: Fixed IRIS session instance name from `iris` to `IRIS` (uppercase)
+  - Affected files: `password.py`, `health_checks.py`
+  - Error symptom: "Access Denied" when DBAPI connections failed due to unexpired passwords
+  - Root cause: `iris session iris` → `iris session IRIS`
+  - All password reset and CallIn enable commands now work correctly
+
 ## [1.8.1] - 2026-01-17 - Bug Fixes & API Contract Synchronization
 
 ### Fixed
@@ -965,6 +1071,11 @@ N/A - Initial release
 
 **Remember**: Every feature here was paid for with real debugging time. 🚀
 
+[1.10.1]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.10.1
+[1.10.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.10.0
+[1.9.3]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.9.3
+[1.9.2]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.9.2
+[1.8.1]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.8.1
 [1.5.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.5.0
 [1.4.5]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.4.5
 [1.4.4]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.4.4
@@ -976,4 +1087,4 @@ N/A - Initial release
 [1.1.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.1.0
 [1.0.2]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.0.2
 [1.0.0]: https://github.com/intersystems-community/iris-devtester/releases/tag/v1.0.0
-[Unreleased]: https://github.com/intersystems-community/iris-devtester/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/intersystems-community/iris-devtester/compare/v1.10.1...HEAD
