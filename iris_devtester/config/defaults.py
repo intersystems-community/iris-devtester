@@ -26,6 +26,12 @@ DEFAULT_USERNAME = "_SYSTEM"
 DEFAULT_PASSWORD = "SYS"
 """Default IRIS password (SYS is the default for containers)"""
 
+DEFAULT_AUTO_CREATE = None
+"""
+Default auto-creation of namespaces.
+If None, uses "Smart Default": True for localhost, False otherwise.
+"""
+
 DEFAULT_DRIVER = "auto"
 """
 Default driver selection (auto tries DBAPI first, falls back to JDBC).

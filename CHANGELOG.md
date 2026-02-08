@@ -5,6 +5,21 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-02-08 - Implicit Namespace Creation (SQLite-Level Ergonomics)
+
+### Added
+
+- **Implicit Namespace Creation**: Achieved "SQLite-level ergonomics" where `get_connection(namespace="NEW")` automatically creates the namespace if it doesn't exist.
+  - Automatically creates database directory and `.dat` file.
+  - Configures namespace mappings (Globals/Routines) to the new database.
+  - Ensures `%Service_CallIn` is enabled for the new namespace.
+  - **Hybrid Smart Default**: Enabled by default for `localhost` (zero-friction dev), explicit opt-in required for remote hosts (production safety).
+  - Supported via `IRISConfig.auto_create` and `IRIS_AUTO_CREATE` environment variable.
+
+### Fixed
+
+- Improved `get_connection` reliability when connecting to non-existent namespaces.
+
 ## [1.10.4] - 2026-02-08 - Critical DBAPI Segfault Fix
 
 ### Fixed

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 from iris_devtester.config.defaults import (
+    DEFAULT_AUTO_CREATE,
     DEFAULT_DRIVER,
     DEFAULT_HOST,
     DEFAULT_NAMESPACE,
@@ -64,6 +65,7 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
         "password": DEFAULT_PASSWORD,
         "driver": DEFAULT_DRIVER,
         "timeout": DEFAULT_TIMEOUT,
+        "auto_create": DEFAULT_AUTO_CREATE,
     }
 
     # Layer 3: .env file (override defaults)
@@ -130,6 +132,13 @@ def _load_from_environment() -> Dict[str, Any]:
     if "IRIS_TIMEOUT" in os.environ:
         config["timeout"] = int(os.environ["IRIS_TIMEOUT"])
 
+    if "IRIS_AUTO_CREATE" in os.environ:
+        val = os.environ["IRIS_AUTO_CREATE"].lower()
+        if val in ("true", "1", "yes"):
+            config["auto_create"] = True
+        elif val in ("false", "0", "no"):
+            config["auto_create"] = False
+
     return config
 
 
@@ -183,6 +192,12 @@ def _load_from_dotenv() -> Dict[str, Any]:
                         config["driver"] = value
                     elif key == "IRIS_TIMEOUT":
                         config["timeout"] = int(value)
+                    elif key == "IRIS_AUTO_CREATE":
+                        val = value.lower()
+                        if val in ("true", "1", "yes"):
+                            config["auto_create"] = True
+                        elif val in ("false", "0", "no"):
+                            config["auto_create"] = False
 
     except (IOError, ValueError):
         # If .env file can't be read or parsed, just skip it

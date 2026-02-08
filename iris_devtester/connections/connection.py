@@ -67,6 +67,11 @@ def get_connection(
         config = discover_config()
         logger.info(f"Auto-discovered IRIS at {config.host}:{config.port}")
 
+    # Implicit namespace creation (SQLite-level ergonomics)
+    from iris_devtester.utils.namespace import ensure_namespace_exists
+
+    ensure_namespace_exists(config)
+
     # Verify DBAPI is available
     if not is_dbapi_available():
         raise ConnectionError(
