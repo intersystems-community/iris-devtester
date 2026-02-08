@@ -1,8 +1,8 @@
 # IRIS DevTools Constitution
 
-**Version**: 1.1.0
+**Version**: 1.2.0
 **Status**: Foundational
-**Last Updated**: 2025-11-23
+**Last Updated**: 2026-02-06
 
 ## Preamble
 
@@ -391,7 +391,38 @@ hasattr(iris, 'connect')  # True in BOTH versions!
 
 **Reference**: See hipporag2-pipeline CONSTITUTION.md Principle 9 for detailed empirical testing results.
 
-### 9. DOCUMENT THE BLIND ALLEYS
+### 9. SQLITE-LEVEL ERGONOMICS (THE NORTH STAR)
+
+**The Principle**: IRIS setup and connectivity should be invisible. A developer should go from "nothing" to "connected" with zero manual configuration.
+
+**Why It Matters**:
+- SQLite is the benchmark for "zero-friction" development
+- Infrastructure setup is a major barrier to IRIS adoption
+- Developer "flow" is interrupted by infrastructure management
+- If a user has to think about ports, passwords, or container lifecycles, we have more work to do.
+
+**Implementation Requirements**:
+- ✅ `get_connection()` with zero-config auto-discovery
+- ✅ Automatic container lifecycle management (transparent to the user)
+- ✅ Standardized default credentials (`_SYSTEM`/`SYS`)
+- ✅ Proactive remediation of all connectivity hurdles (service enablement, password reset)
+- ✅ Silent infrastructure: infrastructure "noise" (logs, status) is hidden unless an error occurs
+
+**Forbidden**:
+- ❌ Requiring manual Docker commands for basic connectivity
+- ❌ Mandatory configuration files for local dev
+- ❌ Exposing infrastructure complexity in the primary API
+
+**Example**:
+```python
+# THE NORTH STAR EXPERIENCE
+from iris_devtester import IRISContainer
+
+# One line to everything: startup, auth, service enablement, connection
+conn = IRISContainer.community().get_connection()
+```
+
+### 10. DOCUMENT THE BLIND ALLEYS
 
 **The Principle**: Failed approaches must be documented to prevent repetition.
 
@@ -470,6 +501,11 @@ Principles may be amended when:
 - [ ] Blind alleys documented if applicable
 
 ## Version History
+
+### v1.2.0 (2026-02-06)
+- Added Principle 9: SQLite-Level Ergonomics (The North Star)
+- Renumbered Principle 9 "Document the Blind Alleys" → Principle 10
+- Standardized on `_SYSTEM` as the default toolkit username
 
 ### v1.1.0 (2025-11-23)
 - Added Principle 8: Use Official IRIS Python API (No Private Attributes)
