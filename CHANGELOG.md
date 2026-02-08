@@ -5,6 +5,15 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.4] - 2026-02-08 - Critical DBAPI Segfault Fix
+
+### Fixed
+
+- **Critical Segfault**: Resolved `SIGSEGV` crash when using `FETCH FIRST N ROWS ONLY` SQL syntax.
+  - Modified `dbapi_compat.py` to prefer the stable `intersystems_iris` connection path over the buggy `iris` (`_elsdk_`) path.
+  - Both modules are part of `intersystems-irispython`, but `intersystems_iris` provides the stable `_IRISNative` driver.
+  - This fix restores stability for SQL pagination and vector-graph operations.
+
 ## [1.10.3] - 2026-02-06 - Docker Exec Ownership Fix
 
 ### Fixed

@@ -48,7 +48,7 @@ class TestPasswordResetMacOS:
             # Reset password with new value
             result = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password="MACOS_TEST",
                 hostname=config.host,
                 port=config.port,
@@ -68,7 +68,7 @@ class TestPasswordResetMacOS:
                 hostname=config.host,
                 port=config.port,
                 namespace=config.namespace,
-                username="SuperUser",
+                username="_SYSTEM",
                 password="MACOS_TEST",
             )
 
@@ -111,7 +111,7 @@ class TestPasswordResetMacOS:
                 # Reset password
                 result = reset_password(
                     container_name=container_name,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     new_password="PORTTEST",
                     hostname=config.host,
                     port=config.port,
@@ -128,7 +128,7 @@ class TestPasswordResetMacOS:
                     hostname=config.host,
                     port=config.port,
                     namespace=config.namespace,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     password="PORTTEST",
                 )
 
@@ -168,7 +168,7 @@ class TestPasswordResetMacOS:
 
                 result = reset_password(
                     container_name=container_name,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     new_password=new_password,
                     hostname=config.host,
                     port=config.port,
@@ -187,7 +187,7 @@ class TestPasswordResetMacOS:
                     hostname=config.host,
                     port=config.port,
                     namespace=config.namespace,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     password=new_password,
                 )
 
@@ -222,7 +222,7 @@ class TestPasswordResetMacOS:
             for i in range(attempts):
                 result = reset_password(
                     container_name=container_name,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     new_password=f"TIMING{i}",
                     hostname=config.host,
                     port=config.port,
@@ -260,7 +260,7 @@ class TestPasswordResetMacOS:
             for i in range(attempts):
                 result = reset_password(
                     container_name=container_name,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     new_password=f"RELIABLE{i}",
                     hostname=config.host,
                     port=config.port,

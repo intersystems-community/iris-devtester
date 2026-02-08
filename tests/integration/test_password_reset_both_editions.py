@@ -52,7 +52,7 @@ class TestPasswordResetBothEditions:
         if edition == "community":
             username, password = "test", "test"
         else:
-            username, password = "SuperUser", "SYS"
+            username, password = "_SYSTEM", "SYS"
 
         # Get actual exposed port from testcontainers
         host = conn._container.get_container_host_ip()
@@ -103,7 +103,7 @@ class TestPasswordResetBothEditions:
         if edition == "community":
             test_username, test_password = "test", "test"
         else:
-            test_username, test_password = "SuperUser", "SYS"
+            test_username, test_password = "_SYSTEM", "SYS"
 
         print(f"\n[{edition.upper()}] Verifying password hardening for {test_username}...")
 
@@ -156,7 +156,7 @@ class TestPasswordResetBothEditions:
         if edition == "community":
             test_username, test_password = "test", "test"
         else:
-            test_username, test_password = "SuperUser", "SYS"
+            test_username, test_password = "_SYSTEM", "SYS"
 
         # CRITICAL: Verify DBAPI connection works
         from iris_devtester.utils.dbapi_compat import get_connection
@@ -205,7 +205,7 @@ class TestPasswordResetBothEditions:
         if edition == "community":
             test_username, test_password = "test", "test"
         else:
-            test_username, test_password = "SuperUser", "SYS"
+            test_username, test_password = "_SYSTEM", "SYS"
 
         print(f"\n[{edition.upper()}] Testing DBAPI connection performance for {test_username}...")
 

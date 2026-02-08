@@ -119,7 +119,7 @@ with IRISContainer.community() \
 ```python
 IRISContainer(
     image="intersystemsdc/iris-community:latest",  # Docker image
-    username="SuperUser",                           # Default username
+    username="_SYSTEM",                             # Default username
     password="SYS",                                 # Default password
     namespace="USER",                               # Default namespace
     name="my-container",                            # Container name (alternative to with_name)

@@ -23,20 +23,20 @@ class TestConnectionInfo:
         from iris_devtester.connections.models import ConnectionInfo
 
         info = ConnectionInfo(
-            driver_type="dbapi", host="localhost", port=1972, namespace="USER", username="SuperUser"
+            driver_type="dbapi", host="localhost", port=1972, namespace="USER", username="_SYSTEM"
         )
         assert info.driver_type == "dbapi"
         assert info.host == "localhost"
         assert info.port == 1972
         assert info.namespace == "USER"
-        assert info.username == "SuperUser"
+        assert info.username == "_SYSTEM"
 
     def test_default_fields(self):
         """Test that ConnectionInfo has default values for optional fields."""
         from iris_devtester.connections.models import ConnectionInfo
 
         info = ConnectionInfo(
-            driver_type="dbapi", host="localhost", port=1972, namespace="USER", username="SuperUser"
+            driver_type="dbapi", host="localhost", port=1972, namespace="USER", username="_SYSTEM"
         )
         assert isinstance(info.connection_time, datetime)
         assert info.is_pooled == False

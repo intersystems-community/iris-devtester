@@ -24,7 +24,7 @@ class TestIRISConfig:
         assert config.host == "localhost"
         assert config.port == 1972
         assert config.namespace == "USER"
-        assert config.username == "SuperUser"
+        assert config.username == "_SYSTEM"
         assert config.password == "SYS"
         assert config.driver == "auto"
         assert config.timeout == 30

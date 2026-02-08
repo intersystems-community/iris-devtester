@@ -34,7 +34,7 @@ class ConnectionInfo:
         ...     host="localhost",
         ...     port=1972,
         ...     namespace="USER",
-        ...     username="SuperUser"
+        ...     username="_SYSTEM"
         ... )
         >>> info.driver_type
         'dbapi'

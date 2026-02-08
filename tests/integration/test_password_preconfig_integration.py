@@ -99,7 +99,7 @@ class TestProgrammaticApiPreConfiguration:
         """Container should start with with_credentials() API."""
         from iris_devtester.containers.iris_container import IRISContainer
 
-        with IRISContainer.community().with_credentials("SuperUser", "SYS") as iris:
+        with IRISContainer.community().with_credentials("_SYSTEM", "SYS") as iris:
             conn = iris.get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT 1")

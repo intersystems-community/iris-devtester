@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iris-devtester"
-version = "1.10.3"
+version = "1.10.4"
 description = "Battle-tested InterSystems IRIS infrastructure utilities for Python development"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -88,6 +88,7 @@ docs = [
 
 [project.scripts]
 iris-devtester = "iris_devtester.cli:main"
+idt = "iris_devtester.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/intersystems-community/iris-devtester"

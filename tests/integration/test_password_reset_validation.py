@@ -32,7 +32,7 @@ class TestPasswordResetActuallyWorks:
         """
         # Create container with default credentials
         with IRISContainer.community(
-            username="SuperUser", password="SYS", namespace="USER"
+            username="_SYSTEM", password="SYS", namespace="USER"
         ) as iris:
             # Get initial connection (this triggers proactive password reset)
             conn1 = iris.get_connection()
@@ -47,7 +47,7 @@ class TestPasswordResetActuallyWorks:
 
             success, message = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password=new_password,
                 hostname=config.host,
                 port=config.port,
@@ -85,7 +85,7 @@ class TestPasswordResetActuallyWorks:
 
         # Create container
         with IRISContainer.community(
-            username="SuperUser", password="SYS", namespace="USER"
+            username="_SYSTEM", password="SYS", namespace="USER"
         ) as iris:
             # Get connection to ensure container is ready
             conn1 = iris.get_connection()
@@ -100,7 +100,7 @@ class TestPasswordResetActuallyWorks:
 
             success, message = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password=new_password,
                 hostname=config.host,
                 port=config.port,
@@ -118,7 +118,7 @@ class TestPasswordResetActuallyWorks:
                     hostname=config.host,
                     port=config.port,
                     namespace=config.namespace,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     password=old_password,
                 )
 
@@ -135,7 +135,7 @@ class TestPasswordResetActuallyWorks:
                 hostname=config.host,
                 port=config.port,
                 namespace=config.namespace,
-                username="SuperUser",
+                username="_SYSTEM",
                 password=new_password,
             )
 
@@ -159,7 +159,7 @@ class TestPasswordResetActuallyWorks:
             iris._config = None
 
             # This should NOT crash (Bug #2 fix)
-            success = iris.reset_password(username="SuperUser", new_password="TEST123")
+            success = iris.reset_password(username="_SYSTEM", new_password="TEST123")
 
             # Verify reset worked
             assert success, "Password reset failed"

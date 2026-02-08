@@ -132,7 +132,7 @@ def iris_db_both_editions(request):
         iris_container = IRISContainer.enterprise(
             license_key=license_key,
             image=enterprise_image,
-            username="SuperUser",
+            username="_SYSTEM",
             password="SYS",
         )
 

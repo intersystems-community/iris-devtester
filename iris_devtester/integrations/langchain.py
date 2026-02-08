@@ -166,7 +166,7 @@ class LangChainIRISContainer(IRISContainer):
             >>> with LangChainIRISContainer.community() as iris:
             ...     conn_str = iris.get_connection_string()
             ...     print(conn_str)
-            iris://SuperUser:SYS@localhost:52773/USER
+            iris://_SYSTEM:SYS@localhost:52773/USER
         """
         # Ensure connection is ready (auto-remediation)
         _ = self.get_connection()
@@ -174,7 +174,7 @@ class LangChainIRISContainer(IRISContainer):
         # Get connection details
         host = self.get_container_host_ip()
         port = self.get_exposed_port(1972)  # SuperServer port
-        username = getattr(self, "username", "SuperUser")
+        username = getattr(self, "username", "_SYSTEM")
         password = getattr(self, "password", "SYS")
         namespace = getattr(self, "namespace", "USER")
 

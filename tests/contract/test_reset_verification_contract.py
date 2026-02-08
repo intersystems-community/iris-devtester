@@ -32,7 +32,7 @@ class TestResetVerificationContract:
         new_pwd = "RealPassword123!"
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password=new_pwd,
             hostname=config.host,
             port=config.port,
@@ -47,7 +47,7 @@ class TestResetVerificationContract:
             hostname=config.host,
             port=config.port,
             namespace=config.namespace,
-            username="SuperUser",
+            username="_SYSTEM",
             password=new_pwd,
         )
         cursor = conn.cursor()
@@ -69,7 +69,7 @@ class TestResetVerificationContract:
         # This will cause a REAL connection failure during verification
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password="ShouldNotWork",
             hostname=config.host,
             port=9999,  # WRONG PORT

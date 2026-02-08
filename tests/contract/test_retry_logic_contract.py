@@ -56,7 +56,7 @@ class TestRetryLogicContract:
         # Reset password (should retry and succeed)
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password="RETRYTEST",
             hostname=config.host,
             port=config.port,
@@ -98,7 +98,7 @@ class TestRetryLogicContract:
         # Reset password (should fail fast without retries)
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password="FAILFAST",
             hostname=config.host,
             port=config.port,
@@ -144,7 +144,7 @@ class TestRetryLogicContract:
         # Reset password (should succeed immediately)
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password="EARLYEXIT",
             hostname=config.host,
             port=config.port,
@@ -186,7 +186,7 @@ class TestRetryLogicContract:
         # Reset password (should fail after max_retries)
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password="MAXRETRIES",
             hostname=config.host,
             port=config.port,
@@ -239,7 +239,7 @@ class TestRetryLogicContract:
         # Reset password with explicit backoff config
         result = reset_password(
             container_name=container_name,
-            username="SuperUser",
+            username="_SYSTEM",
             new_password="BACKOFF",
             hostname=config.host,
             port=config.port,
@@ -295,7 +295,7 @@ class TestRetryLogicContract:
         with caplog.at_level(logging.DEBUG):
             reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password="LOGGING",
                 hostname=config.host,
                 port=config.port,
@@ -326,7 +326,7 @@ class TestRetryLogicContract:
         for i in range(total_attempts):
             result = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password=f"RELIABLE{i}",
                 hostname=config.host,
                 port=config.port,

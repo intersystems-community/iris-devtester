@@ -20,8 +20,8 @@ DEFAULT_PORT = 1972
 DEFAULT_NAMESPACE = "USER"
 """Default IRIS namespace (USER is the default workspace)"""
 
-DEFAULT_USERNAME = "SuperUser"
-"""Default IRIS username (SuperUser has full access)"""
+DEFAULT_USERNAME = "_SYSTEM"
+"""Default IRIS username (_SYSTEM has full access)"""
 
 DEFAULT_PASSWORD = "SYS"
 """Default IRIS password (SYS is the default for containers)"""

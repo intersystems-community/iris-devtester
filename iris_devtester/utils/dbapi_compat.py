@@ -135,19 +135,39 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
     """
     start_time = time.perf_counter()
 
-    # Try modern package first (priority per Principle #2)
-    # CRITICAL: Use official iris.connect() API, NOT private _DBAPI attribute!
-    # See CONSTITUTION.md Principle 8 for empirical evidence that _DBAPI does not exist.
+    # Try modern stable package first (intersystems_iris)
+    # This is preferred over the 'iris' module because 'iris.connect'
+    # in intersystems-irispython 5.3.1+ uses the _elsdk_ driver path
+    # which has known SIGSEGV bugs with FETCH FIRST N ROWS ONLY syntax.
+    try:
+        import intersystems_iris
+
+        if hasattr(intersystems_iris, "connect"):
+            # Validate version from metadata
+            pkg_version = importlib.metadata.version("intersystems-irispython")
+            validate_package_version("intersystems-irispython", pkg_version, "5.1.2")
+
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            logger.info(f"Detected IRIS DBAPI package: intersystems-irispython v{pkg_version} (via intersystems_iris)")
+
+            return DBAPIPackageInfo(
+                package_name="intersystems-irispython",
+                import_path="intersystems_iris",
+                version=pkg_version,
+                connect_function=intersystems_iris.connect,
+                detection_time_ms=elapsed_ms,
+            )
+    except (ImportError, importlib.metadata.PackageNotFoundError):
+        logger.debug("intersystems_iris not available or metadata not found, trying iris")
+
+    # Fallback to 'iris' module (also part of intersystems-irispython)
     modern_available = False
     try:
-        import os
-        import sys
-
         import iris
 
         modern_available = True
     except ImportError as e:
-        logger.debug(f"Modern package not available, trying legacy: {e}")
+        logger.debug(f"Modern 'iris' package not available, trying legacy: {e}")
 
     if modern_available:
         import os

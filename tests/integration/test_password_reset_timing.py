@@ -53,7 +53,7 @@ class TestPasswordResetTiming:
             for i in range(attempts):
                 result = reset_password(
                     container_name=container_name,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     new_password=f"MEASURE{i}",
                     hostname=config.host,
                     port=config.port,
@@ -123,7 +123,7 @@ class TestPasswordResetTiming:
             for i in range(attempts):
                 result = reset_password(
                     container_name=container_name,
-                    username="SuperUser",
+                    username="_SYSTEM",
                     new_password=f"RELIABLE{i}",
                     hostname=config.host,
                     port=config.port,
@@ -185,7 +185,7 @@ class TestPasswordResetTiming:
             start_time = time.time()
             result = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password="SIMULATED",
                 hostname=config.host,
                 port=config.port,
@@ -229,7 +229,7 @@ class TestPasswordResetTiming:
             # OLD STYLE: Tuple unpacking (backward compatibility)
             success, message = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password="COMPAT",
                 hostname=config.host,
                 port=config.port,
@@ -244,7 +244,7 @@ class TestPasswordResetTiming:
             # NEW STYLE: Access full result object
             result = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password="NEWSTYLE",
                 hostname=config.host,
                 port=config.port,
@@ -293,7 +293,7 @@ class TestPasswordResetTiming:
 
             result = reset_password(
                 container_name=container_name,
-                username="SuperUser",
+                username="_SYSTEM",
                 new_password="CUSTOM",
                 hostname=config.host,
                 port=config.port,

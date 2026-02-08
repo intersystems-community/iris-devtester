@@ -66,7 +66,7 @@ class IRISContainer(IRISBase):
     def __init__(
         self,
         image: str = "intersystemsdc/iris-community:latest",
-        username: str = "SuperUser",
+        username: str = "_SYSTEM",
         password: str = "SYS",
         namespace: str = "USER",
         **kwargs,
@@ -204,6 +204,51 @@ class IRISContainer(IRISBase):
             tag = version if version != "latest" else "latest-em"
             image = f"caretdev/iris-community-light:{tag}"
         return cls(image=image, **kwargs)
+
+    @classmethod
+    def attach(cls, container_name: str, **kwargs) -> "IRISContainer":
+        """
+        Attach to an existing IRIS container by name.
+
+        This allows using persistent containers (e.g. from docker-compose)
+        instead of starting a new one via testcontainers.
+
+        Args:
+            container_name: Name of the existing Docker container.
+            **kwargs: Additional configuration (username, password, namespace).
+
+        Returns:
+            An IRISContainer instance attached to the existing container.
+        """
+        instance = cls(image="", name=container_name, **kwargs)
+        instance._is_attached = True
+        instance._container_name = container_name
+
+        try:
+            import docker
+
+            client = docker.from_env()
+            container = client.containers.get(container_name)
+            instance._container = container
+
+            # If it's a mock container, we need to set these manually
+            if not HAS_TESTCONTAINERS:
+                instance.host = "localhost"
+                # Try to find port from container ports
+                ports = container.attrs.get("NetworkSettings", {}).get("Ports", {})
+                if "1972/tcp" in ports and ports["1972/tcp"]:
+                    instance._mapped_port = int(ports["1972/tcp"][0]["HostPort"])
+            else:
+                # testcontainers will handle discovery via get_config()
+                instance.get_config()
+
+        except Exception as e:
+            logger.warning(f"Could not fully inspect container '{container_name}': {e}")
+            # Fallback to defaults
+            instance.host = instance.host or "localhost"
+            instance._mapped_port = instance._mapped_port or 1972
+
+        return instance
 
     def with_name(self, name: str) -> "IRISContainer":
         """Set the container name."""

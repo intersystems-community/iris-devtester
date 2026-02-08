@@ -432,18 +432,13 @@ conn = IRISContainer.community().get_connection()
 - Context for design decisions is valuable
 - Prevents regression to worse solutions
 
-**Implementation Requirements**:
-- ✅ `docs/learnings/` directory for deep-dives
-- ✅ "Why not X?" sections in documentation
-- ✅ ADR (Architecture Decision Records) for major choices
-- ✅ Performance comparisons
-- ✅ Case studies from production
-
 **Documented Blind Alleys**:
 - **Why not JDBC-only?** → DBAPI is 3x faster, see benchmark
 - **Why not shared test databases?** → Data pollution, see case study
 - **Why not manual password resets?** → CI/CD breaks, see incident report
 - **Why not port 1972 hardcoded?** → Conflicts in parallel tests, see issue #42
+- **Why not prefer `iris.connect()`?** → In `intersystems-irispython` 5.3.1+, `iris.connect` uses the `_elsdk_` driver which has a critical `SIGSEGV` bug with `FETCH FIRST N ROWS ONLY` syntax. Prefer `intersystems_iris.connect` (the stable `_IRISNative` path) instead.
+
 
 **Example Documentation**:
 ```markdown
