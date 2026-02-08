@@ -1,6 +1,6 @@
-# Contributing to IRIS DevTools
+# Contributing to iris-devtester
 
-Thank you for considering contributing to IRIS DevTools! This project embodies years of production experience with InterSystems IRIS, and we welcome contributions that build on that foundation.
+Thank you for considering contributing to iris-devtester! This project embodies years of production experience with InterSystems IRIS, and we welcome contributions that build on that foundation.
 
 ## Code of Conduct
 

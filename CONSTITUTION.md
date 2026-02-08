@@ -1,4 +1,4 @@
-# IRIS DevTools Constitution
+# iris-devtester Constitution
 
 **Version**: 1.2.0
 **Status**: Foundational
@@ -506,6 +506,7 @@ Principles may be amended when:
 - Added Principle 9: SQLite-Level Ergonomics (The North Star)
 - Renumbered Principle 9 "Document the Blind Alleys" → Principle 10
 - Standardized on `_SYSTEM` as the default toolkit username
+- Renamed project to `iris-devtester` consistently across documentation
 
 ### v1.1.0 (2025-11-23)
 - Added Principle 8: Use Official IRIS Python API (No Private Attributes)

@@ -85,4 +85,4 @@ When a security vulnerability is reported:
 - **General Questions**: GitHub Discussions
 - **Non-Security Bugs**: GitHub Issues
 
-Thank you for helping keep IRIS DevTools secure!
+Thank you for helping keep iris-devtester secure!

@@ -1,5 +1,5 @@
 """
-Configuration models for IRIS DevTools.
+Configuration models for iris-devtester.
 
 Provides IRISConfig dataclass for database connection configuration.
 """
@@ -20,11 +20,12 @@ class IRISConfig:
         host: Database host (default: "localhost")
         port: Database port (default: 1972)
         namespace: IRIS namespace (default: "USER")
-        username: Database username (default: "SuperUser")
+        username: Database username (default: "_SYSTEM")
         password: Database password (default: "SYS")
         driver: Preferred driver type (default: "auto")
         connection_string: Optional override connection string
         timeout: Connection timeout in seconds (default: 30)
+        container_name: Optional name of the IRIS container (used for password reset)
 
     Raises:
         ValueError: If validation fails (invalid port, empty namespace, etc.)
@@ -46,7 +47,7 @@ class IRISConfig:
     host: str = "localhost"
     port: int = 1972
     namespace: str = "USER"
-    username: str = "SuperUser"
+    username: str = "_SYSTEM"
     password: str = "SYS"
     driver: Literal["dbapi", "jdbc", "auto"] = "auto"
     connection_string: Optional[str] = None

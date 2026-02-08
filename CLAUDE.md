@@ -1,4 +1,4 @@
-# CLAUDE.md - IRIS DevTools
+# CLAUDE.md - iris-devtester
 
 **Purpose**: Provides Claude Code with project-specific context, patterns, and conventions.
 
@@ -11,7 +11,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-**IRIS DevTools** is a battle-tested Python package providing automatic, reliable infrastructure for InterSystems IRIS development. This is being extracted from production code in the `rag-templates` project.
+**iris-devtester** is a battle-tested Python package providing automatic, reliable infrastructure for InterSystems IRIS development. This is being extracted from production code in the `rag-templates` project.
 
 ## Source Material
 

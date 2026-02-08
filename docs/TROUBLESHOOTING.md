@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide covers the most common issues you might encounter when using IRIS DevTools and how to resolve them.
+This guide covers the most common issues you might encounter when using iris-devtester and how to resolve them.
 
 ## Top 5 Issues
 
@@ -43,10 +43,10 @@ sudo usermod -aG docker $USER
 ```
 
 **Diagnosis:**
-IRIS requires password change on first login, but IRIS DevTools should auto-remediate this. If you see this error, auto-remediation failed.
+IRIS requires password change on first login, but iris-devtester should auto-remediate this. If you see this error, auto-remediation failed.
 
 **Solution:**
-IRIS DevTools automatically handles this, but if you encounter the error:
+iris-devtester automatically handles this, but if you encounter the error:
 
 ```python
 # The library should automatically reset the password
@@ -314,4 +314,4 @@ docker info | grep -E "CPUs|Total Memory"
 
 ---
 
-**Remember**: IRIS DevTools is designed to handle most issues automatically. If you encounter consistent errors, please [report them](https://github.com/intersystems-community/iris-devtester/issues/new?template=bug_report.yml) so we can improve auto-remediation.
+**Remember**: iris-devtester is designed to handle most issues automatically. If you encounter consistent errors, please [report them](https://github.com/intersystems-community/iris-devtester/issues/new?template=bug_report.yml) so we can improve auto-remediation.
