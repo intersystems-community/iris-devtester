@@ -90,6 +90,8 @@ def test_connection(
         test_cmd = [
             "docker",
             "exec",
+            "-u",
+            "irisowner",
             "-i",
             container_name,
             "bash",
@@ -126,10 +128,10 @@ def test_connection(
                 "\n"
                 "How to fix it:\n"
                 "  1. List available namespaces:\n"
-                f'     docker exec {container_name} iris session IRIS -U %SYS """Do ^%GSIZE"""\n'
+                f'     docker exec -u irisowner {container_name} iris session IRIS -U %SYS """Do ^%GSIZE"""\n'
                 "\n"
                 "  2. Create the namespace if needed:\n"
-                f"     docker exec {container_name} iris session IRIS -U %SYS\n"
+                f"     docker exec -u irisowner {container_name} iris session IRIS -U %SYS\n"
                 f'     Do ##class(Config.Namespaces).Create("{namespace}")\n'
                 "\n"
                 "  3. Or use an existing namespace like 'USER' or '%SYS'\n",
@@ -151,7 +153,7 @@ def test_connection(
             "     iris-devtester container enable-callin {container_name}\n"
             "\n"
             "  3. Test basic IRIS access:\n"
-            f"     docker exec -it {container_name} iris session IRIS -U %SYS\n",
+            f"     docker exec -u irisowner -it {container_name} iris session IRIS -U %SYS\n",
         )
 
     except subprocess.TimeoutExpired:

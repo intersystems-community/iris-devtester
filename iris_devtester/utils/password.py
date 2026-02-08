@@ -357,6 +357,8 @@ Halt
         cmd = [
             "docker",
             "exec",
+            "-u",
+            "irisowner",
             "-i",
             container_name,
             "iris",
@@ -569,6 +571,8 @@ Halt
         cmd = [
             "docker",
             "exec",
+            "-u",
+            "irisowner",
             container_name,
             "sh",
             "-c",
@@ -625,7 +629,7 @@ Halt
             f"Failed to unexpire passwords in {container_name}: {str(e)}\n"
             "\n"
             "Manual fix:\n"
-            f"  docker exec {container_name} bash -c 'echo \"do ##class(Security.Users)"
+            f"  docker exec -u irisowner {container_name} bash -c 'echo \"do ##class(Security.Users)"
             f'.UnExpireUserPasswords(\\"*\\")" | iris session IRIS -U %SYS\'\n',
         )
 

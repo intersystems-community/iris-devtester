@@ -120,7 +120,7 @@ class IRISReadyWaitStrategy:
             "     docker logs <container_name>\n"
             "\n"
             "  2. Verify IRIS is starting:\n"
-            "     docker exec <container_name> iris list\n"
+            "     docker exec -u irisowner <container_name> iris list\n"
             "\n"
             "  3. Increase timeout if needed:\n"
             f"     IRISReadyWaitStrategy(timeout={timeout * 2})\n"
@@ -170,7 +170,7 @@ class IRISReadyWaitStrategy:
         """
         try:
             result = subprocess.run(
-                ["docker", "exec", container_name, "iris", "list"],
+                ["docker", "exec", "-u", "irisowner", container_name, "iris", "list"],
                 capture_output=True,
                 text=True,
                 timeout=5,

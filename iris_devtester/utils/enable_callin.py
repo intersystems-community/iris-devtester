@@ -110,6 +110,8 @@ def enable_callin_service(
         enable_cmd = [
             "docker",
             "exec",
+            "-u",
+            "irisowner",
             "-i",
             container_name,
             "bash",
@@ -160,13 +162,13 @@ def enable_callin_service(
             f"     docker logs {container_name} | tail -20\n"
             "\n"
             "  2. Try manually enabling CallIn:\n"
-            f"     docker exec -it {container_name} iris session IRIS -U %SYS\n"
+            f"     docker exec -u irisowner -it {container_name} iris session IRIS -U %SYS\n"
             '     Do ##class(Security.Services).Get("%Service_CallIn",.prop)\n'
             '     Set prop("Enabled")=1\n'
             '     Do ##class(Security.Services).Modify("%Service_CallIn",.prop)\n'
             "\n"
             "  3. Check IRIS license (Community vs Enterprise):\n"
-            "     docker exec {container_name} iris list\n"
+            "     docker exec -u irisowner {container_name} iris list\n"
             "\n"
             "Documentation: See docs/learnings/callin-service-requirement.md\n",
         )

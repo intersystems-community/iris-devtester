@@ -305,7 +305,7 @@ class IRISContainer(IRISBase):
         container_name = self.get_container_name()
         ns = namespace or self._namespace
 
-        cmd = ["docker", "exec", "-i", container_name, "iris", "session", "IRIS", "-U", ns]
+        cmd = ["docker", "exec", "-u", "irisowner", "-i", container_name, "iris", "session", "IRIS", "-U", ns]
 
         result = subprocess.run(
             cmd, input=f"{script}\nHalt\n".encode("utf-8"), capture_output=True, timeout=30

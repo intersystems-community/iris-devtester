@@ -146,7 +146,7 @@ class FixtureLoader:
  Halt
  """
             result = subprocess.run(
-                ["docker", "exec", "-i", container_name, "iris", "session", "IRIS", "-U", "%SYS"],
+                ["docker", "exec", "-u", "irisowner", "-i", container_name, "iris", "session", "IRIS", "-U", "%SYS"],
                 input=create_ns_script.encode("utf-8"),
                 capture_output=True,
                 timeout=60,
@@ -168,6 +168,8 @@ class FixtureLoader:
                     [
                         "docker",
                         "exec",
+                        "-u",
+                        "irisowner",
                         "-i",
                         container_name,
                         "iris",
@@ -200,6 +202,8 @@ class FixtureLoader:
                 [
                     "docker",
                     "exec",
+                    "-u",
+                    "irisowner",
                     "-i",
                     container_name,
                     "iris",
@@ -236,7 +240,7 @@ class FixtureLoader:
  Write "SUCCESS" Halt
  """
             subprocess.run(
-                ["docker", "exec", "-i", container_name, "iris", "session", "IRIS", "-U", "%SYS"],
+                ["docker", "exec", "-u", "irisowner", "-i", container_name, "iris", "session", "IRIS", "-U", "%SYS"],
                 input=ensure_user_script.encode("utf-8"),
                 capture_output=True,
                 timeout=30,

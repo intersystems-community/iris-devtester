@@ -132,7 +132,7 @@ class FixtureCreator:
  Halt
  """
         result = subprocess.run(
-            ["docker", "exec", "-i", container_name, "iris", "session", "IRIS", "-U", namespace],
+            ["docker", "exec", "-u", "irisowner", "-i", container_name, "iris", "session", "IRIS", "-U", namespace],
             input=export_classes_script.encode("utf-8"),
             capture_output=True,
             timeout=120,
@@ -156,7 +156,7 @@ class FixtureCreator:
  Halt
  """
         result = subprocess.run(
-            ["docker", "exec", "-i", container_name, "iris", "session", "IRIS", "-U", namespace],
+            ["docker", "exec", "-u", "irisowner", "-i", container_name, "iris", "session", "IRIS", "-U", namespace],
             input=export_globals_script.encode("utf-8"),
             capture_output=True,
             timeout=120,
