@@ -132,6 +132,9 @@ class IRISReadyWaitStrategy:
                 [
                     "docker",
                     "exec",
+                    "-u",
+                    "irisowner",
+                    "-i",
                     container_name,
                     "iris",
                     "session",

@@ -284,6 +284,8 @@ The repository exposes core functionality as "Skills" to help AI agents work aut
 
 ## Active Technologies
 - N/A (documentation only) (023-docs-cleanup)
+- Python 3.9+ + `docker` (SDK), `testcontainers`, `click`, `packaging` (026-dev-instance)
+- Docker Volume (`idt-dev-data`) for physical storage; IRIS Namespaces for project isolation. (026-dev-instance)
 
 ## Recent Changes
 - 023-docs-cleanup: Added N/A (documentation only)
