@@ -5,6 +5,13 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-02-08 - Core Container Fixes
+
+### Fixed
+
+- **Superserver Port Mapping**: Fixed critical bug where non-standard superserver ports (e.g., 31972) were incorrectly mapped host-to-host instead of host-to-container (1972). This fixes connection resets on custom ports.
+- **Container Name Persistence**: Improved handling of `container_name` in CLI and adapter to ensure user-specified names are respected.
+
 ## [1.11.0] - 2026-02-08 - Implicit Namespace Creation (SQLite-Level Ergonomics)
 
 ### Added

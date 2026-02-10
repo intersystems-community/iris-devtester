@@ -10,6 +10,7 @@ We will follow an **MVP-first** approach, prioritizing **User Story 1 (Instant C
 
 ## Phase 1: Setup
 
+- [ ] T000 Fix core container port mapping bug in `iris_devtester/utils/iris_container_adapter.py`
 - [ ] T001 Create `iris_devtester/containers/dev_instance.py` (Implement `DevInstance` and `DockerVolumeManager` from `data-model.md`)
 - [ ] T002 Create `iris_devtester/cli/dev_commands.py` (Implement `idt dev` command set from `contracts/cli.md`)
 - [ ] T003 [P] Create `tests/unit/test_dev_instance_logic.py` for logic verification

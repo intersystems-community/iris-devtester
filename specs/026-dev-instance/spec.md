@@ -71,6 +71,8 @@ As a user, I want the dev instance to use the absolute physical limit for readin
 - **Stale Instance**: How does the system handle a dev instance that is "Running" in Docker but the IRIS process inside has crashed?
 - **Image Updates**: How does the user update the IRIS version used by the dev instance?
   - **Resolution**: Use **Community Edition (latest)** as the default engine image. Users can update or override via CLI flags (`idt dev up --image`).
+- **Port Mapping Inconsistency**: What happens if a non-default port (e.g., 31972) is used?
+  - **Resolution**: System MUST map host port 31972 to container port 1972 (standard IRIS port). The toolkit's core `IRISContainer` and adapter must handle this mapping correctly to ensure connectivity.
 
 ## Requirements *(mandatory)*
 

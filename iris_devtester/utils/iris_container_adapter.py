@@ -353,8 +353,8 @@ class IRISContainerManager:
             name=config.container_name,
             volumes=volumes or None,
             ports={
-                f"{config.superserver_port}/tcp": config.superserver_port,
-                f"{config.webserver_port}/tcp": config.webserver_port,
+                "1972/tcp": config.superserver_port,
+                "52773/tcp": config.webserver_port,
             },
             environment=environment,
             detach=True,
