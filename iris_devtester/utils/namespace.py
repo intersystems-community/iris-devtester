@@ -4,13 +4,27 @@ Namespace management utilities for InterSystems IRIS.
 Implements implicit namespace creation ("SQLite-level ergonomics").
 """
 
+import hashlib
 import logging
+import os
 import subprocess
 from typing import Optional
 
 from iris_devtester.config import IRISConfig
 
 logger = logging.getLogger(__name__)
+
+
+def get_project_id(path: Optional[str] = None) -> str:
+    """Generate a stable Project ID from a directory path."""
+    target_path = os.path.abspath(path or os.getcwd())
+    h = hashlib.sha256(target_path.encode()).hexdigest()
+    return h[:11].upper()
+
+
+def get_project_namespace(path: Optional[str] = None) -> str:
+    """Generate a valid IRIS namespace name for a project."""
+    return f"P{get_project_id(path)}"
 
 
 def check_namespace_exists(container_name: str, namespace: str) -> bool:
@@ -60,7 +74,29 @@ def create_namespace(container_name: str, namespace: str) -> bool:
     Returns:
         True if creation succeeded, False otherwise.
     """
+    # Use Durable %SYS path if possible, otherwise default to mgr/
+    # (Feature 026: The Dev Instance uses /iris/data)
     db_dir = f"/usr/irissys/mgr/{namespace.lower()}"
+    
+    # Try to detect if we should use a different base directory
+    detect_dir_script = 'Write $Get(%ISC["DataDir"], "/usr/irissys/mgr/")'
+    try:
+        detect_cmd = [
+            "docker", "exec", "-u", "irisowner", "-i", container_name,
+            "iris", "session", "IRIS", "-U", "%SYS"
+        ]
+        res = subprocess.run(
+            detect_cmd, input=f"{detect_dir_script}\nHalt\n".encode(), 
+            capture_output=True, timeout=10
+        )
+        base_dir = res.stdout.decode().strip().split("\n")[-1]
+        if base_dir and base_dir.endswith("/"):
+            db_dir = f"{base_dir}{namespace.lower()}"
+        elif base_dir:
+            db_dir = f"{base_dir}/{namespace.lower()}"
+    except Exception:
+        pass
+
     script = f"""
  Set ns="{namespace}"
  Set dbDir="{db_dir}"

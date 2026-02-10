@@ -67,6 +67,19 @@ def get_connection(
         config = discover_config()
         logger.info(f"Auto-discovered IRIS at {config.host}:{config.port}")
 
+    # Feature 026: Implicit Start for Dev Instance
+    # If the config points to the global dev instance, ensure it is running
+    from iris_devtester.containers.dev_instance import DEV_INSTANCE_NAME, DevInstanceManager
+    
+    container_name = getattr(config, "container_name", None)
+    if container_name == DEV_INSTANCE_NAME:
+        dev_manager = DevInstanceManager()
+        if not dev_manager.is_running():
+            logger.info("Dev instance not running. Starting automatically...")
+            dev_manager.ensure_ready()
+            # Refresh config to pick up potentially new port
+            config = discover_config(explicit_config=config)
+
     # Implicit namespace creation (SQLite-level ergonomics)
     from iris_devtester.utils.namespace import ensure_namespace_exists
 

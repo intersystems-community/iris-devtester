@@ -104,6 +104,31 @@ class IRISContainer(IRISBase):
         self._preconfigure_username: Optional[str] = None
 
     @classmethod
+    def dev(cls, **kwargs) -> "IRISContainer":
+        """
+        Attach to or start the global persistent Dev Instance.
+        
+        This provides 'Warm Start' capability with instant connectivity.
+        Isolation is handled automatically via project-specific namespaces.
+        
+        Args:
+            **kwargs: Additional configuration (username, password).
+            
+        Returns:
+            An IRISContainer instance attached to the dev engine.
+        """
+        from iris_devtester.containers.dev_instance import DevInstanceManager, get_project_namespace
+        
+        manager = DevInstanceManager()
+        instance = manager.ensure_ready()
+        
+        # Determine namespace for current project
+        project_ns = get_project_namespace()
+        kwargs.setdefault("namespace", project_ns)
+        
+        return cls.attach(instance.name, **kwargs)
+
+    @classmethod
     def community(
         cls, image: Optional[str] = None, version: str = "latest", **kwargs
     ) -> "IRISContainer":

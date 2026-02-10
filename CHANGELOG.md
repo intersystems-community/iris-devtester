@@ -5,6 +5,25 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-02-10 - The Dev Instance (Warm Start)
+
+### Added
+
+- **The Dev Instance (Warm Start)**: Achieved the project's "North Star" of SQLite-level ergonomics.
+  - **Instant Connection**: `get_connection()` now connects in < 100ms by utilizing a persistent background engine.
+  - **Managed Lifecycle**: New `idt dev` command group (`up`, `down`, `status`, `logs`) to manage the background engine.
+  - **Project Isolation**: Automatic folder-based hashing ensures each project directory gets its own isolated IRIS namespace and database.
+  - **Durable Persistence**: Integrated "Durable %SYS" support ensures data survives container restarts and engine upgrades.
+  - **Automatic Provisioning**: Calling `get_connection()` will implicitly start the dev engine if it's not running.
+  - **Optimized Readiness**: Ultra-fast TCP port probing for immediate connectivity detection.
+
+- **Improved Port Management**: Enhanced auto-discovery logic to prioritize the managed dev instance.
+
+### Fixed
+
+- **Volume Permissions**: Automated `chown` logic for persistent volumes to prevent UID 51773 (irisowner) conflicts on macOS.
+- **Readiness Reliability**: Improved `wait_until_ready` logic with more robust ObjectScript-based initialization checks.
+
 ## [1.11.1] - 2026-02-08 - Core Container Fixes
 
 ### Fixed

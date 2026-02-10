@@ -76,6 +76,21 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
     env_config = _load_from_environment()
     discovered.update(env_config)
 
+    # Layer 2.5: Detect persistent Dev Instance (Feature 026)
+    # This takes precedence over auto-detection but respects environment/explicit config
+    if discovered["host"] == DEFAULT_HOST and discovered["port"] == DEFAULT_PORT:
+        from iris_devtester.containers.dev_instance import DevInstanceManager
+        dev_manager = DevInstanceManager()
+        dev_instance = dev_manager.get_instance()
+        if dev_instance and dev_instance.status == "running":
+            # Extract port mapping from dev instance
+            ports = dev_instance.attrs.get("NetworkSettings", {}).get("Ports", {})
+            if "1972/tcp" in ports and ports["1972/tcp"]:
+                dev_port = int(ports["1972/tcp"][0]["HostPort"])
+                discovered["port"] = dev_port
+                discovered["container_name"] = dev_instance.name
+                logger.info(f"Using persistent dev instance on port {dev_port}")
+
     # Layer 4: Auto-detect from Docker/native instances (ONLY if not already set)
     # Import here to avoid circular dependency
     from iris_devtester.connections.auto_discovery import auto_detect_iris_host_and_port

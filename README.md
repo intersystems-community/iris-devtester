@@ -26,12 +26,23 @@ IRIS DevTester is a comprehensive Python package that provides **automatic, reli
 pip install iris-devtester[all]
 ```
 
-### 2. Start a Container
+### 2. SQLite-Level Connectivity (Warm Start)
+Use the persistent dev instance for instant connections across projects:
+
 ```bash
-iris-devtester container up
+idt dev up
 ```
 
-### 3. Write and Run a Test
+Then in your code:
+```python
+from iris_devtester.connections import get_connection
+
+# Instant connection to a project-specific namespace
+conn = get_connection()
+```
+
+### 3. Ephemeral Containers (for CI/CD)
+For completely isolated test containers:
 ```python
 from iris_devtester.containers import IRISContainer
 

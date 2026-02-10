@@ -80,6 +80,12 @@ class ContainerConfig(BaseModel):
     cpf_merge: Optional[str] = Field(
         default=None, description="Path to CPF merge file or raw CPF content"
     )
+    durable_sys: bool = Field(
+        default=False, description="Enable Durable %SYS for persistent data"
+    )
+    isc_data_directory: str = Field(
+        default="/iris/data", description="Container path for Durable %SYS data"
+    )
 
     @field_validator("container_name")
     @classmethod

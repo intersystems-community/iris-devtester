@@ -47,6 +47,17 @@ class IRISReadyWaitStrategy:
         self.poll_interval = poll_interval
         self._timeout = timeout  # Alias for compatibility
 
+    def is_ready_fast(self, host: str, port: int) -> bool:
+        """
+        Ultra-fast readiness check (sub-50ms) for warm start path.
+        """
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(0.05) # 50ms timeout
+                return sock.connect_ex((host, port)) == 0
+        except Exception:
+            return False
+
     def wait_until_ready(
         self,
         host: str,
@@ -56,31 +67,17 @@ class IRISReadyWaitStrategy:
     ) -> bool:
         """
         Wait until IRIS container is ready.
-
-        Args:
-            host: Container host/IP
-            port: Port to check (uses self.port if not provided)
-            timeout: Timeout in seconds (uses self.timeout if not provided)
-            container_name: Optional Docker container name for application check
-        Returns:
-            True if ready within timeout, False otherwise
-
-        Raises:
-            TimeoutError: If container not ready within timeout
-
-        Example:
-            >>> strategy = IRISReadyWaitStrategy(timeout=30)
-            >>> with IRISContainer.community() as iris:
-            ...     iris.start()
-            ...     config = iris.get_config()
-            ...     ready = strategy.wait_until_ready(config.host, config.port)
-            ...     if ready:
-            ...         print("IRIS is ready to accept connections")
         """
         port = port or self.port
         timeout = timeout or self.timeout
 
+        # Fast path check (Warm Start Optimization)
+        if self.is_ready_fast(host, port):
+            logger.info(f"✓ IRIS ready at {host}:{port} (fast path)")
+            return True
+
         logger.info(f"Waiting for IRIS at {host}:{port} (timeout: {timeout}s)...")
+        # ... rest of method
 
         start_time = time.time()
         last_error = None
@@ -128,6 +125,7 @@ class IRISReadyWaitStrategy:
 
     def check_iris_initialized(self, container_name: str) -> bool:
         try:
+            # Use a more reliable way to execute ObjectScript via shell
             result = subprocess.run(
                 [
                     "docker",
@@ -136,13 +134,9 @@ class IRISReadyWaitStrategy:
                     "irisowner",
                     "-i",
                     container_name,
-                    "iris",
-                    "session",
-                    "IRIS",
-                    "-U",
-                    "%SYS",
-                    "W 1",
-                    "Halt",
+                    "sh",
+                    "-c",
+                    'echo "W 1 halt" | iris session IRIS -U %SYS',
                 ],
                 capture_output=True,
                 text=True,

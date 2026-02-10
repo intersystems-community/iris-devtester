@@ -330,6 +330,10 @@ class IRISContainerManager:
         if config.edition == "enterprise" and config.license_key:
             environment["ISC_LICENSE_KEY"] = config.license_key
 
+        # Support Durable %SYS (Feature 026)
+        if config.durable_sys:
+            environment["ISC_DATA_DIRECTORY"] = config.isc_data_directory
+
         if config.cpf_merge:
             import os
             import tempfile

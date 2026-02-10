@@ -6,6 +6,7 @@ from iris_devtester import __version__
 
 from .connection_commands import test_connection
 from .container import container_group as container
+from .dev_commands import dev_group as dev
 from .fixture_commands import fixture
 
 
@@ -52,6 +53,7 @@ def main():
 # Register subcommands
 main.add_command(fixture)
 main.add_command(container)
+main.add_command(dev)
 main.add_command(test_connection)
 
 
