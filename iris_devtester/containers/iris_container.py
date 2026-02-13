@@ -126,7 +126,8 @@ class IRISContainer(IRISBase):
         project_ns = get_project_namespace()
         kwargs.setdefault("namespace", project_ns)
         
-        return cls.attach(instance.name, **kwargs)
+        container_name = str(instance.name) if instance.name else "iris_db"
+        return cls.attach(container_name, **kwargs)
 
     @classmethod
     def community(
@@ -245,6 +246,9 @@ class IRISContainer(IRISBase):
         Returns:
             An IRISContainer instance attached to the existing container.
         """
+        if not container_name:
+            raise ValueError("container_name must be a non-empty string")
+
         instance = cls(image="", name=container_name, **kwargs)
         instance._is_attached = True
         instance._container_name = container_name
@@ -268,10 +272,18 @@ class IRISContainer(IRISBase):
                 instance.get_config()
 
         except Exception as e:
-            logger.warning(f"Could not fully inspect container '{container_name}': {e}")
-            # Fallback to defaults
-            instance.host = instance.host or "localhost"
-            instance._mapped_port = instance._mapped_port or 1972
+            # For attached containers, we MUST find the container to be useful
+            raise ValueError(
+                f"Container '{container_name}' not found or not running\n"
+                "\n"
+                "What went wrong:\n"
+                f"  {str(e)}\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Verify the container name is correct: docker ps\n"
+                "  2. Ensure the container is started: docker start <name>\n"
+                "  3. Check if your user has permission to access the Docker socket"
+            )
 
         return instance
 
@@ -455,21 +467,29 @@ class IRISContainer(IRISBase):
         """
         # Always create fresh config to pick up any credential changes
         # (e.g., conftest may update _username/_password after start())
-        self._config = IRISConfig(
+        config = IRISConfig(
             username=self._username,
             password=self._password,
             namespace=self._namespace,
             container_name=self.get_container_name(),
         )
-        config = self._config
+        self._config = config
         try:
-            # Get host and mapped port from testcontainers
+            # Get host and mapped port
             # IMPORTANT: self.port must remain 1972 (internal port) for get_exposed_port() to work
-            self.host = self.get_container_host_ip()
+            
+            # Use 'localhost' as default host for local containers
+            discovered_host = self.get_container_host_ip()
+            if discovered_host in ("0.0.0.0", "::"):
+                discovered_host = "localhost"
+            
+            self.host = discovered_host
             self._mapped_port = int(self.get_exposed_port(1972))  # Use internal port to get mapping
+            
             config.host = self.host
             config.port = self._mapped_port  # Config uses the host-mapped port for connections
         except Exception:
+            # If discovery fails, stick with defaults (localhost:1972)
             pass
         return config
 
@@ -526,6 +546,36 @@ class IRISContainer(IRISBase):
         self._username = username
         self._password = password
         return self
+
+    def reset_password(
+        self, username: str = "_SYSTEM", new_password: str = "SYS", timeout: int = 30
+    ) -> bool:
+        """
+        Reset password for a user in this container.
+
+        Args:
+            username: Username to reset
+            new_password: New password to set
+            timeout: Timeout in seconds
+
+        Returns:
+            True if successful
+        """
+        from iris_devtester.utils.password import reset_password as reset_func
+
+        config = self.get_config()
+        result = reset_func(
+            container_name=self.get_container_name(),
+            username=username,
+            new_password=new_password,
+            timeout=timeout,
+            hostname=config.host,
+            port=config.port,
+        )
+        if result.success:
+            self._password = new_password
+            return True
+        return False
 
     def start(self) -> "IRISContainer":
         """Start container with pre-config support and port registry integration."""

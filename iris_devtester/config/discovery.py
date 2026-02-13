@@ -9,6 +9,7 @@ Automatically discovers IRIS configuration from multiple sources:
 5. Sensible defaults (lowest priority)
 """
 
+import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -24,6 +25,8 @@ from iris_devtester.config.defaults import (
     DEFAULT_USERNAME,
 )
 from iris_devtester.config.models import IRISConfig
+
+logger = logging.getLogger(__name__)
 
 
 def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
