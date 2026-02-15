@@ -319,11 +319,34 @@ class PortRegistry:
         raise PortExhaustedError(port_range=self.port_range, current_assignments=assignments)
 
     def _is_host_port_free(self, port: int) -> bool:
-        """Check if a port is actually free on the host using a socket."""
-        with _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM) as s:
-            s.settimeout(0.1)
-            # connect_ex returns 0 if connection succeeded (port is in use)
-            return s.connect_ex(("localhost", port)) != 0
+        """
+        Check if a port is actually bindable on the host.
+        
+        This is more definitive than connecting, as it detects ports that are
+        bound but not listening (which Docker will fail on).
+        """
+        # 1. Try IPv4 bind
+        try:
+            with _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM) as s:
+                # Do NOT set SO_REUSEADDR, we want to know if it's genuinely busy
+                s.bind(("0.0.0.0", port))
+        except (OSError, _socket.error):
+            return False
+
+        # 2. Try IPv6 bind (if supported)
+        try:
+            with _socket.socket(_socket.AF_INET6, _socket.SOCK_STREAM) as s:
+                s.bind(("::", port))
+        except (OSError, _socket.error) as e:
+            # If IPv6 is not supported on this host, we don't count it as "occupied"
+            # but if it fails with EADDRINUSE, it is occupied.
+            import errno
+            if getattr(e, 'errno', None) == errno.EADDRINUSE:
+                return False
+            # For other errors (like EAFNOSUPPORT), we ignore and rely on IPv4 check
+            pass
+
+        return True
 
     def _get_docker_bound_ports(self) -> set:
         """

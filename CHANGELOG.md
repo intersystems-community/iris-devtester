@@ -5,6 +5,18 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.5] - 2026-02-15 - Definitive Port Verification
+
+### Fixed
+
+- **Robust Port Detection**: Replaced connection-based port probing with a definitive `socket.bind()` check. This correctly identifies ports that are bound to `0.0.0.0` but not actively listening (a common "silent failure" state for Docker on macOS).
+- **CLI Range Support**: Added `--port-range` option to `idt container up` and `idt container start` to allow custom port pools for auto-assignment.
+- **Dual-Stack Verification**: Port availability now checks both IPv4 (`0.0.0.0`) and IPv6 (`::`) interfaces where supported.
+
+### Changed
+
+- **E2E Hardening**: Enhanced `tests/e2e/test_port_registry_e2e.py` to simulate the "bound but not listening" state, ensuring long-term reliability of the port fallback mechanism.
+
 ## [1.12.4] - 2026-02-15 - Port Management Reliability
 
 ### Fixed

@@ -83,8 +83,11 @@ def container_group(ctx):
 @click.option(
     "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
 )
+@click.option(
+    "--port-range", help="Port range for auto-assignment (default: 1972-1981)"
+)
 @click.pass_context
-def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, auto_port):
+def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, auto_port, port_range):
     """
     Create and start IRIS container from configuration.
 
@@ -168,7 +171,17 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, aut
         if auto_port:
             from iris_devtester.ports.registry import PortRegistry
 
-            registry = PortRegistry()
+            registry_kwargs = {}
+            if port_range:
+                try:
+                    min_p, max_p = map(int, port_range.split("-"))
+                    registry_kwargs["port_range"] = (min_p, max_p)
+                except Exception:
+                    raise click.ClickException(
+                        f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-1981)"
+                    )
+
+            registry = PortRegistry(**registry_kwargs)
             project_path = str(Path.cwd().absolute())
 
             click.echo(f"⏳ Engaging port registry for project: {project_path}")
@@ -525,8 +538,11 @@ def list_containers(ctx, show_all, output_format):
 @click.option(
     "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
 )
+@click.option(
+    "--port-range", help="Port range for auto-assignment (default: 1972-1981)"
+)
 @click.pass_context
-def start(ctx, container_name, config, timeout, auto_port):
+def start(ctx, container_name, config, timeout, auto_port, port_range):
     """
     Start existing IRIS container or create new one.
 
@@ -574,7 +590,17 @@ def start(ctx, container_name, config, timeout, auto_port):
                 if auto_port:
                     from iris_devtester.ports.registry import PortRegistry
 
-                    registry = PortRegistry()
+                    registry_kwargs = {}
+                    if port_range:
+                        try:
+                            min_p, max_p = map(int, port_range.split("-"))
+                            registry_kwargs["port_range"] = (min_p, max_p)
+                        except Exception:
+                            raise click.ClickException(
+                                f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-1981)"
+                            )
+
+                    registry = PortRegistry(**registry_kwargs)
                     project_path = str(Path.cwd().absolute())
 
                     click.echo(f"⏳ Engaging port registry for project: {project_path}")
