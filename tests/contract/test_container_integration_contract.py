@@ -66,7 +66,7 @@ def test_auto_assignment_with_port_registry(temp_registry):
 
     try:
         port = container.get_assigned_port()
-        assert 1972 <= port <= 1981
+        assert 1972 <= port <= 2000
 
         # Verify registry has assignment
         assignment = temp_registry.get_assignment("/tmp/project-a")

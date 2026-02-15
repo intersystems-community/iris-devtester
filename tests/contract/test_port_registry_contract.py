@@ -41,14 +41,13 @@ def temp_registry_small_range():
 
 def test_assign_port_returns_port_in_range(temp_registry):
     """
-    T004: assign_port() returns port in range 1972-1981.
-
-    Contract: Auto-assigned ports must be within configured range.
+    T004: assign_port() returns port in range 1972-2000.
     """
     assignment = temp_registry.assign_port("/tmp/project-a")
 
     assert isinstance(assignment, PortAssignment)
-    assert 1972 <= assignment.port <= 1981
+    assert 1972 <= assignment.port <= 2000
+
     assert assignment.project_path == "/tmp/project-a"
     assert assignment.assignment_type == "auto"
     assert assignment.status == "active"

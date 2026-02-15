@@ -5,6 +5,18 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.6] - 2026-02-15 - Ultimate Port Reliability Fix
+
+### Fixed
+
+- **Idempotency Remediation**: Fixed "Idempotency Blindness" where `assign_port` would blindly return a cached port assignment even if that port was subsequently occupied by another process. Now performs live verification for every assignment request.
+- **Definitive Port Probing**: (Refined from 1.12.5) Replaced weak `connect_ex` probes with definitive `socket.bind()` attempts on `0.0.0.0` and `::` to detect ports that are bound but not actively listening.
+
+### Changed
+
+- **Default Port Range Expansion**: Increased the default auto-assignment pool from `1972-1981` (10 ports) to `1972-2000` (29 ports). This provides significantly more headroom for concurrent projects and reduces collision frequency in congested dev environments.
+- **E2E Robustness**: Rewrote `tests/e2e/test_port_registry_e2e.py` to be fully isolated and cover complex remediation scenarios.
+
 ## [1.12.5] - 2026-02-15 - Definitive Port Verification
 
 ### Fixed

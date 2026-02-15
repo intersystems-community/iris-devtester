@@ -84,7 +84,7 @@ def container_group(ctx):
     "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
 )
 @click.option(
-    "--port-range", help="Port range for auto-assignment (default: 1972-1981)"
+    "--port-range", help="Port range for auto-assignment (default: 1972-2000)"
 )
 @click.pass_context
 def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, auto_port, port_range):
@@ -178,8 +178,9 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, aut
                     registry_kwargs["port_range"] = (min_p, max_p)
                 except Exception:
                     raise click.ClickException(
-                        f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-1981)"
+                        f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-2000)"
                     )
+
 
             registry = PortRegistry(**registry_kwargs)
             project_path = str(Path.cwd().absolute())
@@ -539,7 +540,7 @@ def list_containers(ctx, show_all, output_format):
     "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
 )
 @click.option(
-    "--port-range", help="Port range for auto-assignment (default: 1972-1981)"
+    "--port-range", help="Port range for auto-assignment (default: 1972-2000)"
 )
 @click.pass_context
 def start(ctx, container_name, config, timeout, auto_port, port_range):
@@ -597,7 +598,7 @@ def start(ctx, container_name, config, timeout, auto_port, port_range):
                             registry_kwargs["port_range"] = (min_p, max_p)
                         except Exception:
                             raise click.ClickException(
-                                f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-1981)"
+                                f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-2000)"
                             )
 
                     registry = PortRegistry(**registry_kwargs)

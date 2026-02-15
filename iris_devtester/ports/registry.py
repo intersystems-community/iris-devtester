@@ -30,14 +30,14 @@ class PortRegistry:
     def __init__(
         self,
         registry_path: Optional[Path] = None,
-        port_range: tuple[int, int] = (1972, 1981),
+        port_range: tuple[int, int] = (1972, 2000),
     ):
         """
         Initialize port registry with optional custom path and port range.
 
         Args:
             registry_path: Path to registry JSON file. Default: ~/.iris-devtester/port-registry.json
-            port_range: Tuple of (min_port, max_port) for auto-assignment. Default: (1972, 1981)
+            port_range: Tuple of (min_port, max_port) for auto-assignment. Default: (1972, 2000)
         """
         if registry_path is None:
             default_dir = Path.home() / ".iris-devtester"
@@ -85,7 +85,16 @@ class PortRegistry:
                 # Check if project already has assignment (idempotency)
                 existing = self._find_assignment(assignments, project_path)
                 if existing:
-                    return existing
+                    # VERIFY: Is the assigned port still actually available?
+                    # (It might have been "stolen" by an external process or another container)
+                    docker_bound = self._get_docker_bound_ports()
+                    # We ignore our own container if we knew its name, but here we check host mostly
+                    if self._is_host_port_free(existing.port) and existing.port not in docker_bound:
+                        return existing
+                    
+                    # Port is no longer available! Invalidate and continue to find a new one.
+                    assignments = [a for a in assignments if a.project_path != project_path]
+                    # We continue to the logic below which will find a new port
 
                 # Determine port to assign
                 port = None
