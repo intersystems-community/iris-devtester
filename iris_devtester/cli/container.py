@@ -80,8 +80,11 @@ def container_group(ctx):
     "--timeout", type=int, default=60, help="Health check timeout in seconds (default: 60)"
 )
 @click.option("--cpf", help="Path to CPF merge file or raw CPF content")
+@click.option(
+    "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
+)
 @click.pass_context
-def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf):
+def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, auto_port):
     """
     Create and start IRIS container from configuration.
 
@@ -160,6 +163,37 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf):
         if cpf:
             container_config.cpf_merge = cpf
             click.echo(f"  → CPF Merge: {cpf[:50]}...")
+
+        # Handle auto-port assignment (Feature 027 - Smart Port Fallback)
+        if auto_port:
+            from iris_devtester.ports.registry import PortRegistry
+
+            registry = PortRegistry()
+            project_path = str(Path.cwd().absolute())
+
+            click.echo(f"⏳ Engaging port registry for project: {project_path}")
+            # Use current config port as preferred
+            preferred = container_config.superserver_port
+            assignment = registry.assign_port(project_path, preferred_port=preferred)
+
+            if assignment.port != preferred:
+                click.echo(
+                    click.style(
+                        f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
+                        fg="yellow",
+                    )
+                )
+            else:
+                click.echo(f"✓ Port {assignment.port} assigned and verified.")
+
+            container_config.superserver_port = assignment.port
+            # Update web port proportionally if it's the default
+            if container_config.webserver_port == 52773:
+                # Simple logic: if superserver shifted by N, shift webserver by N
+                offset = assignment.port - 1972
+                if offset > 0:
+                    container_config.webserver_port = 52773 + offset
+                    click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
 
         # Check if container already exists
         existing_container = IRISContainerManager.get_existing(container_config.container_name)
@@ -475,8 +509,11 @@ def list_containers(ctx, show_all, output_format):
 @click.option(
     "--timeout", type=int, default=60, help="Health check timeout in seconds (default: 60)"
 )
+@click.option(
+    "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
+)
 @click.pass_context
-def start(ctx, container_name, config, timeout):
+def start(ctx, container_name, config, timeout, auto_port):
     """
     Start existing IRIS container or create new one.
 
@@ -517,8 +554,40 @@ def start(ctx, container_name, config, timeout):
                 else:
                     container_config = ContainerConfig.default()
 
-            # Create and start container using Docker SDK (Feature 011 - T015)
-            click.echo("⏳ Configuring and starting container with Docker SDK...")
+                # Override name
+                container_config.container_name = container_name
+
+                # Handle auto-port assignment (Feature 027 - Smart Port Fallback)
+                if auto_port:
+                    from iris_devtester.ports.registry import PortRegistry
+
+                    registry = PortRegistry()
+                    project_path = str(Path.cwd().absolute())
+
+                    click.echo(f"⏳ Engaging port registry for project: {project_path}")
+                    preferred = container_config.superserver_port
+                    assignment = registry.assign_port(project_path, preferred_port=preferred)
+
+                    if assignment.port != preferred:
+                        click.echo(
+                            click.style(
+                                f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
+                                fg="yellow",
+                            )
+                        )
+                    else:
+                        click.echo(f"✓ Port {assignment.port} assigned and verified.")
+
+                    container_config.superserver_port = assignment.port
+                    # Update web port proportionally if it's the default
+                    if container_config.webserver_port == 52773:
+                        offset = assignment.port - 1972
+                        if offset > 0:
+                            container_config.webserver_port = 52773 + offset
+                            click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+
+                # Create and start container using Docker SDK (Feature 011 - T015)
+                click.echo("⏳ Configuring and starting container with Docker SDK...")
 
             # Validate volume paths before creation
             volume_errors = container_config.validate_volume_paths()
