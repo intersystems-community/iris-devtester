@@ -5,6 +5,7 @@ Provides atomic file-based persistence with file locking for concurrent safety.
 """
 
 import json
+import socket as _socket
 from datetime import datetime
 from pathlib import Path
 from typing import List, Literal, Optional
@@ -56,6 +57,7 @@ class PortRegistry:
         self,
         project_path: str,
         preferred_port: Optional[int] = None,
+        allow_fallback: bool = False,
     ) -> PortAssignment:
         """
         Assign port to project (idempotent - returns existing if already assigned).
@@ -63,13 +65,14 @@ class PortRegistry:
         Args:
             project_path: Absolute path to project directory
             preferred_port: Optional manual port override
+            allow_fallback: If True and preferred_port is occupied, fall back to auto-assignment
 
         Returns:
             PortAssignment with assigned port
 
         Raises:
             PortExhaustedError: All ports in range are in use
-            PortConflictError: preferred_port already assigned to different project
+            PortConflictError: preferred_port already assigned to different project (and fallback disabled)
             PortAssignmentTimeoutError: File lock timeout (>5 seconds)
         """
         lock = FileLock(self.lock_path, timeout=5)
@@ -85,11 +88,21 @@ class PortRegistry:
                     return existing
 
                 # Determine port to assign
+                port = None
+                assignment_type: Literal["auto", "manual"] = "auto"
+
                 if preferred_port is not None:
-                    # Manual port assignment
-                    self._validate_port_available(assignments, preferred_port, project_path)
-                    port = preferred_port
-                    assignment_type: Literal["auto", "manual"] = "manual"
+                    try:
+                        # Manual port assignment
+                        self._validate_port_available(assignments, preferred_port, project_path)
+                        port = preferred_port
+                        assignment_type = "manual"
+                    except PortConflictError:
+                        if not allow_fallback:
+                            raise
+                        # Fallback to auto-assignment
+                        port = self._find_available_port(assignments)
+                        assignment_type = "auto"
                 else:
                     # Auto-assignment
                     port = self._find_available_port(assignments)
@@ -283,8 +296,8 @@ class PortRegistry:
         """
         Find first available port in range.
 
-        Checks both registry assignments AND actual Docker port bindings
-        to avoid conflicts with external containers.
+        Checks registry assignments, actual Docker port bindings, AND 
+        live host port availability via socket.
 
         Raises:
             PortExhaustedError: All ports in range are in use
@@ -298,10 +311,19 @@ class PortRegistry:
 
         for port in range(self.min_port, self.max_port + 1):
             if port not in used_ports:
-                return port
+                # FINAL CHECK: Is the port actually free on the host?
+                if self._is_host_port_free(port):
+                    return port
 
         # All ports exhausted
         raise PortExhaustedError(port_range=self.port_range, current_assignments=assignments)
+
+    def _is_host_port_free(self, port: int) -> bool:
+        """Check if a port is actually free on the host using a socket."""
+        with _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM) as s:
+            s.settimeout(0.1)
+            # connect_ex returns 0 if connection succeeded (port is in use)
+            return s.connect_ex(("localhost", port)) != 0
 
     def _get_docker_bound_ports(self) -> set:
         """
@@ -352,8 +374,9 @@ class PortRegistry:
         Validate that preferred port is available.
 
         Raises:
-            PortConflictError: Port already assigned to different project
+            PortConflictError: Port already assigned to different project or occupied on host
         """
+        # 1. Check registry assignments
         for assignment in assignments:
             if assignment.port == port and assignment.status == "active":
                 raise PortConflictError(
@@ -363,3 +386,13 @@ class PortRegistry:
                     existing_assignment_type=assignment.assignment_type,
                     existing_status=assignment.status,
                 )
+
+        # 2. Check live host availability
+        if not self._is_host_port_free(port):
+            raise PortConflictError(
+                requested_port=port,
+                requested_project=requesting_project,
+                existing_project="Unknown (Occupied by non-Docker process on host)",
+                existing_assignment_type="manual",
+                existing_status="active",
+            )

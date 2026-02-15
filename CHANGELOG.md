@@ -5,6 +5,18 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.4] - 2026-02-15 - Port Management Reliability
+
+### Fixed
+
+- **Host Port Availability**: Enhanced `PortRegistry` to perform live TCP socket checks on the host. This prevents `idt` from assigning ports that are occupied by non-Docker processes.
+- **Auto-Port Fallback**: Improved CLI logic to correctly trigger auto-assignment when the default port (1972) is taken, even if it's the configured default.
+- **Web Port Scaling**: Fixed logic for proportional adjustment of the WebServer port when the SuperServer port is shifted.
+
+### Added
+
+- **E2E Coverage**: Added full end-to-end coverage for port conflict scenarios in `tests/e2e/test_port_registry_e2e.py`.
+
 ## [1.12.3] - 2026-02-15 - Documentation Sync
 
 ### Changed

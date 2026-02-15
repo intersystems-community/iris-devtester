@@ -172,24 +172,37 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, aut
             project_path = str(Path.cwd().absolute())
 
             click.echo(f"⏳ Engaging port registry for project: {project_path}")
-            # Use current config port as preferred
-            preferred = container_config.superserver_port
-            assignment = registry.assign_port(project_path, preferred_port=preferred)
+            
+            # Use current config port as preferred ONLY if it's NOT the default 1972
+            preferred = container_config.superserver_port if container_config.superserver_port != 1972 else None
+            
+            assignment = registry.assign_port(
+                project_path, preferred_port=preferred, allow_fallback=True
+            )
 
-            if assignment.port != preferred:
+            if assignment.port != preferred and preferred is not None:
                 click.echo(
                     click.style(
                         f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
                         fg="yellow",
                     )
                 )
+            elif assignment.assignment_type == "auto" and preferred is None:
+                if assignment.port != 1972:
+                    click.echo(
+                        click.style(
+                            f"⚠️  Default port 1972 was unavailable. Assigned {assignment.port} instead.",
+                            fg="yellow",
+                        )
+                    )
+                else:
+                    click.echo(f"✓ Port {assignment.port} assigned and verified.")
             else:
                 click.echo(f"✓ Port {assignment.port} assigned and verified.")
 
             container_config.superserver_port = assignment.port
             # Update web port proportionally if it's the default
             if container_config.webserver_port == 52773:
-                # Simple logic: if superserver shifted by N, shift webserver by N
                 offset = assignment.port - 1972
                 if offset > 0:
                     container_config.webserver_port = 52773 + offset
@@ -565,16 +578,31 @@ def start(ctx, container_name, config, timeout, auto_port):
                     project_path = str(Path.cwd().absolute())
 
                     click.echo(f"⏳ Engaging port registry for project: {project_path}")
-                    preferred = container_config.superserver_port
-                    assignment = registry.assign_port(project_path, preferred_port=preferred)
+                    
+                    # Use current config port as preferred ONLY if it's NOT the default 1972
+                    preferred = container_config.superserver_port if container_config.superserver_port != 1972 else None
+                    
+                    assignment = registry.assign_port(
+                        project_path, preferred_port=preferred, allow_fallback=True
+                    )
 
-                    if assignment.port != preferred:
+                    if assignment.port != preferred and preferred is not None:
                         click.echo(
                             click.style(
                                 f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
                                 fg="yellow",
                             )
                         )
+                    elif assignment.assignment_type == "auto" and preferred is None:
+                        if assignment.port != 1972:
+                            click.echo(
+                                click.style(
+                                    f"⚠️  Default port 1972 was unavailable. Assigned {assignment.port} instead.",
+                                    fg="yellow",
+                                )
+                            )
+                        else:
+                            click.echo(f"✓ Port {assignment.port} assigned and verified.")
                     else:
                         click.echo(f"✓ Port {assignment.port} assigned and verified.")
 
