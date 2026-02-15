@@ -5,6 +5,27 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2] - 2026-02-15 - Smart Port Fallback
+
+### Added
+
+- **Smart Port Fallback**: Added `--auto-port` flag to `idt container up` and `idt container start` commands.
+  - Automatically finds and assigns an available port if the default (1972) is taken.
+  - Utilizes the `PortRegistry` to maintain stable assignments across project sessions.
+  - Automatically adjusts the WebServer port proportionally when the SuperServer port is shifted.
+
+### Fixed
+
+- **Reset Password Support**: Added `IRISContainer.reset_password()` method to support manual password remediation in integration scripts.
+
+## [1.12.1] - 2026-02-15 - Protocol & Discovery Fixes
+
+### Fixed
+
+- **Access Denied (Invalid Message)**: Fixed a critical bug in `get_config()` where discovering `0.0.0.0` as the host caused the IRIS Superserver to reject the connection protocol. Now sanitizes `0.0.0.0` and `::` to `localhost` for reliable client-side connectivity.
+- **Attach Validation**: Improved `IRISContainer.attach()` with explicit validation for container names and better error messages when containers are missing or not running.
+- **Type Safety**: Resolved LSP type mismatch for `container_name` in `attach()` and `dev()` methods.
+
 ## [1.12.0] - 2026-02-10 - The Dev Instance (Warm Start)
 
 ### Added

@@ -89,7 +89,16 @@ Another IRIS instance or container is using the default port (1972).
 
 **Solution:**
 
-**Option 1: Let testcontainers auto-assign ports (recommended)**
+**Option 1: Use Smart Port Fallback (Recommended for CLI)**
+If you are using the CLI, add the `--auto-port` flag to automatically find and assign a free port:
+```bash
+idt container up --auto-port
+# OR
+idt container start --auto-port
+```
+This will automatically find the next available port (e.g., 1973) and record it in the project's port registry.
+
+**Option 2: Let testcontainers auto-assign ports (Recommended for Tests)**
 ```python
 from iris_devtester.containers import IRISContainer
 
