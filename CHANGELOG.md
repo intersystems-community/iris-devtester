@@ -5,6 +5,18 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.7] - 2026-02-15 - RAG Cleanup Helpers
+
+### Added
+
+- **Deterministic Schema Cleanup**: Added `SchemaResetter.truncate_schema()` for safe, ordered table truncation.
+  - Automatically discovers all tables in a schema at runtime.
+  - Implements dynamic Foreign Key dependency discovery via `INFORMATION_SCHEMA` to determine safe deletion order (leaf-to-root).
+  - Provides configurable safety guards against system schema modification.
+- **RAG-Specific Helper**: Added `SchemaResetter.reset_rag_schema()` as an opinionated utility for vector/RAG projects.
+  - Pre-configured with optimal deletion order for standard RAG entities.
+  - Supports `use_truncate` and `strict` modes for tailored cleanup.
+
 ## [1.12.6] - 2026-02-15 - Ultimate Port Reliability Fix
 
 ### Fixed

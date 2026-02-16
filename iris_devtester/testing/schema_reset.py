@@ -10,9 +10,29 @@ See:
 """
 
 import logging
-from typing import Any, List, Optional
+import re
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
+
+# Schemas that should NEVER be truncated/reset
+SYSTEM_SCHEMAS = {
+    "INFORMATION_SCHEMA",
+    "%SYS",
+    "IRISLIB",
+    "IRISLOCAL",
+    "IRISSYS",
+    "SAMPLES",
+}
+
+# Default safe order for RAG tables (leaf to root)
+DEFAULT_RAG_ORDER = [
+    "EntityRelationships",
+    "Entities",
+    "DocumentChunks",
+    "DocumentTokenEmbeddings",
+    "SourceDocuments",
+]
 
 
 def reset_namespace(connection: Any, namespace: str) -> None:
@@ -344,6 +364,193 @@ class SchemaResetter:
             ...     print(f"Cleaned {count} tables")
         """
         return cleanup_test_data(self.connection, test_id)
+
+    def get_table_dependencies(self, schema: str) -> List[Tuple[str, str]]:
+        """
+        Discover foreign key dependencies in a schema.
+
+        Args:
+            schema: Schema name to inspect
+
+        Returns:
+            List of (child_table, parent_table) tuples
+        """
+        cursor = self.connection.cursor()
+        try:
+            # Query InterSystems IRIS specific system table for FKs
+            # This looks at which tables refer to which other tables
+            cursor.execute(
+                """
+                SELECT 
+                    f.Relation AS child_table,
+                    f.ReferencedRelation AS parent_table
+                FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS r
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS f ON r.CONSTRAINT_NAME = f.CONSTRAINT_NAME
+                WHERE f.TABLE_SCHEMA = ?
+            """,
+                (schema,),
+            )
+            return [(row[0], row[1]) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.debug(f"Could not discover dynamic dependencies: {e}")
+            return []
+        finally:
+            cursor.close()
+
+    def _topological_sort(self, tables: List[str], dependencies: List[Tuple[str, str]]) -> List[str]:
+        """
+        Sort tables so that leaf tables (with FKs) come BEFORE parent tables.
+        
+        This allows safe DELETE without constraint violations.
+        """
+        from collections import defaultdict, deque
+
+        # Build graph
+        adj = defaultdict(list)
+        in_degree = {t: 0 for t in tables}
+        
+        for child, parent in dependencies:
+            if child in in_degree and parent in in_degree:
+                # Parent depends on child being deleted first? 
+                # No, CHILD depends on PARENT.
+                # To DELETE safely, we must delete CHILD before PARENT.
+                # So edge is: child -> parent (delete child first)
+                adj[child].append(parent)
+                in_degree[parent] += 1
+
+        # Kahn's algorithm
+        queue = deque([t for t in tables if in_degree[t] == 0])
+        sorted_tables = []
+
+        while queue:
+            u = queue.popleft()
+            sorted_tables.append(u)
+            for v in adj[u]:
+                in_degree[v] -= 1
+                if in_degree[v] == 0:
+                    queue.append(v)
+
+        # If cycles exist or some tables missing, append them
+        remaining = set(tables) - set(sorted_tables)
+        return sorted_tables + sorted(list(remaining))
+
+    def truncate_schema(
+        self,
+        schema: str,
+        *,
+        order: Optional[List[str]] = None,
+        use_truncate: bool = False,
+        include_system: bool = False,
+        strict: bool = False,
+        discover_dependencies: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Truncate or delete all data from all tables in a specific schema.
+
+        Discovers tables at runtime and attempts to delete/truncate in a safe order.
+        Uses dynamic FK discovery where possible, falling back to alphabetical or provided order.
+
+        Args:
+            schema: Schema name to clean (e.g. "RAG")
+            order: Optional priority list of tables to clean FIRST (leaf tables).
+            use_truncate: If True, use TRUNCATE TABLE instead of DELETE FROM.
+            include_system: If True, allow cleaning system schemas (DANGEROUS).
+            strict: If True, raise exception on first table failure.
+            discover_dependencies: If True, query IRIS metadata to find FK order.
+
+        Returns:
+            Dictionary with results: {"total": int, "success": int, "failed": int, "errors": list}
+
+        Raises:
+            ValueError: If schema is in blocklist and include_system=False.
+            RuntimeError: If strict=True and a query fails.
+        """
+        if not include_system and schema.upper() in SYSTEM_SCHEMAS:
+            raise ValueError(f"Schema '{schema}' is a protected system schema.")
+
+        cursor = self.connection.cursor()
+        results = {"total": 0, "success": 0, "failed": 0, "errors": []}
+
+        try:
+            # 1. Discover all tables in schema
+            cursor.execute(
+                """
+                SELECT TABLE_NAME
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = ?
+                  AND TABLE_TYPE = 'BASE TABLE'
+            """,
+                (schema,),
+            )
+            all_tables = [row[0] for row in cursor.fetchall()]
+            results["total"] = len(all_tables)
+
+            if not all_tables:
+                logger.debug(f"No tables found in schema '{schema}'")
+                return results
+
+            # 2. Determine deletion order
+            final_order = []
+            if discover_dependencies:
+                deps = self.get_table_dependencies(schema)
+                if deps:
+                    final_order = self._topological_sort(all_tables, deps)
+            
+            if not final_order:
+                # Fallback to provided order then alphabetical
+                clean_order = order or []
+                remaining = sorted(list(set(all_tables) - set(clean_order)))
+                final_order = clean_order + remaining
+
+            # 3. Execute cleanup
+            verb = "TRUNCATE TABLE" if use_truncate else "DELETE FROM"
+            for table in final_order:
+                # Skip if not in discovery (if order was provided but table missing)
+                if table not in all_tables:
+                    continue
+
+                full_name = f"{schema}.{table}"
+                try:
+                    cursor.execute(f"{verb} {full_name}")
+                    results["success"] += 1
+                    logger.debug(f"Cleaned table {full_name} via {verb}")
+                except Exception as e:
+                    results["failed"] += 1
+                    err_msg = f"Failed to clean {full_name}: {str(e)}"
+                    results["errors"].append(err_msg)
+                    if strict:
+                        raise RuntimeError(err_msg)
+                    logger.warning(err_msg)
+
+            if results["failed"] == 0:
+                logger.info(f"✓ Successfully cleaned schema '{schema}' ({results['success']} tables)")
+            else:
+                logger.warning(
+                    f"⚠ Cleaned schema '{schema}' with issues: "
+                    f"{results['success']} success, {results['failed']} failed"
+                )
+
+            return results
+
+        finally:
+            cursor.close()
+
+    def reset_rag_schema(self, schema: str = "RAG", **kwargs) -> Dict[str, Any]:
+        """
+        Opinionated helper to reset the RAG schema.
+
+        Uses DEFAULT_RAG_ORDER to handle FK dependencies common in vector/RAG projects.
+
+        Args:
+            schema: RAG schema name (default: "RAG")
+            **kwargs: Arguments passed to truncate_schema (use_truncate, strict, etc.)
+
+        Returns:
+            Cleanup results summary
+        """
+        # Merge DEFAULT_RAG_ORDER into kwargs
+        kwargs.setdefault("order", DEFAULT_RAG_ORDER)
+        return self.truncate_schema(schema, **kwargs)
 
     def __enter__(self):
         """Context manager entry."""
