@@ -14,6 +14,12 @@ from iris_devtester.config import IRISConfig
 
 logger = logging.getLogger(__name__)
 
+# Optional iris module — may not be installed in all environments
+try:
+    import iris as _iris_module
+except ImportError:
+    _iris_module = None
+
 
 def get_project_id(path: Optional[str] = None) -> str:
     """Generate a stable Project ID from a directory path."""
@@ -25,6 +31,120 @@ def get_project_id(path: Optional[str] = None) -> str:
 def get_project_namespace(path: Optional[str] = None) -> str:
     """Generate a valid IRIS namespace name for a project."""
     return f"P{get_project_id(path)}"
+
+
+def check_namespace_via_iris_connect(config: IRISConfig, namespace: str) -> bool:
+    """
+    Check if a namespace exists using iris.connect() to %SYS.
+
+    Connects to the %SYS namespace using the credentials from the provided
+    config, then calls Config.Namespaces.Exists() to verify namespace existence.
+    This avoids requiring Docker exec access.
+
+    Args:
+        config: IRIS configuration providing host, port, username, password.
+        namespace: Namespace name to check.
+
+    Returns:
+        True if namespace exists, False otherwise (including on any error).
+    """
+    if _iris_module is None:
+        logger.warning(
+            f"Cannot verify namespace '{namespace}': iris module not available"
+        )
+        return False
+
+    try:
+        conn = _iris_module.connect(
+            hostname=config.host,
+            port=config.port,
+            namespace="%SYS",
+            username=config.username,
+            password=config.password,
+        )
+        try:
+            iris_obj = _iris_module.createIRIS(conn)
+            exists = iris_obj.classMethodValue("Config.Namespaces", "Exists", namespace)
+            if exists:
+                logger.debug(f"Namespace '{namespace}' verified via iris.connect()")
+            else:
+                logger.debug(f"Namespace '{namespace}' not found via iris.connect()")
+            return bool(exists)
+        finally:
+            conn.close()
+    except Exception as e:
+        err_str = str(e).lower()
+        if "access denied" in err_str or "privilege" in err_str or "protect" in err_str:
+            logger.warning(
+                f"Cannot verify namespace '{namespace}': %%SYS access denied "
+                f"for user '{config.username}'"
+            )
+        else:
+            logger.warning(f"Cannot verify namespace '{namespace}': connection failed ({e})")
+        return False
+
+
+def create_namespace_via_iris_connect(config: IRISConfig, namespace: str) -> bool:
+    """
+    Create a namespace using iris.connect() to %SYS.
+
+    Connects to the %SYS namespace and uses Config.Namespaces.Create() to
+    create the namespace. Uses the simplified creation pattern established
+    in the codebase (namespace name only; IRIS provides sensible defaults).
+
+    For full database + namespace setup (custom directory, database creation),
+    use the Docker exec path via create_namespace() instead.
+
+    Args:
+        config: IRIS configuration providing host, port, username, password.
+        namespace: Namespace name to create.
+
+    Returns:
+        True if namespace was created successfully, False otherwise.
+    """
+    if _iris_module is None:
+        logger.warning(
+            f"Cannot create namespace '{namespace}': iris module not available"
+        )
+        return False
+
+    try:
+        conn = _iris_module.connect(
+            hostname=config.host,
+            port=config.port,
+            namespace="%SYS",
+            username=config.username,
+            password=config.password,
+        )
+        try:
+            iris_obj = _iris_module.createIRIS(conn)
+            status = iris_obj.classMethodValue(
+                "Config.Namespaces", "Create", namespace
+            )
+            if status:
+                logger.info(
+                    f"Created namespace '{namespace}' via iris.connect() "
+                    f"on {config.host}:{config.port}"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"Failed to create namespace '{namespace}' via iris.connect(): "
+                    f"Config.Namespaces.Create returned failure status"
+                )
+                return False
+        finally:
+            conn.close()
+    except Exception as e:
+        err_str = str(e).lower()
+        if "access denied" in err_str or "privilege" in err_str or "protect" in err_str:
+            logger.warning(
+                f"Cannot create namespace '{namespace}': %%SYS access denied "
+                f"for user '{config.username}'"
+            )
+        else:
+            logger.warning(f"Cannot create namespace '{namespace}': operation failed ({e})")
+        return False
 
 
 def check_namespace_exists(container_name: str, namespace: str) -> bool:
@@ -142,13 +262,20 @@ def ensure_namespace_exists(config: IRISConfig) -> bool:
     """
     Ensure the requested namespace exists, creating it if necessary and allowed.
 
+    Strategy selection:
+    - auto_create resolves to False → skip (return True immediately)
+    - container_name is set (non-None, non-empty) → Docker exec strategy
+    - container_name is not set → iris.connect() strategy via %SYS
+    - NEVER falls back to a hardcoded container name
+
     Args:
         config: IRIS configuration object.
 
     Returns:
-        True if namespace exists (or was created), False if it doesn't exist and couldn't be created.
+        True if namespace exists (or was created), or if the check failed
+        but the connection should proceed anyway (graceful degradation).
     """
-    # Hybrid Smart Default
+    # Hybrid Smart Default: resolve auto_create
     auto_create = config.auto_create
     if auto_create is None:
         if config.host in ["localhost", "127.0.0.1"]:
@@ -157,17 +284,39 @@ def ensure_namespace_exists(config: IRISConfig) -> bool:
             auto_create = False
 
     if not auto_create:
-        return True  # Proceed anyway, connection will fail later if NS missing
+        return True  # Proceed anyway; connection will fail later if NS missing
 
-    container_name = config.container_name or "iris_db"
+    # Strategy selection based on container_name availability
+    container_name = config.container_name or None  # Normalize empty string to None
 
-    # Only attempt auto-creation if we're on localhost or have a container_name
-    # (Actually the spec says auto-create on localhost/containers)
-    if config.host not in ["localhost", "127.0.0.1"] and not config.container_name:
+    if container_name:
+        # Docker exec strategy — container name is known
+        logger.debug(
+            f"Checking namespace '{config.namespace}' via Docker exec "
+            f"on container '{container_name}'"
+        )
+        if not check_namespace_exists(container_name, config.namespace):
+            logger.info(
+                f"Namespace '{config.namespace}' not found. "
+                f"Attempting auto-creation via Docker exec..."
+            )
+            return create_namespace(container_name, config.namespace)
         return True
-
-    if not check_namespace_exists(container_name, config.namespace):
-        logger.info(f"Namespace '{config.namespace}' not found. Attempting auto-creation...")
-        return create_namespace(container_name, config.namespace)
-
-    return True
+    else:
+        # iris.connect() strategy — no container name available
+        logger.debug(
+            f"Checking namespace '{config.namespace}' via iris.connect() "
+            f"to {config.host}:{config.port}"
+        )
+        if not check_namespace_via_iris_connect(config, config.namespace):
+            logger.info(
+                f"Namespace '{config.namespace}' not found or could not be verified. "
+                f"Attempting auto-creation via iris.connect()..."
+            )
+            if not create_namespace_via_iris_connect(config, config.namespace):
+                logger.debug(
+                    f"Could not create namespace '{config.namespace}' via iris.connect(). "
+                    f"Proceeding with connection attempt anyway."
+                )
+            return True  # Always proceed — namespace may already exist
+        return True
