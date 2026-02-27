@@ -118,10 +118,12 @@ def get_connection(
         except Exception as e:
             from iris_devtester.utils.password import reset_password_if_needed
 
-            # Use the actual container name from config if provided, otherwise default to "iris_db"
-            container_name = getattr(config, "container_name", "iris_db") or "iris_db"
+            # Use the actual container name from config if provided
+            container_name = getattr(config, "container_name", None) or None
 
-            if reset_password_if_needed(e, username=config.username, container_name=container_name):
+            if container_name and reset_password_if_needed(
+                e, username=config.username, container_name=container_name
+            ):
                 return create_dbapi_connection(config)
             raise e
 

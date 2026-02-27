@@ -5,6 +5,22 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-02-27 - Fix Namespace Lookup for Remote IRIS
+
+### Fixed
+
+- **Namespace Auto-Creation No Longer Requires Docker**: Fixed a bug where `ensure_namespace_exists()` attempted Docker container lookup (hardcoded `iris_db`) even when an explicit `IRISConfig` with host/port was provided. This caused failures for remote/non-Docker IRIS connections.
+- **Removed Hardcoded `iris_db` Fallback**: Eliminated the implicit Docker container name assumption from both namespace utilities and the connection password-reset path.
+
+### Added
+
+- **`iris.connect()` Strategy for Namespace Operations**: When no `container_name` is present in config, namespace check/create now uses `iris.connect()` to the `%SYS` namespace directly — no Docker dependency required. This enables namespace auto-creation for remote IRIS instances.
+- **`check_namespace_via_iris_connect()`**: New function that verifies namespace existence by connecting to `%SYS` and calling `Config.Namespaces:Exists()`.
+- **`create_namespace_via_iris_connect()`**: New function that creates namespaces via `%SYS` using `Config.Namespaces:Create()`.
+- **Graceful Degradation**: If `%SYS` access is denied or the `iris` package is unavailable, namespace operations fail gracefully and the connection proceeds anyway.
+- **19 New Unit Tests**: Comprehensive coverage for strategy selection logic, `iris.connect()` functions, and edge cases.
+- **Blind Alley Documentation**: `docs/learnings/namespace-sql-vs-iris-connect.md` documents why SQL/DBAPI was rejected in favor of `iris.connect()` for namespace operations.
+
 ## [1.12.7] - 2026-02-15 - RAG Cleanup Helpers
 
 ### Added

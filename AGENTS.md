@@ -286,6 +286,8 @@ The repository exposes core functionality as "Skills" to help AI agents work aut
 - N/A (documentation only) (023-docs-cleanup)
 - Python 3.9+ + `docker` (SDK), `testcontainers`, `click`, `packaging` (026-dev-instance)
 - Docker Volume (`idt-dev-data`) for physical storage; IRIS Namespaces for project isolation. (026-dev-instance)
+- Python 3.9+ + `intersystems-irispython` (IRIS DBAPI), `docker` (Docker SDK), `click` (CLI) (027-fix-namespace-lookup)
+- N/A (no new storage; queries IRIS `%SYS` namespace metadata) (027-fix-namespace-lookup)
 
 ## Recent Changes
 - 023-docs-cleanup: Added N/A (documentation only)
