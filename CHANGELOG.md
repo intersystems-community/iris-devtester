@@ -5,6 +5,24 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-02-28 - Deterministic Multi-Container Auto-Detection
+
+### Fixed
+
+- **Non-Deterministic Auto-Detection**: Fixed `auto_detect_iris_host_and_port()` returning a random container on machines running multiple IRIS containers. It previously picked whichever container appeared first in `docker ps` output.
+
+### Added
+
+- **`container_name` Parameter**: Added optional `container_name` parameter to the entire auto-detection chain, allowing callers to pin detection to a specific Docker container:
+  - `get_connection(container_name="my-iris")` - top-level API
+  - `IRISConnection(container_name="my-iris")` - context manager
+  - `discover_config(container_name="my-iris")` - config discovery
+  - `auto_detect_iris_host_and_port(container_name="my-iris")` - host/port detection
+  - `auto_detect_iris_port(container_name="my-iris")` - port-only detection
+  - `discover_docker_iris(container_name="my-iris")` - Docker-specific discovery
+- **Backward Compatible**: All new parameters default to `None`, preserving existing behavior for callers that don't need pinning.
+- **10 New Unit Tests**: Comprehensive coverage for multi-container scenarios including pinning, fallback, backward compatibility, and edge cases.
+
 ## [1.13.0] - 2026-02-27 - Fix Namespace Lookup for Remote IRIS
 
 ### Fixed

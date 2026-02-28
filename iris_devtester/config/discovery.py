@@ -29,7 +29,10 @@ from iris_devtester.config.models import IRISConfig
 logger = logging.getLogger(__name__)
 
 
-def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
+def discover_config(
+    explicit_config: Optional[IRISConfig] = None,
+    container_name: Optional[str] = None,
+) -> IRISConfig:
     """
     Discover IRIS configuration from available sources.
 
@@ -42,6 +45,9 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
 
     Args:
         explicit_config: Optional explicit configuration to use
+        container_name: Optional Docker container name to pin auto-detection to.
+            When provided, Docker-based auto-detection only matches this container,
+            making discovery deterministic on machines with multiple IRIS containers.
 
     Returns:
         IRISConfig with discovered or default values
@@ -54,6 +60,9 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
         >>> from iris_devtester.config import IRISConfig
         >>> explicit = IRISConfig(host="custom.host")
         >>> config = discover_config(explicit_config=explicit)
+
+        >>> # Pin to specific container
+        >>> config = discover_config(container_name="iris-vector-graph-main")
     """
     # If explicit config provided, return it directly
     if explicit_config is not None:
@@ -101,11 +110,17 @@ def discover_config(explicit_config: Optional[IRISConfig] = None) -> IRISConfig:
     # Only auto-detect if host AND port are still at defaults (not set by env or .env)
     # This ensures we don't partially override user config with auto-detection
     if discovered["host"] == DEFAULT_HOST and discovered["port"] == DEFAULT_PORT:
-        auto_host, auto_port = auto_detect_iris_host_and_port()
+        auto_host, auto_port = auto_detect_iris_host_and_port(
+            container_name=container_name,
+        )
         if auto_host:
             discovered["host"] = auto_host
         if auto_port:
             discovered["port"] = auto_port
+        # Propagate container_name into config so downstream code
+        # (namespace creation, password reset) can target the right container
+        if container_name and "container_name" not in discovered:
+            discovered["container_name"] = container_name
 
     # Create and return config
     return IRISConfig(**discovered)

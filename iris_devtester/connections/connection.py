@@ -25,6 +25,7 @@ def get_connection(
     config: Optional[IRISConfig] = None,
     auto_retry: bool = True,
     max_retries: int = 3,
+    container_name: Optional[str] = None,
 ) -> Any:
     """
     Get IRIS database connection (DBAPI only, modern toolkit).
@@ -43,6 +44,10 @@ def get_connection(
                 - Native IRIS instances
         auto_retry: Enable automatic retry with exponential backoff
         max_retries: Maximum retry attempts (default: 3)
+        container_name: Optional Docker container name to pin auto-detection to.
+            When provided, Docker-based auto-detection only matches this container,
+            making discovery deterministic on machines with multiple IRIS containers.
+            Ignored when an explicit config is provided.
 
     Returns:
         DBAPI connection object
@@ -59,12 +64,15 @@ def get_connection(
         >>> config = IRISConfig(host="localhost", port=1972)
         >>> conn = get_connection(config)
 
+        >>> # Pin to specific container (deterministic on multi-container machines)
+        >>> conn = get_connection(container_name="iris-vector-graph-main")
+
         >>> # Disable retry
         >>> conn = get_connection(auto_retry=False)
     """
     # Discover configuration if not provided
     if config is None:
-        config = discover_config()
+        config = discover_config(container_name=container_name)
         logger.info(f"Auto-discovered IRIS at {config.host}:{config.port}")
 
     # Feature 026: Implicit Start for Dev Instance
@@ -153,6 +161,7 @@ class IRISConnection:
         config: Optional[IRISConfig] = None,
         auto_retry: bool = True,
         max_retries: int = 3,
+        container_name: Optional[str] = None,
     ):
         """
         Initialize connection context manager.
@@ -161,10 +170,13 @@ class IRISConnection:
             config: Optional IRIS configuration (auto-discovers if None)
             auto_retry: Enable automatic retry
             max_retries: Maximum retry attempts
+            container_name: Optional Docker container name for deterministic
+                auto-detection. Ignored when config is provided.
         """
         self.config = config
         self.auto_retry = auto_retry
         self.max_retries = max_retries
+        self.container_name = container_name
         self.connection = None
 
     def __enter__(self):
@@ -173,6 +185,7 @@ class IRISConnection:
             config=self.config,
             auto_retry=self.auto_retry,
             max_retries=self.max_retries,
+            container_name=self.container_name,
         )
         return self.connection
 

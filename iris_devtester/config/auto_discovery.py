@@ -115,12 +115,17 @@ except Exception:
         return False
 
 
-def discover_docker_iris() -> Optional[Dict[str, Any]]:
+def discover_docker_iris(container_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Auto-detect IRIS running in Docker containers.
 
     Inspects running Docker containers for IRIS instances and extracts
     connection information from port mappings.
+
+    Args:
+        container_name: Optional Docker container name to pin detection to.
+            When provided, only that container is matched (deterministic).
+            When None, the first container with "iris" in its name is used.
 
     Returns:
         Dict with connection config if found, None otherwise
@@ -129,6 +134,9 @@ def discover_docker_iris() -> Optional[Dict[str, Any]]:
         >>> config = discover_docker_iris()
         >>> if config:
         ...     print(f"Found IRIS at {config['host']}:{config['port']}")
+
+        >>> # Pin to specific container
+        >>> config = discover_docker_iris(container_name="iris-vector-graph-main")
     """
     try:
         # Get running containers with port mappings
@@ -148,9 +156,14 @@ def discover_docker_iris() -> Optional[Dict[str, Any]]:
             if not line.strip():
                 continue
 
-            # Check if this is an IRIS container
-            if "iris" not in line.lower():
-                continue
+            # If container_name specified, match exactly; otherwise require "iris" in name
+            if container_name is not None:
+                if not line.startswith(container_name + "\t"):
+                    continue
+            else:
+                # Check if this is an IRIS container
+                if "iris" not in line.lower():
+                    continue
 
             # Parse port mapping: "0.0.0.0:11972->1972/tcp"
             match = re.search(r"0\.0\.0\.0:(\d+)->1972/tcp", line)
@@ -246,7 +259,7 @@ def discover_native_iris() -> Optional[Dict[str, Any]]:
         return None
 
 
-def auto_discover_iris() -> Optional[Dict[str, Any]]:
+def auto_discover_iris(container_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Automatically discover IRIS instance using all available methods.
 
@@ -254,6 +267,11 @@ def auto_discover_iris() -> Optional[Dict[str, Any]]:
     1. Docker containers (most common for development)
     2. Native IRIS installation (production deployments)
     3. Multi-port scanning (fallback)
+
+    Args:
+        container_name: Optional Docker container name to pin detection to.
+            When provided, Docker-based discovery only matches this container,
+            making detection deterministic on machines with multiple IRIS containers.
 
     Returns:
         Dict with connection config if found, None otherwise
@@ -267,6 +285,9 @@ def auto_discover_iris() -> Optional[Dict[str, Any]]:
         ...         config['password']
         ...     )
 
+        >>> # Pin to specific container
+        >>> config = auto_discover_iris(container_name="iris-vector-graph-main")
+
     See Also:
         - docs/learnings/rag-templates-production-patterns.md (Pattern 1, 2)
         - CONSTITUTION.md Principle #4 (Zero Configuration Viable)
@@ -274,7 +295,7 @@ def auto_discover_iris() -> Optional[Dict[str, Any]]:
     logger.info("Auto-discovering IRIS instance...")
 
     # Priority 1: Docker containers
-    config = discover_docker_iris()
+    config = discover_docker_iris(container_name=container_name)
     if config:
         logger.info(f"✓ Auto-discovery successful (Docker): {config['host']}:{config['port']}")
         return config
