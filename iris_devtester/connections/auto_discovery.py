@@ -12,7 +12,7 @@ from typing import Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-def auto_detect_iris_port() -> Optional[int]:
+def auto_detect_iris_port(container_name: Optional[str] = None) -> Optional[int]:
     """
     Auto-detect IRIS port from running Docker containers or native instances.
 
@@ -21,7 +21,9 @@ def auto_detect_iris_port() -> Optional[int]:
     2. Native IRIS instances (iris list)
 
     Args:
-        (no arguments)
+        container_name: Optional Docker container name to pin detection to.
+            When provided, only that container is matched (deterministic).
+            When None, the first container with port 1972 is used (legacy behavior).
 
     Returns:
         Detected port number or None if not found
@@ -30,14 +32,17 @@ def auto_detect_iris_port() -> Optional[int]:
         >>> port = auto_detect_iris_port()
         >>> if port:
         ...     print(f"Found IRIS on port {port}")
+
+        >>> # Pin to specific container
+        >>> port = auto_detect_iris_port(container_name="iris-vector-graph-main")
     """
     # Try Docker first
-    port = _detect_port_from_docker()
+    port = _detect_port_from_docker(container_name=container_name)
     if port:
         logger.info(f"Auto-detected IRIS port {port} from Docker")
         return port
 
-    # Fall back to native instances
+    # Fall back to native instances (container_name doesn't apply)
     port = _detect_port_from_native()
     if port:
         logger.info(f"Auto-detected IRIS port {port} from native instance")
@@ -47,12 +52,16 @@ def auto_detect_iris_port() -> Optional[int]:
     return None
 
 
-def auto_detect_iris_host_and_port() -> Tuple[Optional[str], Optional[int]]:
+def auto_detect_iris_host_and_port(
+    container_name: Optional[str] = None,
+) -> Tuple[Optional[str], Optional[int]]:
     """
     Auto-detect both IRIS host and port from running instances.
 
     Args:
-        (no arguments)
+        container_name: Optional Docker container name to pin detection to.
+            When provided, only that container is matched (deterministic).
+            When None, the first container with port 1972 is used (legacy behavior).
 
     Returns:
         Tuple of (host, port) or (None, None) if not found
@@ -61,13 +70,18 @@ def auto_detect_iris_host_and_port() -> Tuple[Optional[str], Optional[int]]:
         >>> host, port = auto_detect_iris_host_and_port()
         >>> if host and port:
         ...     print(f"Found IRIS at {host}:{port}")
+
+        >>> # Pin to specific container
+        >>> host, port = auto_detect_iris_host_and_port(
+        ...     container_name="iris-vector-graph-main"
+        ... )
     """
     # For Docker, host is always localhost
-    port = _detect_port_from_docker()
+    port = _detect_port_from_docker(container_name=container_name)
     if port:
         return "localhost", port
 
-    # For native, host is also localhost (local instance)
+    # For native, host is also localhost (container_name doesn't apply)
     port = _detect_port_from_native()
     if port:
         return "localhost", port
@@ -75,13 +89,19 @@ def auto_detect_iris_host_and_port() -> Tuple[Optional[str], Optional[int]]:
     return None, None
 
 
-def _detect_port_from_docker() -> Optional[int]:
+def _detect_port_from_docker(container_name: Optional[str] = None) -> Optional[int]:
     """
     Detect IRIS port from Docker containers.
 
     Looks for containers with port mappings like:
     - 0.0.0.0:1972->1972/tcp
     - :::1972->1972/tcp
+
+    Args:
+        container_name: Optional Docker container name to pin detection to.
+            When provided, only that specific container is matched, making
+            detection deterministic on machines with multiple IRIS containers.
+            When None, the first container with a 1972 mapping is used.
 
     Returns:
         Port number or None
@@ -110,6 +130,10 @@ def _detect_port_from_docker() -> Optional[int]:
                 continue
 
             name, ports = line.split("\t", 1)
+
+            # If container_name specified, skip non-matching containers
+            if container_name is not None and name != container_name:
+                continue
 
             # Look for port mapping like "0.0.0.0:1972->1972/tcp" or "0.0.0.0:51773->1972/tcp"
             # Match patterns: 0.0.0.0:PORT->1972/tcp or :::PORT->1972/tcp
