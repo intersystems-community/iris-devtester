@@ -58,6 +58,12 @@ except ImportError:
 class IRISContainer(IRISBase):
     """
     Enhanced IRIS container with automatic connection and password management.
+
+    Lifecycle: Containers created via Python (community(), enterprise(), light()) are
+    managed by testcontainers Ryuk, which removes them when the Python process exits.
+    This is correct for pytest fixtures but means containers do NOT persist after your
+    script ends. For persistent containers, use ``idt container up`` (CLI, no Ryuk) and
+    reconnect with ``IRISContainer.attach(name)``.
     """
 
     # Custom kwargs that should NOT be passed to parent/Docker SDK
@@ -103,6 +109,14 @@ class IRISContainer(IRISBase):
         self._preconfigure_password: Optional[str] = None
         self._preconfigure_username: Optional[str] = None
 
+    def get_password(self) -> str:
+        """Return the currently configured password."""
+        return self._password
+
+    def get_username(self) -> str:
+        """Return the currently configured username."""
+        return self._username
+
     @classmethod
     def dev(cls, **kwargs) -> "IRISContainer":
         """
@@ -137,6 +151,8 @@ class IRISContainer(IRISBase):
         Create a Community Edition container.
 
         Auto-detects architecture (ARM64 vs x86) and pulls the appropriate image.
+        Container is cleaned up by Ryuk on process exit. For persistent containers,
+        use ``idt container up`` and ``IRISContainer.attach(name)``.
 
         Args:
             image: Docker image to use. If None, auto-detects based on architecture.
@@ -160,6 +176,9 @@ class IRISContainer(IRISBase):
     ) -> "IRISContainer":
         """
         Create an Enterprise Edition container.
+
+        Container is cleaned up by Ryuk on process exit. For persistent containers,
+        use ``idt container up`` and ``IRISContainer.attach(name)``.
 
         Args:
             license_key: Path to iris.key file. If None, checks IRIS_LICENSE_KEY env var.
@@ -208,6 +227,7 @@ class IRISContainer(IRISBase):
         Light edition is ~85% smaller than full Community edition (~580MB vs ~3.5GB).
         It removes Interoperability, Management Portal, DeepSee, and web components.
         DBAPI, JDBC, and ODBC connectivity are fully supported.
+        Container is cleaned up by Ryuk on process exit.
 
         Args:
             image: Docker image to use. Defaults to caretdev/iris-community-light.
@@ -236,8 +256,9 @@ class IRISContainer(IRISBase):
         """
         Attach to an existing IRIS container by name.
 
-        This allows using persistent containers (e.g. from docker-compose)
-        instead of starting a new one via testcontainers.
+        Use this to reconnect to persistent containers started by ``idt container up``
+        or docker-compose. Unlike containers created via community()/enterprise()/light(),
+        CLI-managed containers are NOT cleaned up by Ryuk and persist across process exits.
 
         Args:
             container_name: Name of the existing Docker container.

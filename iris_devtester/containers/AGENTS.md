@@ -1,0 +1,59 @@
+# containers/ — IRIS Container Lifecycle
+
+> Parent: [../../AGENTS.md](../../AGENTS.md)
+
+## OVERVIEW
+
+Docker container wrapper for InterSystems IRIS. Manages start/stop, health checks, CPF configuration, resource monitoring, and wait strategies. Largest subpackage (3695 lines, 10 files).
+
+## KEY FILES
+
+| File | Lines | Role |
+|------|-------|------|
+| `iris_container.py` | 668 | Core `IRISContainer` class; `.community()`, `.enterprise()`, `.light()` factories |
+| `monitoring.py` | 1185 | Resource-aware health monitoring (CPU, memory, disk); largest file in project |
+| `cpf_manager.py` | — | Merge custom CPF (Cache Parameter File) into container at startup |
+| `dev_instance.py` | — | Persistent dev container with `idt-dev-data` Docker volume |
+| `wait_strategies.py` | — | `IRISReadyWaitStrategy`: port open AND superserver ready |
+| `validation.py` | — | `ContainerValidator`, pre-flight checks |
+| `models.py` | — | `ContainerHealth`, `ContainerHealthStatus`, `HealthCheckLevel`, `ValidationResult` |
+| `performance.py` | — | Performance metric collection |
+| `monitor_utils.py` | — | Monitoring helper functions |
+
+## PATTERNS
+
+- **Always context manager**: `with IRISContainer.community() as iris:` — never bare `.start()`
+- **Three editions**: `community` (default), `enterprise` (needs license), `light` (CI/CD, 580MB)
+- **Builder pattern**: `.with_name()`, `.with_credentials()`, `.with_preconfigured_password()`
+- **Factory returns self**: `IRISContainer.community()` returns configured instance, not started
+- **Health = port + superserver**: Wait strategy checks both TCP 1972 AND IRIS superserver status
+
+## GOTCHAS (from downstream consumers)
+
+### Ryuk kills CLI containers on process exit
+Testcontainers Ryuk registers an atexit handler that removes containers when the Python process exits. This is correct for pytest fixtures but **breaks CLI workflows** where containers must persist.
+- **Pytest/library use**: Ryuk cleanup is the right behavior. Use `with IRISContainer.community() as iris:`.
+- **CLI / long-running**: `idt container up` uses `use_testcontainers=False` internally (Docker SDK mode, no Ryuk labels). This is the correct pattern for persistent containers.
+- **`IRISContainer.attach(name)`**: Reconnects to an existing container without Ryuk. Use this when `idt container up` started it.
+- See: `docs/learnings/testcontainers-ryuk-lifecycle.md`
+
+### Password change forced on community edition
+Fresh IRIS community containers set `ChangePassword=1` for all users. Even `with_preconfigured_password("SYS")` does not clear this flag — it only sets the env var. DBAPI connections fail because the driver cannot handle the interactive password-change handshake.
+- **Fix**: `IRISContainer.start()` calls `unexpire_all_passwords()` automatically after startup (line ~520 of `iris_container.py`). If you still hit this, call `idt container reset-password` or `iris.reset_password()` explicitly.
+- **Root cause**: `Security.Users.ChangePassword()` was removed in 2004. Must use `Security.Users.Modify()` with `props("ChangePassword")=0`.
+- See: `docs/learnings/password-reset-changeflag-fix.md`, `docs/learnings/iris-security-users-api.md`
+
+### No public `get_password()` accessor
+`IRISContainer` stores the password as `self._password` (private). No public `get_password()` method exists. Downstream consumers access `iris._password` directly.
+- **Workaround**: `iris._password` works but violates encapsulation
+- **TODO**: Add `get_password()` / `password` property to public API
+
+## ANTI-PATTERNS
+
+- **DO NOT** call `iris.start()` without context manager — leaks containers
+- **DO NOT** hardcode ports — use `get_exposed_port(1972)` for dynamic mapping
+- **DO NOT** assume ARM64/x86 image compatibility — factories handle platform detection
+
+## EXPORTS (`__init__.py`)
+
+`IRISContainer`, `IRISReadyWaitStrategy`, `wait_for_iris_ready`, `ContainerHealthStatus`, `HealthCheckLevel`, `ValidationResult`, `ContainerHealth`, `validate_container`, `ContainerValidator`
