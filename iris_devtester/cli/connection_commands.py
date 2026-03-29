@@ -23,9 +23,16 @@ from iris_devtester.utils.iris_container_adapter import IRISContainerManager
 @click.option("--namespace", type=str, help="IRIS namespace (default: USER)")
 @click.option("--username", type=str, help="Username (default: _SYSTEM)")
 @click.option("--password", type=str, help="Password (default: SYS)")
+@click.option(
+    "--auto-fix",
+    is_flag=True,
+    help="Automatically reset password and retry when password change is required",
+)
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed connection diagnostics")
 @click.pass_context
-def test_connection(ctx, config, container, host, port, namespace, username, password, verbose):
+def test_connection(
+    ctx, config, container, host, port, namespace, username, password, auto_fix, verbose
+):
     """
     Test connection to IRIS database.
 
@@ -60,6 +67,7 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
         conn_namespace: str = namespace or "USER"
         conn_username: str = username or "_SYSTEM"
         conn_password: str = password or "SYS"
+        target_container_name = container or "iris_db"
 
         # Try to load from config file
         if config:
@@ -137,6 +145,11 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
         click.echo(f"   Port: {conn_port}")
         click.echo(f"   Namespace: {conn_namespace}")
         click.echo(f"   Username: {conn_username}")
+        if verbose:
+            click.echo(f"   Password: {conn_password}")
+        else:
+            masked = conn_password[0] + "*" * (len(conn_password) - 1) if conn_password else ""
+            click.echo(f"   Password: {masked}")
         click.echo()
 
         # Test DBAPI connection
@@ -170,7 +183,50 @@ def test_connection(ctx, config, container, host, port, namespace, username, pas
             if verbose:
                 click.echo("    Install with: pip install intersystems-irispython")
         except Exception as e:
-            click.echo(f"  ✗ DBAPI connection failed: {e}")
+            error_text = str(e)
+            error_text_lower = error_text.lower()
+            password_change_required = (
+                error_text == "1" or "password" in error_text_lower or "change" in error_text_lower
+            )
+
+            if password_change_required:
+                click.echo("  ✗ DBAPI connection failed: Password change required")
+                click.echo(
+                    f"  → Password change required. Run: idt container reset-password {target_container_name}"
+                )
+
+                if auto_fix:
+                    click.echo("  → Attempting automatic password reset...")
+                    from iris_devtester.utils.password import reset_password
+
+                    reset_success, reset_message = reset_password(
+                        container_name=target_container_name,
+                        username=conn_username,
+                        new_password=conn_password,
+                        port=conn_port,
+                    )
+
+                    if reset_success:
+                        click.echo("  ✓ Password reset succeeded, retrying DBAPI connection...")
+                        try:
+                            connection_string = f"{conn_host}:{conn_port}/{conn_namespace}"
+                            conn = dbapi.connect(
+                                connection_string, conn_username, conn_password, timeout=5
+                            )
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT $ZVERSION")
+                            version = cursor.fetchone()[0]
+                            cursor.close()
+                            conn.close()
+                            click.echo("  ✓ DBAPI connection successful after auto-fix")
+                            click.echo(f"  ✓ IRIS version: {version}")
+                            dbapi_success = True
+                        except Exception as retry_error:
+                            click.echo(f"  ✗ DBAPI retry failed after auto-fix: {retry_error}")
+                    else:
+                        click.echo(f"  ✗ Auto-fix failed: {reset_message}")
+            else:
+                click.echo(f"  ✗ DBAPI connection failed: {e}")
             if verbose:
                 import traceback
 

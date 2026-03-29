@@ -1,6 +1,7 @@
 """Container lifecycle management CLI commands."""
 
 import json
+import subprocess
 from pathlib import Path
 
 import click
@@ -84,10 +85,28 @@ def container_group(ctx):
     "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
 )
 @click.option(
-    "--port-range", help="Port range for auto-assignment (default: 1972-2000)"
+    "--port",
+    "host_port",
+    type=int,
+    default=None,
+    help="Exact host port to map to IRIS SuperServer (1972)",
 )
+@click.option("--port-range", help="Port range for auto-assignment (default: 1972-2000)")
 @click.pass_context
-def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, auto_port, port_range):
+def up(
+    ctx,
+    config,
+    name,
+    edition,
+    image,
+    license_key,
+    detach,
+    timeout,
+    cpf,
+    auto_port,
+    host_port,
+    port_range,
+):
     """
     Create and start IRIS container from configuration.
 
@@ -114,6 +133,11 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, aut
     use docker-compose instead. This tool manages single containers.
     """
     try:
+        if host_port and auto_port:
+            raise click.UsageError(
+                "Cannot use --port and --auto-port together. Use one or the other."
+            )
+
         # Load configuration
         if config:
             container_config = ContainerConfig.from_yaml(config)
@@ -167,6 +191,16 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, aut
             container_config.cpf_merge = cpf
             click.echo(f"  → CPF Merge: {cpf[:50]}...")
 
+        if host_port is not None:
+            container_config.superserver_port = host_port
+            click.echo(f"  → SuperServer host port: {host_port}")
+
+            if container_config.webserver_port == 52773 and host_port != 1972:
+                offset = host_port - 1972
+                if offset > 0:
+                    container_config.webserver_port = 52773 + offset
+                    click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+
         # Handle auto-port assignment (Feature 027 - Smart Port Fallback)
         if auto_port:
             from iris_devtester.ports.registry import PortRegistry
@@ -181,15 +215,18 @@ def up(ctx, config, name, edition, image, license_key, detach, timeout, cpf, aut
                         f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-2000)"
                     )
 
-
             registry = PortRegistry(**registry_kwargs)
             project_path = str(Path.cwd().absolute())
 
             click.echo(f"⏳ Engaging port registry for project: {project_path}")
-            
+
             # Use current config port as preferred ONLY if it's NOT the default 1972
-            preferred = container_config.superserver_port if container_config.superserver_port != 1972 else None
-            
+            preferred = (
+                container_config.superserver_port
+                if container_config.superserver_port != 1972
+                else None
+            )
+
             assignment = registry.assign_port(
                 project_path, preferred_port=preferred, allow_fallback=True
             )
@@ -539,9 +576,7 @@ def list_containers(ctx, show_all, output_format):
 @click.option(
     "--auto-port", is_flag=True, help="Automatically find and assign free ports via registry"
 )
-@click.option(
-    "--port-range", help="Port range for auto-assignment (default: 1972-2000)"
-)
+@click.option("--port-range", help="Port range for auto-assignment (default: 1972-2000)")
 @click.pass_context
 def start(ctx, container_name, config, timeout, auto_port, port_range):
     """
@@ -605,10 +640,14 @@ def start(ctx, container_name, config, timeout, auto_port, port_range):
                     project_path = str(Path.cwd().absolute())
 
                     click.echo(f"⏳ Engaging port registry for project: {project_path}")
-                    
+
                     # Use current config port as preferred ONLY if it's NOT the default 1972
-                    preferred = container_config.superserver_port if container_config.superserver_port != 1972 else None
-                    
+                    preferred = (
+                        container_config.superserver_port
+                        if container_config.superserver_port != 1972
+                        else None
+                    )
+
                     assignment = registry.assign_port(
                         project_path, preferred_port=preferred, allow_fallback=True
                     )
@@ -639,7 +678,9 @@ def start(ctx, container_name, config, timeout, auto_port, port_range):
                         offset = assignment.port - 1972
                         if offset > 0:
                             container_config.webserver_port = 52773 + offset
-                            click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+                            click.echo(
+                                f"  → Web port adjusted to {container_config.webserver_port}"
+                            )
 
                 # Create and start container using Docker SDK (Feature 011 - T015)
                 click.echo("⏳ Configuring and starting container with Docker SDK...")
@@ -980,8 +1021,9 @@ def remove(ctx, container_name, force, volumes):
 @click.option(
     "--port", default=None, type=int, help="IRIS SuperServer port (auto-detected if not specified)"
 )
+@click.option("--timeout", type=int, default=30, help="Timeout in seconds (default: 30)")
 @click.pass_context
-def reset_password_cmd(ctx, container_name, user, password, port):
+def reset_password_cmd(ctx, container_name, user, password, port, timeout):
     """
     Reset password for IRIS user in container.
 
@@ -1018,7 +1060,11 @@ def reset_password_cmd(ctx, container_name, user, password, port):
 
         # Call password reset utility
         success, message = reset_password(
-            container_name=container_name, username=user, new_password=password, port=port
+            container_name=container_name,
+            username=user,
+            new_password=password,
+            port=port,
+            timeout=timeout,
         )
 
         if success:
@@ -1065,6 +1111,12 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
         iris-devtester container test-connection my_iris --user admin --password secret
     """
     try:
+        click.secho(
+            "⚠ DEPRECATED: Use 'idt test-connection --container <name>' instead.",
+            fg="yellow",
+            err=True,
+        )
+
         from iris_devtester.config import IRISConfig
         from iris_devtester.connections import get_connection
 
@@ -1171,4 +1223,106 @@ def enable_callin(ctx, container_name, timeout):
         ctx.exit(1)
     except Exception as e:
         progress.print_error(f"Failed to enable CallIn: {e}")
+        ctx.exit(1)
+
+
+@container_group.command(name="exec")
+@click.argument("container_name", required=False, default="iris_db")
+@click.option("--objectscript", "-os", type=str, help="ObjectScript code to execute")
+@click.option("--namespace", "-n", default="USER", help="IRIS namespace (default: USER)")
+@click.option("--timeout", type=int, default=30, help="Timeout in seconds (default: 30)")
+@click.argument("command", nargs=-1, type=click.UNPROCESSED)
+@click.pass_context
+def exec_cmd(ctx, container_name, objectscript, namespace, timeout, command):
+    try:
+        container = IRISContainerManager.get_existing(container_name)
+        if not container:
+            progress.print_error(
+                f"Container '{container_name}' not found\n"
+                "\n"
+                "What went wrong:\n"
+                f"  No Docker container named '{container_name}' exists.\n"
+                "\n"
+                "How to fix it:\n"
+                "  1. Start a container first:\n"
+                "     idt container up\n"
+                "  2. Or check available containers:\n"
+                "     idt container list"
+            )
+            ctx.exit(2)
+
+        container.reload()
+        if container.status != "running":
+            progress.print_error(
+                f"Container '{container_name}' is not running\n"
+                "\n"
+                "What went wrong:\n"
+                f"  Current status is '{container.status}'.\n"
+                "\n"
+                "How to fix it:\n"
+                f"  1. Start the container:\n"
+                f"     idt container start {container_name}"
+            )
+            ctx.exit(1)
+
+        if objectscript and command:
+            raise click.UsageError(
+                "Cannot use --objectscript with a raw command. Use one execution mode at a time."
+            )
+
+        if not objectscript and not command:
+            raise click.UsageError(
+                "No execution target provided. Use --objectscript '<code>' or pass a command after '--'."
+            )
+
+        if objectscript:
+            from iris_devtester.containers.iris_container import IRISContainer
+
+            attached = IRISContainer.attach(container_name)
+            output = attached.execute_objectscript(objectscript, namespace=namespace)
+            click.echo(output)
+            ctx.exit(0)
+
+        cmd = ["docker", "exec", container_name, *command]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+
+        if result.stdout:
+            click.echo(result.stdout, nl=False)
+        if result.stderr:
+            click.echo(result.stderr, err=True, nl=False)
+
+        if result.returncode == 0:
+            ctx.exit(0)
+
+        progress.print_error(
+            "Command failed inside container\n"
+            "\n"
+            "What went wrong:\n"
+            f"  docker exec returned code {result.returncode}.\n"
+            "\n"
+            "How to fix it:\n"
+            "  1. Verify command syntax and binary exists in the container.\n"
+            f"  2. Try interactive debug:\n"
+            f"     docker exec -it {container_name} sh"
+        )
+        ctx.exit(1)
+
+    except subprocess.TimeoutExpired:
+        progress.print_error(
+            f"Command timed out after {timeout}s\n"
+            "\n"
+            "What went wrong:\n"
+            "  The command did not complete before timeout.\n"
+            "\n"
+            "How to fix it:\n"
+            "  1. Increase timeout with --timeout\n"
+            "  2. Check container logs with: idt container logs"
+        )
+        ctx.exit(5)
+    except (click.exceptions.Exit, SystemExit, KeyboardInterrupt):
+        raise
+    except click.UsageError:
+        raise
+    except Exception as e:
+        progress.print_error(f"Failed to execute command in container: {e}")
         ctx.exit(1)

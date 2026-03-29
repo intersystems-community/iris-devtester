@@ -39,14 +39,12 @@ Testcontainers Ryuk registers an atexit handler that removes containers when the
 
 ### Password change forced on community edition
 Fresh IRIS community containers set `ChangePassword=1` for all users. Even `with_preconfigured_password("SYS")` does not clear this flag — it only sets the env var. DBAPI connections fail because the driver cannot handle the interactive password-change handshake.
-- **Fix**: `IRISContainer.start()` calls `unexpire_all_passwords()` automatically after startup (line ~520 of `iris_container.py`). If you still hit this, call `idt container reset-password` or `iris.reset_password()` explicitly.
+- **Fix**: `IRISContainer.start()` calls `unexpire_all_passwords()` automatically after startup (line ~520 of `iris_container.py`). If you still hit this, use `idt test-connection --auto-fix` (auto-detects and remediates) or `idt container reset-password` explicitly.
 - **Root cause**: `Security.Users.ChangePassword()` was removed in 2004. Must use `Security.Users.Modify()` with `props("ChangePassword")=0`.
 - See: `docs/learnings/password-reset-changeflag-fix.md`, `docs/learnings/iris-security-users-api.md`
 
-### No public `get_password()` accessor
-`IRISContainer` stores the password as `self._password` (private). No public `get_password()` method exists. Downstream consumers access `iris._password` directly.
-- **Workaround**: `iris._password` works but violates encapsulation
-- **TODO**: Add `get_password()` / `password` property to public API
+### No public `get_password()` accessor — RESOLVED (Feature 029)
+`IRISContainer` now exposes `get_password()` and `get_username()` public methods. No need to access `iris._password` directly.
 
 ## ANTI-PATTERNS
 

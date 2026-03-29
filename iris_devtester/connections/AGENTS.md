@@ -35,16 +35,18 @@ DBAPI-first connection layer with auto-discovery, retry logic, and password reme
 
 DBAPI connections fail on fresh community containers with an auth error because IRIS sets `ChangePassword=1` for all users at first startup. The DBAPI driver cannot handle the interactive password-change handshake.
 
-**Symptoms**: Connection refused, auth error, or silent hang on `iris.connect()`.
+**Symptoms**: Connection refused, auth error, "Unexpected error: 1", or silent hang on `iris.connect()`.
 
 **Fix sequence** (automated by `IRISContainer.start()`):
 1. `enable_callin_service(container_name)` — enables the CallIn service
 2. `unexpire_all_passwords(container_name)` — clears `ChangePassword=0` via `Security.Users.Modify()`
 
-**If you still hit this** (e.g., `idt container up` started the container but password wasn't cleared):
+**CLI auto-fix (Feature 030)**:
 ```bash
-idt container reset-password <container-name>
+idt test-connection --auto-fix        # Detects password-change error, auto-remediates, retries
+idt container reset-password <name>   # Manual reset with --timeout support
 ```
+
 Or programmatically: `iris.reset_password(username="_SYSTEM", new_password="SYS")`
 
 See: `docs/learnings/password-reset-changeflag-fix.md`, `containers/AGENTS.md` for full context.

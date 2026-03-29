@@ -372,7 +372,7 @@ Halt
             cmd,
             input=objectscript_commands.encode("utf-8"),
             capture_output=True,
-            timeout=15,
+            timeout=timeout,
         )
 
         stdout = reset_result.stdout.decode("utf-8", errors="replace")

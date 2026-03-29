@@ -41,16 +41,25 @@ sudo usermod -aG docker $USER
 ```
 [SQLCODE: <-853>:<User xxx is required to change password before login>]
 ```
+or the cryptic:
+```
+Unexpected error: 1
+```
 
 **Diagnosis:**
 IRIS requires password change on first login, but iris-devtester should auto-remediate this. If you see this error, auto-remediation failed.
 
-**Solution:**
-iris-devtester automatically handles this, but if you encounter the error:
+**Solution (CLI — recommended):**
+```bash
+# Auto-detect and fix password issues:
+idt test-connection --auto-fix
 
+# Or manually reset password (with timeout to avoid hangs):
+idt container reset-password <container-name> --timeout 10
+```
+
+**Solution (Python API):**
 ```python
-# The library should automatically reset the password
-# If it doesn't work, check Docker container access:
 from iris_devtester.containers import IRISContainer
 
 with IRISContainer.community() as iris:
@@ -58,12 +67,8 @@ with IRISContainer.community() as iris:
     conn = iris.get_connection()
 ```
 
-**Manual workaround (if auto-remediation fails):**
+**Manual workaround (if all else fails):**
 ```bash
-# Get container ID
-docker ps | grep iris
-
-# Reset password manually
 docker exec -it <container_id> iris session IRIS -U%SYS <<EOF
 do ##class(Security.Users).UnExpireUserPasswords("*")
 halt

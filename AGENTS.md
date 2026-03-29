@@ -88,7 +88,11 @@ black . && isort . && flake8 iris_devtester/ && mypy iris_devtester/
 # CLI
 idt container up                      # Start community container
 idt container up --edition light      # CI/CD (580MB image)
+idt container up --port 11972         # Specific host port
+idt container exec iris_db --objectscript "Write \$ZVERSION"  # Run ObjectScript
+idt container reset-password iris_db --timeout 10              # With timeout
 idt test-connection                   # Verify connectivity
+idt test-connection --auto-fix        # Auto-fix password issues
 idt fixture load --name my-data       # Load GOF fixture
 idt dev up                            # Persistent dev instance
 ```
@@ -121,8 +125,10 @@ Testcontainers Ryuk removes containers when the Python process exits. For persis
 ### 2. Password change required on fresh community containers
 IRIS community edition forces `ChangePassword=1` on first startup. `with_preconfigured_password()` sets the env var but does NOT clear this flag. `IRISContainer.start()` calls `unexpire_all_passwords()` automatically, but if you hit auth errors: `idt container reset-password <name>` or `iris.reset_password()`. See `docs/learnings/password-reset-changeflag-fix.md`.
 
+**CLI auto-fix (Feature 030)**: `idt test-connection --auto-fix` now detects password-change errors and auto-remediates. The cryptic "Unexpected error: 1" is replaced with an actionable message.
+
 ### 3. No public `get_password()` on IRISContainer
-Password is stored as `_password` (private). No public accessor exists. Downstream code accesses `iris._password` directly. Tracked as a known API gap.
+**RESOLVED (Feature 029)**: `get_password()` and `get_username()` public methods added. No longer need `iris._password`.
 
 ## ENVIRONMENT
 

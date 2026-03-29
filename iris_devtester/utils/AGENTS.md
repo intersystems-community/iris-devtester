@@ -32,3 +32,4 @@ Core utilities for IRIS operations: password management, CallIn service, health 
 - **Return pattern**: `tuple[bool, str]` — `(success, message)` for all utility functions
 - **Docker exec**: Password reset and CallIn use `docker exec` to run IRIS terminal commands
 - **Error messages**: Always include "What went wrong" + "How to fix it" (Constitution #5)
+- **Timeout propagation**: `password.py` `reset_password(timeout=N)` now correctly passes `timeout` to the subprocess call (fixed in Feature 030 — was hardcoded to 15s)
