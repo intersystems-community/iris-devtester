@@ -1,3 +1,4 @@
+import sys
 import types
 
 import pytest
@@ -20,17 +21,13 @@ class TestFeature030CliUxContract:
             raise Exception("1")
 
         fake_dbapi.connect = fake_connect
+        monkeypatch.setitem(sys.modules, "intersystems_iris", types.ModuleType("intersystems_iris"))
         monkeypatch.setitem(
-            __import__("sys").modules,
-            "intersystems_iris",
-            types.ModuleType("intersystems_iris"),
-        )
-        monkeypatch.setitem(
-            __import__("sys").modules,
+            sys.modules,
             "intersystems_iris.dbapi",
             types.ModuleType("intersystems_iris.dbapi"),
         )
-        monkeypatch.setitem(__import__("sys").modules, "intersystems_iris.dbapi._DBAPI", fake_dbapi)
+        monkeypatch.setitem(sys.modules, "intersystems_iris.dbapi._DBAPI", fake_dbapi)
 
         result = cli_runner.invoke(
             test_connection,

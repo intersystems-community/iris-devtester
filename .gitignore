@@ -77,3 +77,4 @@ Demo_*.md
 # Agent/Development artifacts
 .sisyphus/
 .benchmarks/
+.claude/settings.local.json

@@ -3,6 +3,7 @@
 import json
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 import click
 
@@ -14,6 +15,71 @@ from iris_devtester.utils.iris_container_adapter import (
     translate_docker_error,
     verify_container_persistence,
 )
+
+
+def _resolve_port_mappings(container, default_superserver_port: int, default_webserver_port: int):
+    port_bindings = container.attrs.get("NetworkSettings", {}).get("Ports", {})
+    superserver_port = default_superserver_port
+    webserver_port = default_webserver_port
+
+    if "1972/tcp" in port_bindings and port_bindings["1972/tcp"]:
+        superserver_port = int(port_bindings["1972/tcp"][0]["HostPort"])
+    if "52773/tcp" in port_bindings and port_bindings["52773/tcp"]:
+        webserver_port = int(port_bindings["52773/tcp"][0]["HostPort"])
+
+    return superserver_port, webserver_port
+
+
+def _apply_auto_port_assignment(container_config, auto_port: bool, port_range: Optional[str]):
+    if not auto_port:
+        return
+
+    from iris_devtester.ports.registry import PortRegistry
+
+    registry_kwargs = {}
+    if port_range:
+        try:
+            min_p, max_p = map(int, port_range.split("-"))
+            registry_kwargs["port_range"] = (min_p, max_p)
+        except Exception:
+            raise click.ClickException(
+                f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-2000)"
+            )
+
+    registry = PortRegistry(**registry_kwargs)
+    project_path = str(Path.cwd().absolute())
+
+    click.echo(f"⏳ Engaging port registry for project: {project_path}")
+
+    preferred = container_config.superserver_port if container_config.superserver_port != 1972 else None
+    assignment = registry.assign_port(project_path, preferred_port=preferred, allow_fallback=True)
+
+    if assignment.port != preferred and preferred is not None:
+        click.echo(
+            click.style(
+                f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
+                fg="yellow",
+            )
+        )
+    elif assignment.assignment_type == "auto" and preferred is None:
+        if assignment.port != 1972:
+            click.echo(
+                click.style(
+                    f"⚠️  Default port 1972 was unavailable. Assigned {assignment.port} instead.",
+                    fg="yellow",
+                )
+            )
+        else:
+            click.echo(f"✓ Port {assignment.port} assigned and verified.")
+    else:
+        click.echo(f"✓ Port {assignment.port} assigned and verified.")
+
+    container_config.superserver_port = assignment.port
+    if container_config.webserver_port == 52773:
+        offset = assignment.port - 1972
+        if offset > 0:
+            container_config.webserver_port = 52773 + offset
+            click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
 
 
 @click.group(name="container")
@@ -171,7 +237,7 @@ def up(
                 # Light edition: caretdev/iris-community-light (85% smaller)
                 container_config.image_tag = "latest-em"
                 click.echo(
-                    click.style(f"  → Edition: light", fg="cyan")
+                    click.style("  → Edition: light", fg="cyan")
                     + " (minimal for CI/CD, ~580MB vs ~3.5GB)"
                 )
             elif edition_lower == "enterprise":
@@ -182,10 +248,10 @@ def up(
                         "Usage: iris-devtester container up --edition enterprise --license /path/to/iris.key"
                     )
                 container_config.license_key = license_key
-                click.echo(f"  → Edition: enterprise")
+                click.echo("  → Edition: enterprise")
                 click.echo(f"  → License: {license_key}")
             else:
-                click.echo(f"  → Edition: community")
+                click.echo("  → Edition: community")
 
         if cpf:
             container_config.cpf_merge = cpf
@@ -202,62 +268,7 @@ def up(
                     click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
 
         # Handle auto-port assignment (Feature 027 - Smart Port Fallback)
-        if auto_port:
-            from iris_devtester.ports.registry import PortRegistry
-
-            registry_kwargs = {}
-            if port_range:
-                try:
-                    min_p, max_p = map(int, port_range.split("-"))
-                    registry_kwargs["port_range"] = (min_p, max_p)
-                except Exception:
-                    raise click.ClickException(
-                        f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-2000)"
-                    )
-
-            registry = PortRegistry(**registry_kwargs)
-            project_path = str(Path.cwd().absolute())
-
-            click.echo(f"⏳ Engaging port registry for project: {project_path}")
-
-            # Use current config port as preferred ONLY if it's NOT the default 1972
-            preferred = (
-                container_config.superserver_port
-                if container_config.superserver_port != 1972
-                else None
-            )
-
-            assignment = registry.assign_port(
-                project_path, preferred_port=preferred, allow_fallback=True
-            )
-
-            if assignment.port != preferred and preferred is not None:
-                click.echo(
-                    click.style(
-                        f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
-                        fg="yellow",
-                    )
-                )
-            elif assignment.assignment_type == "auto" and preferred is None:
-                if assignment.port != 1972:
-                    click.echo(
-                        click.style(
-                            f"⚠️  Default port 1972 was unavailable. Assigned {assignment.port} instead.",
-                            fg="yellow",
-                        )
-                    )
-                else:
-                    click.echo(f"✓ Port {assignment.port} assigned and verified.")
-            else:
-                click.echo(f"✓ Port {assignment.port} assigned and verified.")
-
-            container_config.superserver_port = assignment.port
-            # Update web port proportionally if it's the default
-            if container_config.webserver_port == 52773:
-                offset = assignment.port - 1972
-                if offset > 0:
-                    container_config.webserver_port = 52773 + offset
-                    click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+        _apply_auto_port_assignment(container_config, auto_port, port_range)
 
         # Check if container already exists
         existing_container = IRISContainerManager.get_existing(container_config.container_name)
@@ -298,16 +309,11 @@ def up(
             if existing_container.status == "running":
                 click.echo(f"✓ Container '{container_config.container_name}' is already running")
 
-                # Get port mappings from container
-                port_bindings = existing_container.attrs.get("NetworkSettings", {}).get("Ports", {})
-                superserver_port = container_config.superserver_port
-                webserver_port = container_config.webserver_port
-
-                # Extract mapped ports if available
-                if "1972/tcp" in port_bindings and port_bindings["1972/tcp"]:
-                    superserver_port = int(port_bindings["1972/tcp"][0]["HostPort"])
-                if "52773/tcp" in port_bindings and port_bindings["52773/tcp"]:
-                    webserver_port = int(port_bindings["52773/tcp"][0]["HostPort"])
+                superserver_port, webserver_port = _resolve_port_mappings(
+                    existing_container,
+                    container_config.superserver_port,
+                    container_config.webserver_port,
+                )
 
                 progress.print_connection_info(
                     container_name=container_config.container_name,
@@ -358,7 +364,7 @@ def up(
                 if not check.success:
                     raise ValueError(check.get_error_message(container_config))
 
-                click.echo(f"✓ Container persistence verified")
+                click.echo("✓ Container persistence verified")
 
             except Exception as e:
                 # Translate Docker errors to constitutional format
@@ -371,9 +377,7 @@ def up(
         def progress_callback(msg: str):
             click.echo(f"  {msg}")
 
-        state = health_checks.wait_for_healthy(
-            existing_container, timeout=timeout, progress_callback=progress_callback
-        )
+        health_checks.wait_for_healthy(existing_container, timeout=timeout, progress_callback=progress_callback)
 
         # Enable CallIn service (required for DBAPI)
         click.echo("⏳ Enabling CallIn service...")
@@ -387,17 +391,12 @@ def up(
         # Success
         click.echo(f"\n✓ Container '{container_config.container_name}' is running and healthy")
 
-        # Get port mappings from container
         existing_container.reload()
-        port_bindings = existing_container.attrs.get("NetworkSettings", {}).get("Ports", {})
-        superserver_port = container_config.superserver_port
-        webserver_port = container_config.webserver_port
-
-        # Extract mapped ports if available
-        if "1972/tcp" in port_bindings and port_bindings["1972/tcp"]:
-            superserver_port = int(port_bindings["1972/tcp"][0]["HostPort"])
-        if "52773/tcp" in port_bindings and port_bindings["52773/tcp"]:
-            webserver_port = int(port_bindings["52773/tcp"][0]["HostPort"])
+        superserver_port, webserver_port = _resolve_port_mappings(
+            existing_container,
+            container_config.superserver_port,
+            container_config.webserver_port,
+        )
 
         # Show connection information
         progress.print_connection_info(
@@ -623,64 +622,7 @@ def start(ctx, container_name, config, timeout, auto_port, port_range):
                 container_config.container_name = container_name
 
                 # Handle auto-port assignment (Feature 027 - Smart Port Fallback)
-                if auto_port:
-                    from iris_devtester.ports.registry import PortRegistry
-
-                    registry_kwargs = {}
-                    if port_range:
-                        try:
-                            min_p, max_p = map(int, port_range.split("-"))
-                            registry_kwargs["port_range"] = (min_p, max_p)
-                        except Exception:
-                            raise click.ClickException(
-                                f"Invalid port range format: {port_range}. Use 'min-max' (e.g. 1972-2000)"
-                            )
-
-                    registry = PortRegistry(**registry_kwargs)
-                    project_path = str(Path.cwd().absolute())
-
-                    click.echo(f"⏳ Engaging port registry for project: {project_path}")
-
-                    # Use current config port as preferred ONLY if it's NOT the default 1972
-                    preferred = (
-                        container_config.superserver_port
-                        if container_config.superserver_port != 1972
-                        else None
-                    )
-
-                    assignment = registry.assign_port(
-                        project_path, preferred_port=preferred, allow_fallback=True
-                    )
-
-                    if assignment.port != preferred and preferred is not None:
-                        click.echo(
-                            click.style(
-                                f"⚠️  Port {preferred} was unavailable. Assigned {assignment.port} instead.",
-                                fg="yellow",
-                            )
-                        )
-                    elif assignment.assignment_type == "auto" and preferred is None:
-                        if assignment.port != 1972:
-                            click.echo(
-                                click.style(
-                                    f"⚠️  Default port 1972 was unavailable. Assigned {assignment.port} instead.",
-                                    fg="yellow",
-                                )
-                            )
-                        else:
-                            click.echo(f"✓ Port {assignment.port} assigned and verified.")
-                    else:
-                        click.echo(f"✓ Port {assignment.port} assigned and verified.")
-
-                    container_config.superserver_port = assignment.port
-                    # Update web port proportionally if it's the default
-                    if container_config.webserver_port == 52773:
-                        offset = assignment.port - 1972
-                        if offset > 0:
-                            container_config.webserver_port = 52773 + offset
-                            click.echo(
-                                f"  → Web port adjusted to {container_config.webserver_port}"
-                            )
+                _apply_auto_port_assignment(container_config, auto_port, port_range)
 
                 # Create and start container using Docker SDK (Feature 011 - T015)
                 click.echo("⏳ Configuring and starting container with Docker SDK...")
@@ -725,7 +667,7 @@ def start(ctx, container_name, config, timeout, auto_port, port_range):
 
         # Wait for healthy
         click.echo("⏳ Waiting for container to be healthy...")
-        state = health_checks.wait_for_healthy(container, timeout=timeout)
+        health_checks.wait_for_healthy(container, timeout=timeout)
 
         click.echo(f"✓ Container '{container_name}' started successfully")
         ctx.exit(0)
@@ -817,7 +759,7 @@ def restart(ctx, container_name, timeout):
 
         # Wait for healthy
         click.echo("⏳ Waiting for container to be healthy...")
-        state = health_checks.wait_for_healthy(container, timeout=timeout)
+        health_checks.wait_for_healthy(container, timeout=timeout)
 
         click.echo(f"✓ Container '{container_name}' restarted successfully")
         ctx.exit(0)
@@ -1157,7 +1099,7 @@ def test_connection_cmd(ctx, container_name, namespace, username, password):
             # Test the connection with a simple query
             cursor = conn.cursor()
             cursor.execute("SELECT $NAMESPACE as namespace")
-            result = cursor.fetchone()
+            cursor.fetchone()
             cursor.close()
             conn.close()
 

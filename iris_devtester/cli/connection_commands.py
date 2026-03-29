@@ -1,7 +1,5 @@
 """Connection testing and diagnostics CLI commands."""
 
-import sys
-from pathlib import Path
 from typing import Optional
 
 import click
@@ -57,6 +55,16 @@ def test_connection(
         iris-devtester test-connection -v
     """
     try:
+        def _run_dbapi_probe(dbapi_module):
+            connection_string = f"{conn_host}:{conn_port}/{conn_namespace}"
+            conn = dbapi_module.connect(connection_string, conn_username, conn_password, timeout=5)
+            cursor = conn.cursor()
+            cursor.execute("SELECT $ZVERSION")
+            version = cursor.fetchone()[0]
+            cursor.close()
+            conn.close()
+            return version
+
         # Determine connection parameters
         if verbose:
             click.echo("🔍 Determining connection parameters...")
@@ -140,7 +148,7 @@ def test_connection(
         conn_port = conn_port or 1972
 
         # Display connection parameters
-        click.echo(f"\n🔌 Testing connection to IRIS:")
+        click.echo("\n🔌 Testing connection to IRIS:")
         click.echo(f"   Host: {conn_host}")
         click.echo(f"   Port: {conn_port}")
         click.echo(f"   Namespace: {conn_namespace}")
@@ -161,20 +169,12 @@ def test_connection(
             if verbose:
                 click.echo(f"  → Connecting to SuperServer {conn_host}:{conn_port}...")
 
-            connection_string = f"{conn_host}:{conn_port}/{conn_namespace}"
-            conn = dbapi.connect(connection_string, conn_username, conn_password, timeout=5)
-
             if verbose:
                 click.echo("  → Executing test query...")
 
-            cursor = conn.cursor()
-            cursor.execute("SELECT $ZVERSION")
-            version = cursor.fetchone()[0]
+            version = _run_dbapi_probe(dbapi)
 
-            cursor.close()
-            conn.close()
-
-            click.echo(f"  ✓ DBAPI connection successful")
+            click.echo("  ✓ DBAPI connection successful")
             click.echo(f"  ✓ IRIS version: {version}")
             dbapi_success = True
 
@@ -209,15 +209,7 @@ def test_connection(
                     if reset_success:
                         click.echo("  ✓ Password reset succeeded, retrying DBAPI connection...")
                         try:
-                            connection_string = f"{conn_host}:{conn_port}/{conn_namespace}"
-                            conn = dbapi.connect(
-                                connection_string, conn_username, conn_password, timeout=5
-                            )
-                            cursor = conn.cursor()
-                            cursor.execute("SELECT $ZVERSION")
-                            version = cursor.fetchone()[0]
-                            cursor.close()
-                            conn.close()
+                            version = _run_dbapi_probe(dbapi)
                             click.echo("  ✓ DBAPI connection successful after auto-fix")
                             click.echo(f"  ✓ IRIS version: {version}")
                             dbapi_success = True
@@ -267,7 +259,7 @@ def test_connection(
             cursor.close()
             conn.close()
 
-            click.echo(f"  ✓ JDBC connection successful")
+            click.echo("  ✓ JDBC connection successful")
             click.echo(f"  ✓ IRIS version: {version}")
             jdbc_success = True
 
@@ -275,7 +267,7 @@ def test_connection(
             missing_module = "jaydebeapi" if "jaydebeapi" in str(e) else "jpype"
             click.echo(f"  ⚠ JDBC not available ({missing_module} not installed)")
             if verbose:
-                click.echo(f"    Install with: pip install iris-devtester[jdbc]")
+                click.echo("    Install with: pip install iris-devtester[jdbc]")
         except Exception as e:
             click.echo(f"  ✗ JDBC connection failed: {e}")
             if verbose:
@@ -307,7 +299,7 @@ def test_connection(
             click.echo("  Could not connect to IRIS using either DBAPI or JDBC.")
             click.echo("\nHow to fix it:")
             click.echo("  1. Verify IRIS is running:")
-            click.echo(f"     iris-devtester container status")
+            click.echo("     iris-devtester container status")
             click.echo("  2. Check connection parameters:")
             click.echo(f"     Host: {conn_host}")
             click.echo(f"     Port: {conn_port}")

@@ -543,9 +543,7 @@ class IRISContainer(IRISBase):
         unexpire_all_passwords(self.get_container_name())
 
         config = self.get_config()
-        from iris_devtester.connections.connection import get_connection as get_modern_connection
-
-        self._connection = get_modern_connection(config)
+        self._connection = get_connection(config)
         return self._connection
 
     def with_preconfigured_password(self, password: str) -> "IRISContainer":
@@ -607,8 +605,6 @@ class IRISContainer(IRISBase):
 
         # Port registry integration: assign port before starting
         if self._port_registry is not None and self._project_path is not None:
-            from iris_devtester.ports import PortAssignment
-
             self._port_assignment = self._port_registry.assign_port(
                 project_path=self._project_path,
                 preferred_port=self._preferred_port,

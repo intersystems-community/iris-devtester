@@ -172,6 +172,15 @@ def verify_password(
     if config is None:
         config = VerificationConfig()
 
+    def _verification_success_result(attempt: int) -> PasswordResult:
+        return PasswordResult(
+            success=True,
+            message="Password verified successfully",
+            attempts=attempt,
+            elapsed_seconds=time.time() - start_time,
+            username=username,
+        )
+
     start_time = time.time()
     last_error = ""
     last_error_type: ErrorType = "unknown"
@@ -191,13 +200,7 @@ def verify_password(
                     timeout=5,
                 )
                 conn.close()
-                return PasswordResult(
-                    success=True,
-                    message="Password verified successfully",
-                    attempts=attempt,
-                    elapsed_seconds=time.time() - start_time,
-                    username=username,
-                )
+                return _verification_success_result(attempt)
             except ImportError:
                 # Fallback to connection manager if iris package not found
                 from iris_devtester.config import IRISConfig
@@ -212,26 +215,25 @@ def verify_password(
                 )
                 conn = create_dbapi_connection(cfg)
                 conn.close()
-                return PasswordResult(
-                    success=True,
-                    message="Password verified successfully",
-                    attempts=attempt,
-                    elapsed_seconds=time.time() - start_time,
-                    username=username,
-                )
+                return _verification_success_result(attempt)
 
         except Exception as e:
             last_error = str(e)
             error_msg = last_error.lower()
 
-            if "access denied" in error_msg:
-                last_error_type = "access_denied"
-            elif "connection refused" in error_msg:
-                last_error_type = "connection_refused"
-            elif "timeout" in error_msg:
-                last_error_type = "timeout"
-            else:
-                last_error_type = "unknown"
+            error_type_by_indicator = {
+                "access denied": "access_denied",
+                "connection refused": "connection_refused",
+                "timeout": "timeout",
+            }
+            last_error_type = next(
+                (
+                    mapped
+                    for indicator, mapped in error_type_by_indicator.items()
+                    if indicator in error_msg
+                ),
+                "unknown",
+            )
 
             # Check hard timeout
             elapsed_ms = (time.time() - start_time) * 1000
@@ -386,40 +388,7 @@ Halt
             )
 
         # Optionally verify password works
-        if verify:
-            verify_host = hostname or "localhost"
-            verify_result = verify_password(
-                hostname=verify_host,
-                port=port,
-                namespace=namespace,
-                username=username,
-                password=new_password,
-                config=verification_config,
-            )
-
-            if verify_result.success:
-                return PasswordResult(
-                    success=True,
-                    message=f"Password for '{username}' reset and verified successfully",
-                    attempts=verify_result.attempts,
-                    elapsed_seconds=time.time() - start_time,
-                    container_name=container_name,
-                    username=username,
-                )
-            else:
-                return PasswordResult(
-                    success=False,
-                    message=(
-                        f"Password reset succeeded but verification failed: "
-                        f"{verify_result.message}"
-                    ),
-                    error_type=verify_result.error_type or "verification_failed",
-                    attempts=verify_result.attempts,
-                    elapsed_seconds=time.time() - start_time,
-                    container_name=container_name,
-                    username=username,
-                )
-        else:
+        if not verify:
             return PasswordResult(
                 success=True,
                 message=f"Password for '{username}' reset successfully (not verified)",
@@ -427,6 +396,36 @@ Halt
                 container_name=container_name,
                 username=username,
             )
+
+        verify_host = hostname or "localhost"
+        verify_result = verify_password(
+            hostname=verify_host,
+            port=port,
+            namespace=namespace,
+            username=username,
+            password=new_password,
+            config=verification_config,
+        )
+
+        if verify_result.success:
+            return PasswordResult(
+                success=True,
+                message=f"Password for '{username}' reset and verified successfully",
+                attempts=verify_result.attempts,
+                elapsed_seconds=time.time() - start_time,
+                container_name=container_name,
+                username=username,
+            )
+
+        return PasswordResult(
+            success=False,
+            message=f"Password reset succeeded but verification failed: {verify_result.message}",
+            error_type=verify_result.error_type or "verification_failed",
+            attempts=verify_result.attempts,
+            elapsed_seconds=time.time() - start_time,
+            container_name=container_name,
+            username=username,
+        )
 
     except subprocess.TimeoutExpired:
         return PasswordResult(

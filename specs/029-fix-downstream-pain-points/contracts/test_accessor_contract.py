@@ -4,9 +4,6 @@ These tests define the API contract BEFORE implementation.
 They should FAIL until get_password()/get_username() are implemented.
 """
 
-import pytest
-
-
 class TestPublicPasswordAccessor:
     """FR-001: IRISContainer MUST expose get_password() returning configured password."""
 
