@@ -56,8 +56,14 @@ def test_connection(
     """
     try:
         def _run_dbapi_probe(dbapi_module):
-            connection_string = f"{conn_host}:{conn_port}/{conn_namespace}"
-            conn = dbapi_module.connect(connection_string, conn_username, conn_password, timeout=5)
+            conn = dbapi_module.connect(
+                hostname=conn_host,
+                port=conn_port,
+                namespace=conn_namespace,
+                username=conn_username,
+                password=conn_password,
+                timeout=5,
+            )
             cursor = conn.cursor()
             cursor.execute("SELECT $ZVERSION")
             version = cursor.fetchone()[0]
@@ -164,7 +170,7 @@ def test_connection(
         click.echo("📊 Test 1/2: DBAPI Connection (fast native protocol)")
         dbapi_success = False
         try:
-            import intersystems_iris.dbapi._DBAPI as dbapi
+            import iris as dbapi
 
             if verbose:
                 click.echo(f"  → Connecting to SuperServer {conn_host}:{conn_port}...")

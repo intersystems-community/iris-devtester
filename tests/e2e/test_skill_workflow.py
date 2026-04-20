@@ -7,7 +7,7 @@ from iris_devtester.containers.performance import get_resource_metrics
 @pytest.mark.e2e
 @pytest.mark.integration
 def test_skill_guided_workflow():
-    with IRISContainer.community(username="skill_user", password="SYS") as iris:
+    with IRISContainer.community() as iris:
         container = iris.get_wrapped_container()
         assert container is not None
         assert container.status == "running"

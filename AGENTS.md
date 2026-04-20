@@ -1,5 +1,8 @@
 # AGENTS.md - iris-devtester
 
+**Owner:** Thomas Dyar (Tom) — Sr. Manager, AI Platform and Ecosystems, InterSystems Corporation  
+> NEVER use "Tim" — that is Tim Leavitt, a colleague. Always use "Tom" in conversation.
+
 **Generated**: 2026-03-28
 **Commit**: 417ffee
 **Branch**: main
@@ -105,6 +108,7 @@ idt dev up                            # Persistent dev instance
 - **Return pattern**: `tuple[bool, str]` for simple success/failure; dataclass for rich results
 - **Error messages**: MUST include "What went wrong" + "How to fix it" (Constitution #5)
 - **Package**: `intersystems-irispython` ONLY. Never `intersystems-iris` (deprecated, causes conflicts)
+- **Import story (v5.x)**: Package ships as `iris` and `irisnative` top-level modules. `import iris; iris.connect(hostname=..., port=..., namespace=..., username=..., password=...)`. NOT `intersystems_iris.dbapi._DBAPI` (old v3.x path). `dbapi_compat.py` handles detection automatically.
 
 ## ANTI-PATTERNS
 

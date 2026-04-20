@@ -56,10 +56,11 @@ class TestConnectionFallback:
         assert conn == mock_conn
 
     @patch("iris_devtester.connections.dbapi.is_dbapi_available", return_value=True)
+    @patch("iris_devtester.connections.jdbc.is_jdbc_available", return_value=True)
     @patch("iris_devtester.connections.dbapi.create_dbapi_connection")
     @patch("iris_devtester.connections.jdbc.create_jdbc_connection")
     def test_falls_back_to_jdbc_on_dbapi_failure(
-        self, mock_jdbc_create, mock_dbapi_create, mock_dbapi_available
+        self, mock_jdbc_create, mock_dbapi_create, mock_jdbc_available, mock_dbapi_available
     ):
         """Test fallback to JDBC when DBAPI connection fails."""
         from iris_devtester.config import IRISConfig
