@@ -78,8 +78,13 @@ def _apply_auto_port_assignment(container_config, auto_port: bool, port_range: O
     if container_config.webserver_port == 52773:
         offset = assignment.port - 1972
         if offset > 0:
-            container_config.webserver_port = 52773 + offset
-            click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+            candidate = 52773 + offset
+            if candidate <= 65535:
+                container_config.webserver_port = candidate
+                click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+            else:
+                container_config.webserver_port = 0
+                click.echo("  → Web port disabled (would exceed 65535 with this superserver port)")
 
 
 @click.group(name="container")
@@ -264,8 +269,13 @@ def up(
             if container_config.webserver_port == 52773 and host_port != 1972:
                 offset = host_port - 1972
                 if offset > 0:
-                    container_config.webserver_port = 52773 + offset
-                    click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+                    candidate = 52773 + offset
+                    if candidate <= 65535:
+                        container_config.webserver_port = candidate
+                        click.echo(f"  → Web port adjusted to {container_config.webserver_port}")
+                    else:
+                        container_config.webserver_port = 0
+                        click.echo("  → Web port disabled (would exceed 65535 with this superserver port)")
 
         # Handle auto-port assignment (Feature 027 - Smart Port Fallback)
         _apply_auto_port_assignment(container_config, auto_port, port_range)
