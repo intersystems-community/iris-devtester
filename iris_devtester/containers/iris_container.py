@@ -103,7 +103,8 @@ class IRISContainer(IRISBase):
         # Use self._mapped_port for the host-side mapped port.
         self.host = "localhost"
         self.port = 1972  # Internal container port - DO NOT CHANGE
-        self._mapped_port: Optional[int] = None  # Host-side mapped port
+        self._mapped_port: Optional[int] = None  # Host-side mapped port (1972 only, cached)
+        self._port_cache: dict[int, int] = {}  # Host-side mapped port cache for all internal ports
 
         # Pre-configuration fields (Feature 001)
         self._preconfigure_password: Optional[str] = None
@@ -496,39 +497,42 @@ class IRISContainer(IRISBase):
         )
         self._config = config
         try:
-            # Get host and mapped port
-            # IMPORTANT: self.port must remain 1972 (internal port) for get_exposed_port() to work
-            
-            # Use 'localhost' as default host for local containers
             discovered_host = self.get_container_host_ip()
             if discovered_host in ("0.0.0.0", "::"):
                 discovered_host = "localhost"
-            
             self.host = discovered_host
-            self._mapped_port = int(self.get_exposed_port(1972))  # Use internal port to get mapping
-            
+            self._mapped_port = self.get_mapped_port(1972)
             config.host = self.host
-            config.port = self._mapped_port  # Config uses the host-mapped port for connections
-        except Exception:
-            # If discovery fails, stick with defaults (localhost:1972)
+            config.port = self._mapped_port
+        except ConnectionError:
             pass
         return config
 
     def get_mapped_port(self, internal_port: int = 1972) -> int:
-        """Get the host-side mapped port for a given internal container port.
+        """Get the host-side port that maps to the given internal container port.
 
-        This is a convenience wrapper around get_exposed_port() that ensures
-        we always pass the internal port (not the host port).
+        In Docker-in-Docker (DinD) environments, the outer host's port bindings are
+        not visible to the inner Docker daemon. testcontainers raises ConnectionError
+        from DockerClient.port() in that case. We catch it and return the internal
+        port directly — which is reachable via the container's bridge/gateway IP.
 
         Args:
-            internal_port: The port inside the container (default: 1972 for IRIS superserver)
+            internal_port: Port inside the container (1972 = IRIS SuperServer, 52773 = web)
 
         Returns:
-            The host-side port that maps to the internal port
+            Host-side mapped port, or internal_port if mapping is unavailable (DinD).
         """
-        if self._mapped_port is not None and internal_port == 1972:
+        if internal_port == 1972 and self._mapped_port is not None:
             return self._mapped_port
-        return int(self.get_exposed_port(internal_port))
+        if internal_port in self._port_cache:
+            return self._port_cache[internal_port]
+        try:
+            host_port = int(self.get_exposed_port(internal_port))
+            self._port_cache[internal_port] = host_port
+            return host_port
+        except ConnectionError:
+            self._port_cache[internal_port] = internal_port
+            return internal_port
 
     def get_connection(self, enable_callin: bool = True) -> Any:
         """Get database connection."""

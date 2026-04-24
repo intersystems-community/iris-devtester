@@ -43,8 +43,13 @@ Fresh IRIS community containers set `ChangePassword=1` for all users. Even `with
 - **Root cause**: `Security.Users.ChangePassword()` was removed in 2004. Must use `Security.Users.Modify()` with `props("ChangePassword")=0`.
 - See: `docs/learnings/password-reset-changeflag-fix.md`, `docs/learnings/iris-security-users-api.md`
 
-### No public `get_password()` accessor — RESOLVED (Feature 029)
-`IRISContainer` now exposes `get_password()` and `get_username()` public methods. No need to access `iris._password` directly.
+### Docker-in-Docker (DinD): get_mapped_port() raises ConnectionError on non-1972 ports
+When iris-devtester runs **inside** a container (CI runners, GitHub Actions with Docker socket mounted, nested Docker), testcontainers detects DinD via `/.dockerenv` and sets `ConnectionMode.gateway_ip`. In this mode `DockerClient.port()` queries the Docker API for host-side port mappings — but those mappings are on the **outer** host, invisible to the inner daemon. The call returns `None`, and testcontainers raises `ConnectionError: Port mapping … is not available`.
+- **Which calls fail**: `get_mapped_port(52773)` (web portal) and any port other than 1972. Port 1972 is cached as `_mapped_port` during `start()`, so it rarely hits this path.
+- **Fix (v1.15.1+)**: `get_mapped_port()` now catches `ConnectionError` and returns the internal port directly. In DinD, the IRIS container is reachable via its bridge/gateway IP + internal port (no NAT needed).
+- **Env var override**: Set `TESTCONTAINERS_CONNECTION_MODE=bridge_ip` to force the correct DinD mode, or `TC_HOST=<gateway-ip>` to pin the host.
+- **Diagnosis**: `docker exec <runner> cat /.dockerenv` — if the file exists you're in DinD.
+- See: `docs/learnings/iris-container-dind-port-mapping.md`
 
 ## ANTI-PATTERNS
 
