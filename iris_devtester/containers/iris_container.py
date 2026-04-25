@@ -247,10 +247,77 @@ class IRISContainer(IRISBase):
             - CSP/REST web framework
         """
         if image is None:
-            # Use latest-em for LTS stability, or allow version override
             tag = version if version != "latest" else "latest-em"
             image = f"caretdev/iris-community-light:{tag}"
         return cls(image=image, **kwargs)
+
+    @classmethod
+    def health(
+        cls, image: Optional[str] = None, version: str = "latest", **kwargs
+    ) -> "IRISContainer":
+        """
+        Create an irishealth-community container with FHIR R4 pre-installed.
+
+        Foundation.Install + InstallInstance are baked at build time — no ZPM,
+        no network calls, no runtime setup. FHIR R4 endpoint available at
+        /csp/healthshare/demo/fhir/r4/metadata within ~90 seconds of start.
+
+        Web portal on 52773. SuperServer on 1972. Community edition.
+        Container is cleaned up by Ryuk on process exit.
+
+        Args:
+            image: Docker image. Defaults to irishealth-community:latest.
+            version: Image tag. Options: 'latest', '2024.1', '2025.1', etc.
+        """
+        if image is None:
+            image = f"intersystemsdc/irishealth-community:{version}"
+        container = cls(image=image, **kwargs)
+        container._edition = "health"
+        return container
+
+    @classmethod
+    def ai_hub(
+        cls,
+        build: str = "159",
+        image: Optional[str] = None,
+        durable_path: Optional[str] = None,
+        **kwargs,
+    ) -> "IRISContainer":
+        """
+        Create an irishealth AI Hub container with %AI.Agent, %AI.MCP.Service, VECTOR.
+
+        Requires access to docker.iscinternal.com (ISC internal registry).
+        No license key needed — this is not the standard enterprise image.
+        SuperServer on 1972 only. No web server (WebServer=0 in iris.cpf).
+
+        CRITICAL — /durable volume:
+            Named Docker volumes mount with root ownership. irisowner (uid 51773)
+            cannot write → container fails silently. This factory defaults to
+            tmpfs:/durable. For persistence, provide durable_path (host bind-mount
+            must be pre-chowned to uid 51773 before starting).
+
+        CRITICAL — double-start bug:
+            The -a entrypoint hook in /iris-main runs after IRIS is already started.
+            Any startup script that calls 'iris start IRIS quietly' will cause IRIS
+            to fail with "database already running". Startup scripts under -a must
+            assume IRIS is already live.
+
+        Args:
+            build: AI Hub build number (default: "159" = 2026.2.0AI.159).
+            image: Override full image reference. If None, uses irishealth:2026.2.0AI.{build}.0
+            durable_path: Host path for persistent /durable bind-mount. Must be
+                pre-chowned to uid 51773:51773. If None, uses tmpfs (non-persistent).
+        """
+        import os
+
+        if image is None:
+            image = f"docker.iscinternal.com/docker-intersystems/intersystems/irishealth:2026.2.0AI.{build}.0"
+
+        container = cls(image=image, **kwargs)
+        container._edition = "ai_hub"
+        container._durable_path = durable_path
+        container._use_tmpfs_durable = durable_path is None
+        return container
 
     @classmethod
     def attach(cls, container_name: str, **kwargs) -> "IRISContainer":
@@ -569,6 +636,38 @@ class IRISContainer(IRISBase):
             docker_sdk_version="",
             schemas=probe.schemas,
         )
+
+    def fhir_health_check(self, timeout: int = 10) -> "FHIRContainerHealth":
+        from iris_devtester.containers.models import FHIRContainerHealth
+        import urllib.request
+        import urllib.error
+        import json
+
+        host = self.get_container_host_ip()
+        web_port = self.get_mapped_port(52773)
+        app_key = getattr(self, "_fhir_app_key", "/csp/healthshare/demo/fhir/r4")
+        endpoint = f"http://{host}:{web_port}{app_key}"
+        metadata_url = f"{endpoint}/metadata"
+
+        try:
+            with urllib.request.urlopen(metadata_url, timeout=timeout) as resp:
+                data = json.loads(resp.read())
+                fhir_version = data.get("fhirVersion")
+                resource_types = {e.get("type") for e in data.get("rest", [{}])[0].get("resource", [])}
+                return FHIRContainerHealth(
+                    container_name=self.get_container_name(),
+                    accessible=True,
+                    endpoint=endpoint,
+                    fhir_version=fhir_version,
+                    resource_types_count=len(resource_types),
+                )
+        except Exception as e:
+            return FHIRContainerHealth(
+                container_name=self.get_container_name(),
+                accessible=False,
+                endpoint=endpoint,
+                error=str(e),
+            )
 
     def with_preconfigured_password(self, password: str) -> "IRISContainer":
         """Set password for pre-configuration."""

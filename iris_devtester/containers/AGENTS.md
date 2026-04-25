@@ -51,6 +51,22 @@ When iris-devtester runs **inside** a container (CI runners, GitHub Actions with
 - **Diagnosis**: `docker exec <runner> cat /.dockerenv` — if the file exists you're in DinD.
 - See: `docs/learnings/iris-container-dind-port-mapping.md`
 
+### irishealth editions — 4 hard-won gotchas (Feature 033)
+
+**Gotcha 1: `/durable` volume ownership on AI Hub**
+Named Docker volumes mount with `root` ownership. `irisowner` (uid 51773) cannot write → container starts then silently fails. Always use `tmpfs:/durable:uid=51773,gid=51773` (default in `ai_hub()`) or a bind-mount pre-chowned to 51773.
+
+**Gotcha 2: Double-start bug in AI Hub entrypoint**
+The `-a` hook in `/iris-main` runs *after* IRIS is already started. Any script under `-a` that calls `iris start IRIS quietly` causes IRIS to fail with "database already running" and exit. Startup scripts under `-a` must assume IRIS is already live.
+
+**Gotcha 3: No web server in enterprise irishealth**
+`irishealth:2026.2.0AI.*` has `WebServer=0` in `iris.cpf` and no `csp/bin/` directory — no httpd, no FHIR HTTP endpoint. Port 1972 (SuperServer) only. `irishealth-community` has the full Apache private web server. For both `%AI.*` and FHIR HTTP, use a two-container stack.
+
+**Gotcha 4: `%AI.*` classes live in irislib (read-only)**
+`%AI.Agent`, `%AI.MCP.Service`, etc. are compiled system routines in irislib, a read-only database. Cannot be exported as UDL/XML. Cannot be transplanted into the community image.
+
+See: `docs/learnings/irishealth-editions.md`
+
 ## ANTI-PATTERNS
 
 - **DO NOT** call `iris.start()` without context manager — leaks containers

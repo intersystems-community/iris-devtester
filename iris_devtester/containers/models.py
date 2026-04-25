@@ -425,9 +425,42 @@ class ContainerHealth:
         }
 
     def is_healthy(self) -> bool:
-        """Check if container is fully healthy.
-
-        Returns:
-            True if status is HEALTHY, False otherwise.
-        """
+        """Check if container is fully healthy."""
         return self.status == ContainerHealthStatus.HEALTHY
+
+
+@dataclass
+class FHIRContainerHealth:
+    """Health state of an irishealth-community FHIR container.
+
+    Returned by IRISContainer.fhir_health_check(). Mirrors ContainerHealth
+    for the FHIR-specific surface: HTTP endpoint, FHIR version, resource counts.
+    """
+
+    container_name: str
+    accessible: bool
+    endpoint: str
+    fhir_version: Optional[str] = None
+    resource_types_count: int = 0
+    error: Optional[str] = None
+
+    @property
+    def ready(self) -> bool:
+        """True if FHIR endpoint is accessible and returned a valid metadata response."""
+        return self.accessible and self.fhir_version is not None
+
+    def report(self) -> str:
+        """Human-readable FHIR health summary."""
+        lines = [
+            f"Container:  {self.container_name}",
+            f"Endpoint:   {self.endpoint}",
+            f"Accessible: {self.accessible}",
+        ]
+        if self.fhir_version:
+            lines.append(f"FHIR:       R4 v{self.fhir_version}")
+            lines.append(f"Resources:  {self.resource_types_count} types")
+        else:
+            lines.append("FHIR:       ⚠ metadata not reachable — Foundation.Install may not have run")
+        if self.error:
+            lines.append(f"Error:      {self.error}")
+        return "\n".join(lines)
