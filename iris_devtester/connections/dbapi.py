@@ -10,6 +10,7 @@ import logging
 from typing import Any, Optional
 
 from iris_devtester.config.models import IRISConfig
+from iris_devtester.connections.cursor_wrapper import DiagnosticCursor
 from iris_devtester.utils.dbapi_compat import (
     DBAPIPackageNotFoundError,
     get_connection,
@@ -89,10 +90,15 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
             f"DBAPI connection established using {info.package_name} v{info.version} "
             f"to {config.host}:{config.port}/{config.namespace}"
         )
+        _orig_cursor = connection.cursor
+
+        def _diagnostic_cursor(*args, **kwargs):
+            return DiagnosticCursor(_orig_cursor(*args, **kwargs), connection)
+
+        connection.cursor = _diagnostic_cursor
         return connection
 
-    except DBAPIPackageNotFoundError as e:
-        # Re-raise with original constitutional error message
+    except DBAPIPackageNotFoundError as e:        # Re-raise with original constitutional error message
         raise e
 
     except Exception as e:

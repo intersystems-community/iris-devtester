@@ -35,6 +35,7 @@ from iris_devtester.config import IRISConfig
 # Convenience imports for common usage
 from iris_devtester.connections import get_connection
 from iris_devtester.containers import IRISContainer
+from iris_devtester.diagnostics import probe_connection
 
 # Optional LangChain integration (requires langchain-iris)
 try:

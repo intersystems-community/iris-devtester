@@ -138,3 +138,8 @@ The docs include a "Troubleshooting: Table not found" page covering:
 - Q: Should `ConnectionDiagnosticError` wrap ALL SQLCODE errors or only -30? → A: At minimum -30 (table not found) and -23 (label not in applicable tables, which is the CTE scoping error). These are the two most confusing IRIS-specific errors for new users.
 - Q: Should probe_connection() be synchronous or async? → A: Synchronous — iris-devtester is a sync-first library; async would require a separate interface.
 - Q: Should wrapping be opt-in (via config) or always-on? → A: Always-on for -30 and -23; other SQLCODE errors pass through unchanged to avoid obscuring genuine SQL bugs.
+
+### Session 2026-04-25 (implementation)
+
+- Q: Where should SQLCODE -30/-23 interception live? → A: Cursor wrapper always-on — `conn.cursor()` returns a `DiagnosticCursor` for all iris-devtester-managed connections. Zero call-site changes required downstream.
+- Q: How should `ContainerHealth.schemas` handle backward compatibility? → A: `Optional[dict[str, int]] = None` — existing construction code unchanged; `None` means schema probe was not run.
