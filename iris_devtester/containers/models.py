@@ -380,6 +380,9 @@ class ContainerHealth:
     image: Optional[str] = None
     """Container image name."""
 
+    schemas: Optional[Dict[str, int]] = None
+    """Schema visibility probe result: {schema_name: table_count}. None means probe was not run."""
+
     def to_dict(self) -> dict:
         """Serialize to dictionary for JSON output.
 
