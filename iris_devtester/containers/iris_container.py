@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 from iris_devtester.config import IRISConfig
 from iris_devtester.connections import get_connection
-from iris_devtester.containers.models import HealthCheckLevel, ValidationResult
+from iris_devtester.containers.models import ContainerHealth, ContainerHealthStatus, HealthCheckLevel, ValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -549,6 +549,26 @@ class IRISContainer(IRISBase):
         config = self.get_config()
         self._connection = get_connection(config)
         return self._connection
+
+    def health_check(self) -> "ContainerHealth":
+        """Probe schema visibility and return enriched ContainerHealth.
+
+        Calls get_connection() to obtain (or reuse) a DBAPI connection, then
+        runs probe_connection() to inspect visible schemas. Use this before
+        running queries to confirm the container is seeded, not just running.
+        """
+        from iris_devtester.diagnostics import probe_connection
+
+        conn = self.get_connection()
+        probe = probe_connection(conn)
+        return ContainerHealth(
+            container_name=self.get_container_name(),
+            status=ContainerHealthStatus.HEALTHY,
+            running=True,
+            accessible=True,
+            docker_sdk_version="",
+            schemas=probe.schemas,
+        )
 
     def with_preconfigured_password(self, password: str) -> "IRISContainer":
         """Set password for pre-configuration."""
