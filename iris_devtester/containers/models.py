@@ -383,6 +383,28 @@ class ContainerHealth:
     schemas: Optional[Dict[str, int]] = None
     """Schema visibility probe result: {schema_name: table_count}. None means probe was not run."""
 
+    @property
+    def tables_visible(self) -> bool:
+        """True if at least one schema with tables is visible."""
+        return bool(self.schemas)
+
+    def report(self) -> str:
+        """Human-readable health summary including schema visibility."""
+        lines = [
+            f"Container:  {self.container_name}",
+            f"Status:     {self.status.value}",
+            f"Running:    {self.running}",
+            f"Accessible: {self.accessible}",
+        ]
+        if self.schemas is None:
+            lines.append("Schemas:    (probe not run)")
+        elif not self.schemas:
+            lines.append("Schemas:    ⚠ No schemas visible — initialize_schema() may not have been called")
+        else:
+            for name, count in sorted(self.schemas.items()):
+                lines.append(f"  {name}: {count} table(s)")
+        return "\n".join(lines)
+
     def to_dict(self) -> dict:
         """Serialize to dictionary for JSON output.
 
@@ -399,6 +421,7 @@ class ContainerHealth:
             "port_bindings": self.port_bindings,
             "image": self.image,
             "docker_sdk_version": self.docker_sdk_version,
+            "schemas": self.schemas,
         }
 
     def is_healthy(self) -> bool:

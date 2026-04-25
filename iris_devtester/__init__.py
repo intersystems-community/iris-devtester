@@ -26,18 +26,16 @@ LangChain Integration:
     ...     # Build your RAG app...
 """
 
-__version__ = "1.16.0"
+__version__ = "1.17.0"
 __author__ = "InterSystems Community"
 __license__ = "MIT"
 
 from iris_devtester.config import IRISConfig
-
-# Convenience imports for common usage
 from iris_devtester.connections import get_connection
 from iris_devtester.containers import IRISContainer
-from iris_devtester.diagnostics import probe_connection
+from iris_devtester.containers.models import ContainerHealth
+from iris_devtester.diagnostics import ConnectionDiagnosticError, ConnectionProbe, probe_connection
 
-# Optional LangChain integration (requires langchain-iris)
 try:
     from iris_devtester.integrations.langchain import LangChainIRISContainer
 
@@ -46,13 +44,20 @@ try:
         "get_connection",
         "IRISContainer",
         "IRISConfig",
-        "LangChainIRISContainer",  # Available if langchain-iris installed
+        "probe_connection",
+        "ConnectionProbe",
+        "ConnectionDiagnosticError",
+        "ContainerHealth",
+        "LangChainIRISContainer",
     ]
 except ImportError:
-    # langchain-iris not installed, skip integration
     __all__ = [
         "__version__",
         "get_connection",
         "IRISContainer",
         "IRISConfig",
+        "probe_connection",
+        "ConnectionProbe",
+        "ConnectionDiagnosticError",
+        "ContainerHealth",
     ]

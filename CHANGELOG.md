@@ -5,6 +5,23 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-04-25 - Container Health Check and Full Diagnostic API
+
+### Added
+
+- **`IRISContainer.health_check() -> ContainerHealth`**: Probes schema visibility from the container. Returns `ContainerHealth` with `.schemas`, `.tables_visible`, and `.report()`. Eliminates the "works in pytest, fails manually" class of debugging session by making precondition state observable.
+- **`ContainerHealth.tables_visible`**: Property returning `True` if at least one schema with tables is visible.
+- **`ContainerHealth.report()`**: Human-readable summary of container name, status, schema names, table counts. Includes warning line when no schemas are visible.
+- **`ContainerHealth.to_dict()` includes `schemas`**: Serialized schema visibility now included in JSON output.
+- **Top-level exports**: `ContainerHealth`, `ConnectionDiagnosticError`, `ConnectionProbe` now importable directly from `iris_devtester`.
+- **13 new contract tests**: `TestContainerHealthExtensions`, `TestTopLevelImports`, `TestIRISContainerHealthCheck` — covers empty schema warning, `tables_visible` flag, top-level imports, `probe_connection` round-trip.
+
+### Context
+
+Completes spec 031 (`031-connection-diagnostics`). The full backstory: a 30-minute debugging session traced to "manual `iris.connect()` probe sees empty namespace before `initialize_schema()` runs, pytest fixture connection sees the seeded schema." Zero signal in the error — just `SQLCODE -30`. `ConnectionDiagnosticError` (1.16.0) wraps the error with schema state. `health_check()` (1.17.0) lets you proactively check before queries run.
+
+The pattern this closes: **test infrastructure that creates state should emit observable signals**.
+
 ## [1.16.0] - 2026-04-25 - Connection Diagnostics
 
 ### Added
