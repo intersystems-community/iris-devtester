@@ -5,7 +5,58 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.14.0] - 2026-02-28 - Deterministic Multi-Container Auto-Detection
+## [1.16.0] - 2026-04-25 - Connection Diagnostics
+
+### Added
+
+- **`probe_connection(conn) -> ConnectionProbe`**: Inspects a live connection in <200ms. Returns namespace, IRIS version, all visible schemas with table counts, and probe latency. Importable directly from `iris_devtester`.
+- **`ConnectionDiagnosticError`**: Automatically wraps SQLCODE -30 (Table or view not found) and SQLCODE -23 (CTE label not applicable) with schema visibility context and a suggested fix. Replaces the raw opaque `ProgrammingError` for these two codes — no call-site changes needed.
+- **`DiagnosticCursor`**: Transparent cursor proxy injected by `create_dbapi_connection()`. All cursor methods delegate to the underlying DBAPI cursor; only `-30` and `-23` are intercepted.
+- **`ContainerHealth.schemas`**: New `Optional[dict[str, int]]` field on `ContainerHealth`. `None` means schema probe was not run; dict maps schema name → table count.
+- **`docs/troubleshooting/table-not-found.md`**: Four hard-won scenarios documented: (1) schema not seeded before probing, (2) `_SYSTEM` password expired, (3) schema not in SQL search path, (4) probing outside pytest before fixtures run.
+- **14 contract tests**: Full coverage of `ConnectionProbe`, `ConnectionDiagnosticError`, `DiagnosticCursor`, public export, and `ContainerHealth.schemas`.
+
+### Context
+
+Closes [#14](https://github.com/intersystems-community/iris-devtester/issues/14). A 30-minute debugging session traced SQLCODE -30 to "manual `iris.connect()` probe sees empty namespace before `initialize_schema()` runs." Zero signal in the raw error. `ConnectionDiagnosticError` surfaces schema state at failure time; `probe_connection()` lets you inspect preconditions before running queries.
+
+## [1.15.1] - 2026-04-25 - Docker-in-Docker Port Mapping Fix
+
+### Fixed
+
+- **`get_mapped_port()` raises `ConnectionError` in DinD (BUG-IDT-1)**: When iris-devtester runs inside a container (CI runners, GitHub Actions with mounted Docker socket), testcontainers sets `ConnectionMode.gateway_ip`. `DockerClient.port()` then queries the inner Docker daemon for host-side NAT mappings that don't exist there — returning `None` → `ConnectionError`. Fixed by catching `ConnectionError` in `get_mapped_port()` and falling back to the internal port, which is directly reachable via the container's bridge/gateway IP in DinD. Port 1972 was unaffected (cached); port 52773 and any other non-default port triggered the crash.
+- **Narrow `get_config()` exception clause**: `except Exception` narrowed to `except ConnectionError` so real failures (container not started, etc.) still propagate instead of being silently swallowed.
+- **Web port overflow**: `idt container up --port 61972` previously calculated web portal port as `52773 + (61972 - 1972) = 112773`, exceeding the 16-bit port limit. Now caps at 65535; ports that would overflow disable the web portal mapping with a clear message.
+
+### Added
+
+- **`_port_cache: dict[int, int]`**: All non-1972 port lookups cached per-container instance, eliminating repeated `DockerClient.port()` calls.
+- **`docs/learnings/iris-container-dind-port-mapping.md`**: Full root-cause analysis, diagnosis script, and env-var override reference (`TC_HOST`, `TESTCONTAINERS_CONNECTION_MODE`).
+- **8 contract tests**: Full coverage of DinD fallback, port cache, `get_config()` resilience.
+
+## [1.15.0] - 2026-04-25 - CLI UX Improvements + Public Accessors
+
+### Added
+
+- **`IRISContainer.get_password()` / `get_username()`**: Public accessors replacing `iris._password` / `iris._username` private attribute access. Downstream consumers no longer need to reach into private state.
+- **`idt test-connection --auto-fix`**: Detects the cryptic "Unexpected error: 1" (IRIS password-change-required error) and auto-remediates by calling `reset_password()` then retrying the connection.
+- **`idt test-connection` shows credentials**: Displays masked password by default (`S***`); full password in verbose mode (`-v`).
+- **`idt container reset-password --timeout`**: Exposes the existing `timeout` parameter to the CLI (default 30s). Prevents indefinite hangs when IRIS is unresponsive.
+- **`idt container up --port`**: Exact host-port mapping for the IRIS SuperServer. Mutually exclusive with `--auto-port`; raises `UsageError` if both provided.
+- **`idt container exec`**: Run ObjectScript or shell commands inside a container from the CLI. Options: `--objectscript`, `--namespace` (default `USER`), `--timeout` (default 30s).
+- **Hierarchical AGENTS.md knowledge base**: Root + 8 subdirectory AGENTS.md files covering `containers/`, `connections/`, `utils/`, `config/`, `cli/`, `fixtures/`, `testing/`, `tests/`.
+
+### Fixed
+
+- **`intersystems-irispython` v5.x import story**: `connection_commands.py` was importing the legacy `intersystems_iris.dbapi._DBAPI` path (v3.x). Updated to `import iris` and `iris.connect(hostname=, port=, ...)` keyword-argument API.
+- **`test_connection_fallback` missing mock**: `test_falls_back_to_jdbc_on_dbapi_failure` was missing `@patch("iris_devtester.connections.jdbc.is_jdbc_available", return_value=True)`, causing the test to raise `ConnectionError` instead of exercising the JDBC fallback.
+- **`test_skill_workflow` non-existent user**: `IRISContainer.community(username="skill_user")` referenced a user that doesn't exist in fresh community containers.
+
+### Deprecated
+
+- **`idt container test-connection`**: Deprecated in favour of `idt test-connection --container <name>`. Prints deprecation warning; will be removed in a future major version.
+
+
 
 ### Fixed
 
