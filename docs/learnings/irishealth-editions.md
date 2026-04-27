@@ -31,16 +31,22 @@ do ##class(HS.FHIRServer.Installer).InstallInstance(appKey, strategyClass, metad
 
 Total build time: ~30 seconds. Zero network calls. `InstallInstance` generates ~180 search parameter classes and builds FHIR SQL tables.
 
-## Gotcha 1: `/durable` Volume Ownership
+## Gotcha 1: Volume Ownership — irisowner (uid 51773) Cannot Write Host Volumes
 
-Named Docker volumes mount with `root` ownership. `irisowner` (uid 51773) cannot write to them.
+IRIS containers run as `irisowner` (uid 51773). Any host directory mounted into the container must be writable by that uid. This affects:
 
+- **`/durable`** on AI Hub images — named Docker volumes mount as root, irisowner can't write
+- **Project bind-mounts** on Linux (Ubuntu, RHEL, etc.) — host directory owned by user uid 1000
+
+The symptom is always the same:
 ```
-Error: ISC_DATA_DIRECTORY=/durable — Permission denied
-Container exits immediately after IRIS start attempt
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  Unable to find/open file iris-main.log in current directory /home/irisowner/dev
 ```
+Or: container starts then silently exits.
 
-**Fix — tmpfs (non-persistent, default):**
+### Fix A — tmpfs (non-persistent, for `/durable`)
+
 ```yaml
 volumes:
   - type: tmpfs
@@ -50,16 +56,30 @@ volumes:
       gid: 51773
 ```
 
-**Fix — bind-mount (persistent):**
+`IRISContainer.ai_hub()` defaults to this.
+
+### Fix B — chown (persistent bind-mount)
+
 ```bash
-mkdir -p /host/durable && chown 51773:51773 /host/durable
-```
-```yaml
-volumes:
-  - /host/durable:/durable
+mkdir -p /host/path && chown 51773:51773 /host/path
 ```
 
-`IRISContainer.ai_hub()` defaults to tmpfs. Pass `durable_path="/host/durable"` for persistence.
+### Fix C — POSIX ACLs (Linux project directories, no ownership change)
+
+```bash
+setfacl -R -m u:51773:rwX /path/to/project
+setfacl -R -d -m u:51773:rwX /path/to/project
+```
+
+The `-d` flag sets default ACLs so new files inherit the permission. Verify with `getfacl /path/to/project`. This must be re-run after cloning or on each new developer machine.
+
+### Fix D — Docker user namespace remapping
+
+For enterprise deployments, configure Docker's `userns-remap` so container uid 51773 maps to the host user's uid. This is transparent but requires Docker daemon configuration.
+
+### Note for macOS
+
+macOS Docker Desktop uses a Linux VM with its own filesystem. Bind-mounted volumes go through VirtioFS/gRPC FUSE which translates permissions — so uid 51773 mismatch rarely causes issues on macOS. This is primarily a **Linux host** problem.
 
 ## Gotcha 2: Double-Start Bug
 

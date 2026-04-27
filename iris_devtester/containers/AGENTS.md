@@ -53,8 +53,8 @@ When iris-devtester runs **inside** a container (CI runners, GitHub Actions with
 
 ### irishealth editions — 4 hard-won gotchas (Feature 033)
 
-**Gotcha 1: `/durable` volume ownership on AI Hub**
-Named Docker volumes mount with `root` ownership. `irisowner` (uid 51773) cannot write → container starts then silently fails. Always use `tmpfs:/durable:uid=51773,gid=51773` (default in `ai_hub()`) or a bind-mount pre-chowned to 51773.
+**Gotcha 1: Volume ownership — irisowner (uid 51773) cannot write host volumes**
+IRIS runs as uid 51773. Any host directory mounted in must be writable by that uid. Affects `/durable` on AI Hub (named volumes mount as root) AND project bind-mounts on Linux (host dir owned by uid 1000). Symptom: `std::runtime_error: Unable to find/open file iris-main.log` or silent container exit. Fixes: tmpfs (default in `ai_hub()`), `chown 51773:51773`, or POSIX ACLs (`setfacl -R -m u:51773:rwX path`). macOS Docker Desktop not affected (VirtioFS translates permissions).
 
 **Gotcha 2: Double-start bug in AI Hub entrypoint**
 The `-a` hook in `/iris-main` runs *after* IRIS is already started. Any script under `-a` that calls `iris start IRIS quietly` causes IRIS to fail with "database already running" and exit. Startup scripts under `-a` must assume IRIS is already live.
