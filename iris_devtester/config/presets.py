@@ -6,5 +6,6 @@ class CPFPreset:
     SECURE_DEFAULTS = (
         "[Actions]\n"
         "ModifyService:Name=%Service_CallIn,Enabled=1,AutheEnabled=48\n"
-        "ModifyUser:Name=SuperUser,PasswordHash=FBFE8593AEFA510C27FD184738D6E865A441DE98,u4ocm4qh,ChangePassword=0,PasswordNeverExpires=1"
+        "ModifyUser:Name=SuperUser,PasswordHash=FBFE8593AEFA510C27FD184738D6E865A441DE98,u4ocm4qh,ChangePassword=0,PasswordNeverExpires=1\n"
+        "ModifyUser:Name=_SYSTEM,ChangePassword=0,PasswordNeverExpires=1"
     )

@@ -145,3 +145,13 @@ Should output: `1` (success)
 The password reset utilities now properly disable the "ChangePassword on next login" flag, fixing DBAPI authentication issues and eliminating the need to manually change passwords via Management Portal.
 
 **Status**: ✅ FIXED - Both DBAPI and iris.connect() work correctly after password reset
+
+## Update 2026-04-25: CPF Merge is the Cleaner Solution
+
+[grongierisc/iris-fhir-facade-and-repo-template](https://github.com/grongierisc/iris-fhir-facade-and-repo-template/blob/main/initdb.d/merge.cpf) demonstrates the cleaner approach: set `ChangePassword=0` via `ISC_CPF_MERGE_FILE` before IRIS starts, eliminating all `docker exec` dependency.
+
+`config/presets.py::CPFPreset.SECURE_DEFAULTS` implements this for iris-devtester containers.
+
+**Gap found 2026-04-25**: `SECURE_DEFAULTS` only patched `SuperUser`, not `_SYSTEM`. Since iris-devtester connects as `_SYSTEM` by default, the preset was ineffective. Fixed in Feature 033 branch — `_SYSTEM,ChangePassword=0,PasswordNeverExpires=1` now added to `SECURE_DEFAULTS`.
+
+**Gap found 2026-04-25**: `connection.py` auto-remediation silently skips when `container_name` is None (direct host/port connections not via `IRISContainer`). The error message should tell users to provide `container_name` to `reset_password_if_needed()`.

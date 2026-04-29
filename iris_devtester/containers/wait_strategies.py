@@ -9,6 +9,8 @@ import logging
 import socket
 import subprocess
 import time
+import urllib.request
+import urllib.error
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -236,3 +238,53 @@ def wait_for_iris_ready(
     except Exception as e:
         logger.error(f"Error waiting for IRIS: {e}")
         return False
+
+
+class FHIRReadyWaitStrategy:
+    """Wait strategy for irishealth-community containers.
+
+    Checks both the IRIS SuperServer (port 1972) AND the FHIR HTTP metadata
+    endpoint (port 52773). The FHIR endpoint takes longer to become ready than
+    the SuperServer — Foundation.Install + InstallInstance runs at build time
+    but the CSP web server needs additional startup time.
+    """
+
+    def __init__(
+        self,
+        superserver_port: int = 1972,
+        web_port: int = 52773,
+        fhir_app_key: str = "/csp/healthshare/demo/fhir/r4",
+        timeout: int = 90,
+        poll_interval: float = 2.0,
+    ):
+        self.superserver_port = superserver_port
+        self.web_port = web_port
+        self.fhir_app_key = fhir_app_key
+        self.timeout = timeout
+        self.poll_interval = poll_interval
+
+    def wait_until_ready(self, host: str, mapped_web_port: Optional[int] = None) -> bool:
+        web_port = mapped_web_port or self.web_port
+        iris_strategy = IRISReadyWaitStrategy(port=self.superserver_port, timeout=self.timeout)
+        iris_strategy.wait_until_ready(host, self.superserver_port, self.timeout)
+
+        metadata_url = f"http://{host}:{web_port}{self.fhir_app_key}/metadata"
+        logger.info(f"Waiting for FHIR metadata at {metadata_url}...")
+        start = time.time()
+        while time.time() - start < self.timeout:
+            try:
+                with urllib.request.urlopen(metadata_url, timeout=5) as resp:
+                    if resp.status == 200:
+                        logger.info(f"✓ FHIR endpoint ready at {metadata_url}")
+                        return True
+            except (urllib.error.URLError, OSError):
+                pass
+            time.sleep(self.poll_interval)
+
+        raise TimeoutError(
+            f"FHIR endpoint not ready after {self.timeout}s at {metadata_url}\n"
+            "How to fix it:\n"
+            "  1. Check container logs: docker logs <container>\n"
+            "  2. Verify Foundation.Install ran at build time\n"
+            "  3. Increase timeout: FHIRReadyWaitStrategy(timeout=120)"
+        )

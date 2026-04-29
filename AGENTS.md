@@ -120,6 +120,7 @@ idt dev up                            # Persistent dev instance
 - **DO NOT** edit `CHANGELOG.md` without version bump
 - **DO NOT** commit `iris.key` or any `*.key` files (caused real incident)
 - **DO NOT** use `iris = IRISContainer(); iris.start()` — always use context manager `with`
+- **DO NOT** bind-mount host directories into IRIS containers on Linux without fixing uid 51773 permissions — `chown 51773:51773` or `setfacl -R -m u:51773:rwX`. macOS not affected. See `docs/learnings/iris-container-volume-permissions.md`
 
 ## KNOWN PAIN POINTS (downstream consumers)
 
