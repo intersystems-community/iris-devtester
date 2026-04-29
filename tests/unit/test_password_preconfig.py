@@ -96,14 +96,14 @@ class TestStartWithPreconfig:
             container._preconfigure_password = "TestPass"
             container._preconfigure_username = None
             container._password_preconfigured = False
-            container._port_registry = None  # Port registry attributes
+            container._port_registry = None
             container._preferred_port = None
             container._project_path = None
             container._port_assignment = None
             container.with_env = MagicMock(return_value=container)
+            container.with_cpf_merge = MagicMock(return_value=container)
             container.get_config = MagicMock()
 
-            # Mock parent start
             with patch.object(IRISContainer.__bases__[0], "start", return_value=container):
                 container.start()
 
@@ -119,18 +119,17 @@ class TestStartWithPreconfig:
             container._preconfigure_password = "TestPass"
             container._preconfigure_username = "TestUser"
             container._password_preconfigured = False
-            container._port_registry = None  # Port registry attributes
+            container._port_registry = None
             container._preferred_port = None
             container._project_path = None
             container._port_assignment = None
             container.with_env = MagicMock(return_value=container)
+            container.with_cpf_merge = MagicMock(return_value=container)
             container.get_config = MagicMock()
 
-            # Mock parent start
             with patch.object(IRISContainer.__bases__[0], "start", return_value=container):
                 container.start()
 
-            # Check both calls were made
             calls = container.with_env.call_args_list
             assert any(
                 call[0] == ("IRIS_PASSWORD", "TestPass") for call in calls

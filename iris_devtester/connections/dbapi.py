@@ -104,8 +104,8 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
     except Exception as e:
         error_msg = str(e).lower()
 
-        # Check for password change requirement
         if "password change required" in error_msg or "password expired" in error_msg:
+            container_hint = f"<container-name>" if not config.container_name else config.container_name
             raise ConnectionError(
                 f"DBAPI connection failed: Password change required\n"
                 "\n"
@@ -114,12 +114,11 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
                 "  This is common on first connection or after password expiration.\n"
                 "\n"
                 "How to fix it:\n"
-                "  1. Use the password reset utility:\n"
-                "     from iris_devtester.utils import reset_password_if_needed\n"
-                f"     reset_password_if_needed(e, username='{config.username}')\n"
+                f"  idt container reset-password {container_hint}\n"
                 "\n"
-                "  2. Or manually reset via Management Portal:\n"
-                "     http://{config.host}:52773/csp/sys/UtilHome.csp\n"
+                "  Or programmatically:\n"
+                "     from iris_devtester.utils import reset_password_if_needed\n"
+                f"     reset_password_if_needed(e, container_name='{container_hint}', username='{config.username}')\n"
                 "\n"
                 f"Original error: {e}\n"
             ) from e
