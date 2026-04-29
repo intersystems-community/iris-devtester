@@ -102,9 +102,10 @@ class IRISContainer(IRISBase):
         # for testcontainers' get_exposed_port() to work correctly.
         # Use self._mapped_port for the host-side mapped port.
         self.host = "localhost"
-        self.port = 1972  # Internal container port - DO NOT CHANGE
-        self._mapped_port: Optional[int] = None  # Host-side mapped port (1972 only, cached)
-        self._port_cache: dict[int, int] = {}  # Host-side mapped port cache for all internal ports
+        self.port = 1972
+        self._mapped_port: Optional[int] = None
+        self._port_cache: dict[int, int] = {}
+        self._password_handled: bool = False
 
         # Pre-configuration fields (Feature 001)
         self._preconfigure_password: Optional[str] = None
@@ -609,13 +610,19 @@ class IRISContainer(IRISBase):
         if enable_callin:
             self.enable_callin_service()
 
-        from iris_devtester.utils.password import unexpire_all_passwords
-
-        unexpire_all_passwords(self.get_container_name())
-
         config = self.get_config()
-        self._connection = get_connection(config)
-        return self._connection
+        try:
+            self._connection = get_connection(config)
+            return self._connection
+        except Exception as e:
+            from iris_devtester.utils.password import detect_password_change_required, unexpire_all_passwords
+            if detect_password_change_required(str(e)) and not self._password_handled:
+                container_name = self.get_container_name()
+                unexpire_all_passwords(container_name)
+                self._password_handled = True
+                self._connection = get_connection(config)
+                return self._connection
+            raise
 
     def health_check(self) -> "ContainerHealth":
         """Probe schema visibility and return enriched ContainerHealth.
@@ -721,24 +728,37 @@ class IRISContainer(IRISBase):
 
     def start(self) -> "IRISContainer":
         """Start container with pre-config support and port registry integration."""
+        from iris_devtester.config.presets import CPFPreset
+
+        if not hasattr(self, "_cpf_temp_files") or not self._cpf_temp_files:
+            if self._preconfigure_password:
+                cpf = (
+                    "[Actions]\n"
+                    "ModifyService:Name=%Service_CallIn,Enabled=1,AutheEnabled=48\n"
+                    f"ModifyUser:Name=SuperUser,PasswordHash={self._preconfigure_password},"
+                    "ChangePassword=0,PasswordNeverExpires=1\n"
+                    "ModifyUser:Name=_SYSTEM,ChangePassword=0,PasswordNeverExpires=1"
+                )
+            else:
+                cpf = CPFPreset.SECURE_DEFAULTS
+            self.with_cpf_merge(cpf)
+
+        self._password_handled = True
+
         if self._preconfigure_password:
             self.with_env("IRIS_PASSWORD", self._preconfigure_password)
         if self._preconfigure_username:
             self.with_env("IRIS_USERNAME", self._preconfigure_username)
 
-        # Port registry integration: assign port before starting
         if self._port_registry is not None and self._project_path is not None:
             self._port_assignment = self._port_registry.assign_port(
                 project_path=self._project_path,
                 preferred_port=self._preferred_port,
             )
-            # Configure container to use the assigned port
-            # Note: testcontainers uses with_bind_ports() for port mapping
             if hasattr(self, "with_bind_ports"):
                 self.with_bind_ports(1972, self._port_assignment.port)
 
         super().start()
-        # Ensure host/port are updated after start
         self.get_config()
         self._password_preconfigured = True
         return self
