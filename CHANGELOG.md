@@ -5,6 +5,34 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-04-29 - CPF-First Password Strategy + health() and ai_hub() Editions
+
+### Added
+
+- **`IRISContainer.health()`**: `irishealth-community` with FHIR R4 pre-installed at build time — no ZPM, no network. `Foundation.Install` + `InstallInstance` baked in. FHIR endpoint at `/csp/healthshare/demo/fhir/r4/metadata` within ~90s. Web portal on 52773, SuperServer on 1972.
+- **`IRISContainer.ai_hub(build="159")`**: irishealth enterprise AI Hub build with `%AI.Agent`, `%AI.MCP.Service`, `%AI.Policy.Authorization`, `VECTOR`/`EMBEDDING` SQL. SuperServer on 1972 only (no web server). ISC internal registry. Defaults to `tmpfs:/durable` to avoid uid 51773 volume ownership issues.
+- **`IRISContainer.fhir_health_check() -> FHIRContainerHealth`**: Probes FHIR `/metadata` endpoint. Returns `fhir_version`, `endpoint`, `resource_types_count`, `ready`, `report()`.
+- **`FHIRReadyWaitStrategy`**: Waits for both SuperServer (1972) and FHIR HTTP endpoint (52773) to be ready. Two-stage: port + HTTP `/metadata` poll.
+- **`FHIRContainerHealth`** dataclass: `accessible`, `fhir_version`, `endpoint`, `resource_types_count`, `ready` property, `report()` method.
+- **`docs/learnings/irishealth-editions.md`**: Full probe findings — FHIR setup script, four gotchas (durable volume, double-start bug, no web server in enterprise, `%AI.*` in read-only irislib), two-container docker-compose pattern.
+- **`docs/learnings/iris-container-volume-permissions.md`**: All IRIS containers run as uid 51773 (`irisowner`). Applies to every edition on Linux bind-mounts. Five fix options including POSIX ACLs (`setfacl`) and init-container pattern from grongierisc template.
+
+### Changed (CPF-First Password Strategy)
+
+- **`start()` now injects `CPFPreset.SECURE_DEFAULTS` via CPF merge** before calling `super().start()`. `ChangePassword=0` and `PasswordNeverExpires=1` for both `_SYSTEM` and `SuperUser` are set atomically at IRIS startup — no `docker exec` call required. Pattern from [grongierisc/iris-fhir-facade-and-repo-template](https://github.com/grongierisc/iris-fhir-facade-and-repo-template).
+- **`get_connection()` is now optimistic**: attempts `iris.connect()` directly without pre-emptive password reset. If a password-change error is detected AND the fallback hasn't run yet, calls `unexpire_all_passwords()` once and retries. `_password_handled` flag prevents double-remediation.
+- **`CPFPreset.SECURE_DEFAULTS`** now includes `ModifyUser:Name=_SYSTEM,ChangePassword=0` — previously only patched `SuperUser`, but iris-devtester connects as `_SYSTEM` by default, making the preset ineffective.
+- **`connections/dbapi.py` error message** for password-change errors now includes `container_name` in the suggested `reset_password_if_needed()` call.
+
+### Fixed
+
+- `with_preconfigured_password()` now merges the password hash into the CPF file alongside `ChangePassword=0` — single mechanism, single env var.
+- Four irishealth gotchas now documented: durable volume ownership, double-start entrypoint bug, enterprise image no web server, `%AI.*` classes in read-only irislib.
+
+### E2E Coverage
+
+New e2e test `test_cpf_first_no_docker_exec_on_happy_path`: starts a real community container, calls `get_connection()`, verifies `unexpire_all_passwords()` was **never called**. This is the specific guarantee of the CPF-first strategy — verified against a live container.
+
 ## [1.17.0] - 2026-04-25 - Container Health Check and Full Diagnostic API
 
 ### Added

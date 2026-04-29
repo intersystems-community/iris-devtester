@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 
 from iris_devtester import IRISContainer, get_connection
 from iris_devtester.containers.performance import get_resource_metrics
@@ -32,3 +33,18 @@ def test_skill_guided_workflow():
         row = cursor.fetchone()
         assert row is not None
         assert row[0] == "OK"
+
+
+@pytest.mark.e2e
+@pytest.mark.integration
+def test_cpf_first_no_docker_exec_on_happy_path():
+    from iris_devtester.utils.password import unexpire_all_passwords
+
+    with patch("iris_devtester.utils.password.unexpire_all_passwords") as mock_unexpire:
+        with IRISContainer.community() as iris:
+            conn = iris.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            assert cursor.fetchone()[0] == 1
+
+    mock_unexpire.assert_not_called()
