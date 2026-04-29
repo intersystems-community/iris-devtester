@@ -64,7 +64,33 @@ The `-d` flag sets default ACLs so new files inherit the rule. Must re-run after
 
 Configure Docker's `userns-remap` so container uid 51773 maps to the host user's uid. Transparent but requires Docker daemon config change.
 
-### E. Dockerfile USER override — development only
+### E. Init-container pattern — docker-compose (recommended for teams)
+
+Run a one-shot Alpine container that chowns the volume before IRIS starts. Pattern from [grongierisc/iris-fhir-facade-and-repo-template](https://github.com/grongierisc/iris-fhir-facade-and-repo-template/blob/main/docker-compose.yml):
+
+```yaml
+services:
+  init-permissions:
+    image: alpine:latest
+    volumes:
+      - iris-data:/dur
+    command: sh -c "chown -R 51773:51773 /dur && echo 'Permissions fixed'"
+
+  iris:
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+    image: intersystemsdc/iris-community:latest
+    volumes:
+      - iris-data:/dur
+    environment:
+      - ISC_DATA_DIRECTORY=/dur/iris
+
+volumes:
+  iris-data:
+```
+
+`depends_on: condition: service_completed_successfully` ensures IRIS only starts after the chown completes. Alpine runs as root inside Docker and can write to named volumes — no host root access needed.
 
 ```dockerfile
 FROM intersystemsdc/iris-community:latest
