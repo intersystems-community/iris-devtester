@@ -135,6 +135,9 @@ IRIS community edition forces `ChangePassword=1` on first startup. `with_preconf
 ### 3. No public `get_password()` on IRISContainer
 **RESOLVED (Feature 029)**: `get_password()` and `get_username()` public methods added. No longer need `iris._password`.
 
+### 4. `docker stop` causes data loss — WIJ not flushed (HIGH)
+`docker stop` sends SIGKILL after grace period. IRIS's default entrypoint doesn't trap SIGTERM, so the WIJ (write buffer) is not flushed. Tables exist on restart but rows are 0. **Fixed (v1.18.1+)**: `IRISContainer.__exit__()` calls `stop_gracefully()` automatically. For CLI/compose: run `docker exec <container> iris stop IRIS quietly` before `docker stop`. See `docs/learnings/iris-container-graceful-shutdown.md`.
+
 ## ENVIRONMENT
 
 | Variable | Default | Description |

@@ -56,7 +56,12 @@ When iris-devtester runs **inside** a container (CI runners, GitHub Actions with
 **Gotcha 1: Volume ownership — irisowner (uid 51773) cannot write host volumes**
 IRIS runs as uid 51773. Any host directory mounted in must be writable by that uid. Affects `/durable` on AI Hub (named volumes mount as root) AND project bind-mounts on Linux (host dir owned by uid 1000). Symptom: `std::runtime_error: Unable to find/open file iris-main.log` or silent container exit. Fixes: tmpfs (default in `ai_hub()`), `chown 51773:51773`, or POSIX ACLs (`setfacl -R -m u:51773:rwX path`). macOS Docker Desktop not affected (VirtioFS translates permissions).
 
-**Gotcha 2: Double-start bug in AI Hub entrypoint**
+### `docker stop` causes data loss — IRIS WIJ not flushed (HIGH severity)
+`docker stop` sends SIGTERM then SIGKILL after the grace period. IRIS does not trap SIGTERM in its default entrypoint, so Docker kills it with the WIJ (write image journal) dirty. On restart, IRIS runs journal recovery (30-300 seconds). Uncommitted in-flight writes are lost. **Symptom: tables exist (schema survived) but rows are 0 after restart.**
+
+Fix (v1.18.1+): `IRISContainer.__exit__()` calls `stop_gracefully()` automatically — runs `iris stop IRIS quietly` before docker stop. For CLI/docker-compose: always run `docker exec <container> iris stop IRIS quietly` before `docker stop`. Add `stop_grace_period: 60s` to compose as a safety net.
+
+See: `docs/learnings/iris-container-graceful-shutdown.md`
 The `-a` hook in `/iris-main` runs *after* IRIS is already started. Any script under `-a` that calls `iris start IRIS quietly` causes IRIS to fail with "database already running" and exit. Startup scripts under `-a` must assume IRIS is already live.
 
 **Gotcha 3: No web server in enterprise irishealth**

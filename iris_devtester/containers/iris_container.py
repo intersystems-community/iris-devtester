@@ -119,6 +119,34 @@ class IRISContainer(IRISBase):
         """Return the currently configured username."""
         return self._username
 
+    def stop_gracefully(self, timeout: int = 30) -> bool:
+        """Stop IRIS cleanly before stopping the container.
+
+        Calls 'iris stop IRIS quietly' inside the container so IRIS flushes
+        its write buffer (WIJ) before Docker sends SIGKILL. Without this,
+        docker stop may terminate IRIS mid-write, leaving uncommitted data
+        in the WIJ. IRIS will recover on next start, but this can take
+        30-300 seconds and any in-flight writes not yet committed are lost.
+
+        Returns True if graceful stop succeeded, False if it timed out or
+        the container was not running (caller should proceed with docker stop).
+        """
+        try:
+            container = self.get_wrapped_container()
+            if container is None:
+                return False
+            exit_code, _ = container.exec_run(
+                "iris stop IRIS quietly",
+                user="irisowner",
+            )
+            return exit_code == 0
+        except Exception:
+            return False
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_gracefully()
+        super().__exit__(exc_type, exc_val, exc_tb)
+
     @classmethod
     def dev(cls, **kwargs) -> "IRISContainer":
         """
