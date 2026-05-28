@@ -5,6 +5,17 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.1] - 2026-05-28 - Graceful IRIS Shutdown
+
+### Fixed
+
+- **`docker stop` data loss (HIGH severity)**: `IRISContainer.__exit__()` now calls `stop_gracefully()` before stopping the container. This runs `iris stop IRIS quietly` inside the container to flush the WIJ (write image journal) before Docker sends SIGKILL. Without this, `docker stop` could leave the database in a dirty state where tables exist but all rows are gone after restart. IRIS still recovers automatically, but this prevents the 30-300s recovery delay and eliminates any risk of losing in-flight uncommitted writes.
+- **`stop_gracefully()` public method**: New method on `IRISContainer`. Returns `True` if graceful stop succeeded, `False` if container not running (never raises). Safe to call before any `docker stop`.
+
+### Added
+
+- **`docs/learnings/iris-container-graceful-shutdown.md`**: Documents the WIJ data loss scenario, root cause, all fix options (explicit exec, custom entrypoint SIGTERM trap, Kubernetes PreStop hook), and why `stop_grace_period` alone is not sufficient.
+
 ## [1.18.0] - 2026-04-29 - CPF-First Password Strategy + health() and ai_hub() Editions
 
 ### Added
