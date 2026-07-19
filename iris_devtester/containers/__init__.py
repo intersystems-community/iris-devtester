@@ -1,5 +1,9 @@
 """Container management for InterSystems IRIS testcontainers."""
 
+from iris_devtester.containers.connection_info import (
+    IRISConnectionInfo,
+    detect_webgateway,
+)
 from iris_devtester.containers.iris_container import IRISContainer
 from iris_devtester.containers.models import (
     ContainerHealth,
@@ -18,6 +22,8 @@ from iris_devtester.containers.wait_strategies import (
 
 __all__ = [
     "IRISContainer",
+    "IRISConnectionInfo",
+    "detect_webgateway",
     "IRISReadyWaitStrategy",
     "wait_for_iris_ready",
     "ContainerHealthStatus",

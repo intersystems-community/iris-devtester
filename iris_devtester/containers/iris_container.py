@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from iris_devtester.config import IRISConfig
 from iris_devtester.connections import get_connection
+from iris_devtester.containers.connection_info import IRISConnectionInfo
 from iris_devtester.containers.models import ContainerHealth, ContainerHealthStatus, HealthCheckLevel, ValidationResult
 
 logger = logging.getLogger(__name__)
@@ -527,9 +528,8 @@ class IRISContainer(IRISBase):
         if success:
             self._callin_enabled = True
             return True
-        else:
-            logger.error(f"Failed to enable CallIn: {msg}")
-            return False
+        logger.error(f"Failed to enable CallIn: {msg}")
+        return False
 
     def check_callin_enabled(self) -> bool:
         """Check if CallIn is enabled."""
@@ -603,6 +603,84 @@ class IRISContainer(IRISBase):
         except ConnectionError:
             pass
         return config
+
+    def connection_info(self, web_port: Optional[int] = None) -> "IRISConnectionInfo":
+        """Build the iris-devtester -> iris-agentic-dev handoff contract.
+
+        Returns an :class:`IRISConnectionInfo` describing how to reach this
+        container: host, host-mapped SuperServer port, credentials, image, and a
+        WebGateway URL if one is auto-detected. A session calls this once and
+        writes ``connection_info().to_toml_snippet()`` into
+        ``.iris-agentic-dev.toml``, which iad hot-reloads.
+
+        WebGateway detection scans containers sharing a Docker network with this
+        IRIS container for a ``*webgateway*`` image and uses its host-mapped port
+        80. When detection finds nothing, ``web_port`` (typically read from
+        ``.iris-dev.toml``) is used as a fallback; if that is also None, the
+        result is ``docker_only=True``.
+
+        Args:
+            web_port: Explicit WebGateway host port to fall back to when
+                auto-detection finds none (e.g. from ``.iris-dev.toml``).
+
+        Returns:
+            An :class:`IRISConnectionInfo` for this container.
+        """
+        from iris_devtester.containers.connection_info import (
+            IRISConnectionInfo,
+            detect_webgateway,
+        )
+
+        host = self.host
+        superserver_port = self.get_mapped_port(1972)
+        container_name = self.get_container_name()
+
+        wrapped = None
+        try:
+            wrapped = self.get_wrapped_container()
+        except Exception:
+            pass
+
+        iris_image = str(self.image)
+        iris_networks: set = set()
+        client = None
+        if wrapped is not None:
+            try:
+                tags = wrapped.image.tags
+                if tags:
+                    iris_image = tags[0]
+            except Exception:
+                pass
+            try:
+                networks = wrapped.attrs["NetworkSettings"]["Networks"]
+                iris_networks = set(networks.keys())
+            except Exception:
+                pass
+            client = getattr(wrapped, "client", None)
+
+        webgateway_url: Optional[str] = None
+        webgateway_container: Optional[str] = None
+        if client is not None and iris_networks:
+            webgateway_url, webgateway_container = detect_webgateway(
+                client, iris_networks=iris_networks, host=host
+            )
+
+        # Fallback: explicit web_port (e.g. .iris-dev.toml override) when
+        # auto-detection found no WebGateway container.
+        if webgateway_url is None and web_port is not None:
+            webgateway_url = f"http://{host}:{web_port}"
+
+        return IRISConnectionInfo(
+            host=host,
+            superserver_port=superserver_port,
+            container=container_name,
+            iris_image=iris_image,
+            namespace=self._namespace,
+            username=self._username,
+            password=self._password,
+            webgateway_url=webgateway_url,
+            webgateway_container=webgateway_container,
+        )
 
     def get_mapped_port(self, internal_port: int = 1972) -> int:
         """Get the host-side port that maps to the given internal container port.
