@@ -302,21 +302,20 @@ def ensure_namespace_exists(config: IRISConfig) -> bool:
             )
             return create_namespace(container_name, config.namespace)
         return True
-    else:
-        # iris.connect() strategy — no container name available
-        logger.debug(
-            f"Checking namespace '{config.namespace}' via iris.connect() "
-            f"to {config.host}:{config.port}"
+
+    # iris.connect() strategy — no container name available
+    logger.debug(
+        f"Checking namespace '{config.namespace}' via iris.connect() "
+        f"to {config.host}:{config.port}"
+    )
+    if not check_namespace_via_iris_connect(config, config.namespace):
+        logger.info(
+            f"Namespace '{config.namespace}' not found or could not be verified. "
+            f"Attempting auto-creation via iris.connect()..."
         )
-        if not check_namespace_via_iris_connect(config, config.namespace):
-            logger.info(
-                f"Namespace '{config.namespace}' not found or could not be verified. "
-                f"Attempting auto-creation via iris.connect()..."
+        if not create_namespace_via_iris_connect(config, config.namespace):
+            logger.debug(
+                f"Could not create namespace '{config.namespace}' via iris.connect(). "
+                f"Proceeding with connection attempt anyway."
             )
-            if not create_namespace_via_iris_connect(config, config.namespace):
-                logger.debug(
-                    f"Could not create namespace '{config.namespace}' via iris.connect(). "
-                    f"Proceeding with connection attempt anyway."
-                )
-            return True  # Always proceed — namespace may already exist
-        return True
+    return True  # Always proceed — namespace may already exist

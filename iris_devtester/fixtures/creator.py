@@ -1,11 +1,9 @@
 import datetime
 import subprocess
-import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from iris_devtester.config import IRISConfig
-from iris_devtester.connections import get_connection
 
 from .manifest import (
     FixtureCreateError,
@@ -53,10 +51,10 @@ class FixtureCreator:
         dat_file_path = output_path / "IRIS.DAT"
         try:
             self.export_namespace_to_dat(namespace, str(dat_file_path))
-        except Exception as e:
+        except Exception:
             try:
                 output_path.rmdir()
-            except:
+            except OSError:
                 pass
             raise
 
@@ -131,16 +129,13 @@ class FixtureCreator:
  Write "CLASSES_DONE"
  Halt
  """
-        result = subprocess.run(
+        # Class export is non-fatal - some namespaces may have no user classes
+        subprocess.run(
             ["docker", "exec", "-u", "irisowner", "-i", container_name, "iris", "session", "IRIS", "-U", namespace],
             input=export_classes_script.encode("utf-8"),
             capture_output=True,
             timeout=120,
         )
-        stdout = result.stdout.decode("utf-8", errors="replace")
-        if "CLASSES_DONE" not in stdout:
-            # Non-fatal - some namespaces may have no user classes
-            pass
 
         # Step 2: Export globals (for data)
         export_globals_script = f"""
@@ -221,7 +216,7 @@ class FixtureCreator:
                 cursor.execute(f"SELECT COUNT(*) FROM {qualified_name}")
                 row_count = cursor.fetchone()[0]
                 tables.append(TableInfo(name=qualified_name, row_count=row_count))
-            except:
+            except Exception:
                 continue
         cursor.close()
         return tables
@@ -249,5 +244,5 @@ class FixtureCreator:
             row = cursor.fetchone()
             cursor.close()
             return str(row[0]) if row else "unknown"
-        except:
+        except Exception:
             return "unknown"

@@ -1,11 +1,10 @@
 """Container configuration model for IRIS lifecycle management."""
 
 import os
-import re
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from iris_devtester.config.yaml_loader import load_yaml
 
@@ -86,28 +85,6 @@ class ContainerConfig(BaseModel):
     isc_data_directory: str = Field(
         default="/iris/data", description="Container path for Durable %SYS data"
     )
-
-    @field_validator("container_name")
-    @classmethod
-    def validate_container_name(cls, v: str) -> str:
-        """Validate Docker container name format."""
-        if not re.match(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$", v):
-            raise ValueError(
-                f"Invalid container_name: {v}\n"
-                "Container names must start with alphanumeric and contain only [a-zA-Z0-9_.-]"
-            )
-        return v
-
-    @field_validator("namespace")
-    @classmethod
-    def validate_namespace(cls, v: str) -> str:
-        """Validate IRIS namespace format."""
-        if not re.match(r"^[A-Z][A-Z0-9%]*$", v):
-            raise ValueError(
-                f"Invalid namespace: {v}\n"
-                "Namespaces must start with uppercase letter and contain only [A-Z0-9%]"
-            )
-        return v
 
     @model_validator(mode="after")
     def validate_enterprise_license(self) -> "ContainerConfig":

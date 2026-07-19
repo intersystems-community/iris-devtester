@@ -168,7 +168,7 @@ def enable_callin_service(
             '     Do ##class(Security.Services).Modify("%Service_CallIn",.prop)\n'
             "\n"
             "  3. Check IRIS license (Community vs Enterprise):\n"
-            "     docker exec -u irisowner {container_name} iris list\n"
+            f"     docker exec -u irisowner {container_name} iris list\n"
             "\n"
             "Documentation: See docs/learnings/callin-service-requirement.md\n",
         )

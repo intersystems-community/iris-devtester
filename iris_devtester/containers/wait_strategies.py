@@ -47,7 +47,6 @@ class IRISReadyWaitStrategy:
         self.port = port
         self.timeout = timeout
         self.poll_interval = poll_interval
-        self._timeout = timeout  # Alias for compatibility
 
     def is_ready_fast(self, host: str, port: int) -> bool:
         """
@@ -79,7 +78,6 @@ class IRISReadyWaitStrategy:
             return True
 
         logger.info(f"Waiting for IRIS at {host}:{port} (timeout: {timeout}s)...")
-        # ... rest of method
 
         start_time = time.time()
         last_error = None
@@ -105,8 +103,6 @@ class IRISReadyWaitStrategy:
                 logger.debug(f"Not ready yet: {e}")
 
             time.sleep(self.poll_interval)
-
-        # Timeout reached
 
         elapsed = time.time() - start_time
         raise TimeoutError(

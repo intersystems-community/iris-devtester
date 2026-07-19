@@ -532,7 +532,7 @@ def translate_docker_error(error: Exception, config: Optional[ContainerConfig]) 
             "\n"
             "How to fix it:\n"
             "  1. Pull the image manually:\n"
-            "     → docker pull {image}\n"
+            f"     → docker pull {image}\n"
             "  2. Check image_tag in config:\n"
             "     → Verify 'image_tag' field in iris-config.yml\n"
             "  3. Use default Community image:\n"
@@ -579,7 +579,7 @@ def translate_docker_error(error: Exception, config: Optional[ContainerConfig]) 
             "\n"
             "How to fix it:\n"
             "  1. Remove the existing container:\n"
-            "     → docker rm {name}\n"
+            f"     → docker rm {name}\n"
             "  2. Use a different container name:\n"
             "     → Change 'container_name' in iris-config.yml\n"
             "  3. List existing containers:\n"
@@ -589,26 +589,6 @@ def translate_docker_error(error: Exception, config: Optional[ContainerConfig]) 
         )
 
     # Architecture mismatch
-    if "unsupported cpu" in error_str or "exec format error" in error_str:
-        image = config.get_image_name() if config else "unknown"
-        return ValueError(
-            f"Architecture mismatch for image '{image}'\n"
-            "\n"
-            "What went wrong:\n"
-            "  The Docker image architecture does not match your host CPU.\n"
-            "  (e.g., trying to run amd64 image on Apple Silicon arm64)\n"
-            "\n"
-            "Why it matters:\n"
-            "  IRIS containers require native or emulated CPU support.\n"
-            "\n"
-            "How to fix it:\n"
-            "  1. Ensure you are using the correct image for your architecture\n"
-            "  2. For Apple Silicon, use Community images (multi-arch support)\n"
-            "  3. Or enable Rosetta 2 emulation in Docker Desktop settings\n"
-            "\n"
-            "Documentation: https://docs.docker.com/desktop/settings/mac/#general\n"
-        )
-
     if "unsupported cpu" in error_str or "exec format error" in error_str:
         image = config.get_image_name() if config else "unknown"
         return ValueError(

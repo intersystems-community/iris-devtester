@@ -6,7 +6,6 @@ JDBC is slower (3x) than DBAPI but works everywhere (Constitutional Principle #2
 """
 
 import logging
-import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -191,7 +190,7 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
                 f"     reset_password_if_needed(e, username='{config.username}')\n"
                 "\n"
                 "  2. Or manually reset via Management Portal:\n"
-                "     http://{config.host}:52773/csp/sys/UtilHome.csp\n"
+                f"     http://{config.host}:52773/csp/sys/UtilHome.csp\n"
                 "\n"
                 f"Original error: {e}\n"
             ) from e
@@ -207,7 +206,7 @@ def create_jdbc_connection(config: IRISConfig) -> Any:
                 "\n"
                 "How to fix it:\n"
                 "  1. Re-download the JDBC driver:\n"
-                "     rm {jdbc_jar_path}\n"
+                f"     rm {jdbc_jar_path}\n"
                 "     wget https://github.com/intersystems-community/iris-driver-distribution/raw/main/JDBC/JDK18/intersystems-jdbc-3.8.4.jar\n"
                 "\n"
                 "  2. Verify Java is installed:\n"

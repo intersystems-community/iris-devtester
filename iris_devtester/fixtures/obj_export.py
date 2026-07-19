@@ -13,10 +13,35 @@ These utilities complement the IRIS.DAT-based fixtures by providing:
 import logging
 import subprocess
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+def _run_objectscript(container: Any, objectscript: str) -> Tuple[Optional[bool], str]:
+    """Run an ObjectScript snippet in the container's %SYS namespace.
+
+    Args:
+        container: IRISContainer instance
+        objectscript: Script to execute (must Write "1"/"0" and Halt)
+
+    Returns:
+        Tuple of (success, raw_output). success is None if the operation
+        timed out, True/False otherwise. raw_output is empty on timeout.
+    """
+    cmd = [
+        "docker",
+        "exec",
+        container.get_container_name(),
+        "sh",
+        "-c",
+        f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    raw_output = result.stdout + result.stderr
+    success = result.returncode == 0 and "1" in result.stdout
+    return success, raw_output
 
 
 @dataclass
@@ -94,21 +119,7 @@ Halt
 """
 
     try:
-        container_name = container.get_container_name()
-
-        cmd = [
-            "docker",
-            "exec",
-            container_name,
-            "sh",
-            "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-
-        raw_output = result.stdout + result.stderr
-        success = result.returncode == 0 and "1" in result.stdout
+        success, raw_output = _run_objectscript(container, objectscript)
 
         if success:
             logger.info(f"Exported classes matching '{pattern}' to {output_file}")
@@ -183,21 +194,7 @@ Halt
 """
 
     try:
-        container_name = container.get_container_name()
-
-        cmd = [
-            "docker",
-            "exec",
-            container_name,
-            "sh",
-            "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-
-        raw_output = result.stdout + result.stderr
-        success = result.returncode == 0 and "1" in result.stdout
+        success, raw_output = _run_objectscript(container, objectscript)
 
         if success:
             logger.info(f"Imported classes from {input_file} into {namespace}")
@@ -271,21 +268,7 @@ Halt
 """
 
     try:
-        container_name = container.get_container_name()
-
-        cmd = [
-            "docker",
-            "exec",
-            container_name,
-            "sh",
-            "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-
-        raw_output = result.stdout + result.stderr
-        success = result.returncode == 0 and "1" in result.stdout
+        success, raw_output = _run_objectscript(container, objectscript)
 
         if success:
             logger.info(f"Exported global ^{clean_global} to {output_file}")
@@ -355,21 +338,7 @@ Halt
 """
 
     try:
-        container_name = container.get_container_name()
-
-        cmd = [
-            "docker",
-            "exec",
-            container_name,
-            "sh",
-            "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-
-        raw_output = result.stdout + result.stderr
-        success = result.returncode == 0 and "1" in result.stdout
+        success, raw_output = _run_objectscript(container, objectscript)
 
         if success:
             logger.info(f"Imported global from {input_file} into {namespace}")
@@ -438,21 +407,7 @@ Halt
 """
 
     try:
-        container_name = container.get_container_name()
-
-        cmd = [
-            "docker",
-            "exec",
-            container_name,
-            "sh",
-            "-c",
-            f'iris session IRIS -U %SYS << "EOF"\n{objectscript}\nEOF',
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-
-        raw_output = result.stdout + result.stderr
-        success = result.returncode == 0 and "1" in result.stdout
+        success, raw_output = _run_objectscript(container, objectscript)
 
         if success:
             logger.info(f"Exported package {package_name} to {output_file}")

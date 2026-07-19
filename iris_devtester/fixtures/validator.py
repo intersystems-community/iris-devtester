@@ -12,12 +12,10 @@ Fixture Format:
 
 import hashlib
 from pathlib import Path
-from typing import Optional
 
 from .manifest import (
     ChecksumMismatchError,
     FixtureManifest,
-    FixtureValidationError,
     ValidationResult,
 )
 
@@ -43,7 +41,6 @@ class FixtureValidator:
 
     def __init__(self):
         """Initialize fixture validator (stateless, no configuration needed)."""
-        pass
 
     def calculate_sha256(self, file_path: str, chunk_size: int = 65536) -> str:
         """
@@ -110,7 +107,7 @@ class FixtureValidator:
         """
         if not expected_checksum.startswith("sha256:"):
             raise ValueError(
-                f"Invalid checksum format: {expected_checksum}. " "Must start with 'sha256:'"
+                f"Invalid checksum format: {expected_checksum}. Must start with 'sha256:'"
             )
 
         actual_checksum = self.calculate_sha256(file_path, chunk_size)
@@ -324,8 +321,8 @@ class FixtureValidator:
         manifest = FixtureManifest.from_file(str(manifest_file))
         dat_file = fixture_dir / manifest.dat_file
 
-        # Get file sizes
-        manifest_bytes = manifest_file.stat().st_size if manifest_file.exists() else 0
+        # Get file sizes (manifest_file existence verified above)
+        manifest_bytes = manifest_file.stat().st_size
         dat_bytes = dat_file.stat().st_size if dat_file.exists() else 0
         total_bytes = manifest_bytes + dat_bytes
 

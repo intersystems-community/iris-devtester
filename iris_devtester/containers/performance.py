@@ -248,10 +248,9 @@ def auto_disable_monitoring(conn, reason: str) -> bool:
 
         if count > 0:
             logger.info(f"✓ Auto-disabled {count} monitoring task(s) due to: {reason}")
-            return True
         else:
             logger.info("ℹ No active monitoring tasks to disable")
-            return True  # Not an error - already disabled
+        return True  # Zero tasks is not an error - already disabled
 
     except Exception as e:
         error_msg = (
@@ -308,10 +307,9 @@ def auto_enable_monitoring(conn) -> bool:
 
         if count > 0:
             logger.info(f"✓ Auto-enabled {count} monitoring task(s)")
-            return True
         else:
             logger.info("ℹ No suspended monitoring tasks to enable")
-            return True  # Not an error - already enabled
+        return True  # Zero tasks is not an error - already enabled
 
     except Exception as e:
         error_msg = (

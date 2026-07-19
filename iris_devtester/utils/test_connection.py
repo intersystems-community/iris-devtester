@@ -150,7 +150,7 @@ def test_connection(
             f"     docker logs {container_name} | tail -20\n"
             "\n"
             "  2. Check if CallIn service is enabled (for DBAPI):\n"
-            "     iris-devtester container enable-callin {container_name}\n"
+            f"     iris-devtester container enable-callin {container_name}\n"
             "\n"
             "  3. Test basic IRIS access:\n"
             f"     docker exec -u irisowner -it {container_name} iris session IRIS -U %SYS\n",

@@ -7,7 +7,7 @@ This is the preferred connection method per Constitutional Principle #2.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from iris_devtester.config.models import IRISConfig
 from iris_devtester.connections.cursor_wrapper import DiagnosticCursor
@@ -105,7 +105,7 @@ def create_dbapi_connection(config: IRISConfig) -> Any:
         error_msg = str(e).lower()
 
         if "password change required" in error_msg or "password expired" in error_msg:
-            container_hint = f"<container-name>" if not config.container_name else config.container_name
+            container_hint = config.container_name or "<container-name>"
             raise ConnectionError(
                 f"DBAPI connection failed: Password change required\n"
                 "\n"

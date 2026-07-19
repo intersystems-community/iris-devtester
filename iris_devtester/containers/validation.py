@@ -200,12 +200,11 @@ def _get_available_containers(client: docker.DockerClient) -> List[str]:
     """
     try:
         containers = client.containers.list(all=True)
-        names = []
-        for container in containers:
-            if container.name:
-                status = f"({container.status})" if container.status != "running" else "(running)"
-                names.append(f"{container.name} {status}")
-        return names
+        return [
+            f"{container.name} ({container.status})"
+            for container in containers
+            if container.name
+        ]
     except Exception:
         return []
 
@@ -228,8 +227,7 @@ def _check_exec_accessibility(
 
         if exec_result.exit_code == 0:
             return True, None
-        else:
-            return False, f"Exec failed with exit code {exec_result.exit_code}"
+        return False, f"Exec failed with exit code {exec_result.exit_code}"
 
     except Exception as e:
         return False, str(e)
@@ -258,8 +256,7 @@ def _check_iris_health(
 
         if exec_result.exit_code == 0:
             return True, None
-        else:
-            return False, f"IRIS query failed with exit code {exec_result.exit_code}"
+        return False, f"IRIS query failed with exit code {exec_result.exit_code}"
 
     except Exception as e:
         return False, str(e)
@@ -364,8 +361,6 @@ class ContainerValidator:
                 status = ContainerHealthStatus.HEALTHY
             elif container.status == "running":
                 status = ContainerHealthStatus.RUNNING_NOT_ACCESSIBLE
-            elif container.status == "exited":
-                status = ContainerHealthStatus.NOT_RUNNING
             else:
                 status = ContainerHealthStatus.NOT_RUNNING
 

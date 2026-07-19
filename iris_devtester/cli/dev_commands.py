@@ -4,7 +4,6 @@ CLI commands for managing the persistent IRIS Dev Instance.
 
 import click
 import json
-import logging
 from typing import Optional
 
 from iris_devtester.containers.dev_instance import (
@@ -14,8 +13,6 @@ from iris_devtester.containers.dev_instance import (
     get_project_namespace
 )
 from iris_devtester.utils import progress
-
-logger = logging.getLogger(__name__)
 
 
 @click.group(name="dev")
@@ -43,7 +40,7 @@ def up(image: Optional[str], force: bool):
     click.echo(f"⏳ Starting dev engine '{DEV_INSTANCE_NAME}'...")
     try:
         manager.ensure_ready(image=image, force=force)
-        click.echo(f"✓ Dev engine is up and ready")
+        click.echo("✓ Dev engine is up and ready")
     except Exception as e:
         progress.print_error(f"Failed to start dev engine: {e}")
         raise click.Abort()
@@ -61,7 +58,7 @@ def down(volumes: bool):
 
     click.echo(f"⚡ Stopping dev engine '{DEV_INSTANCE_NAME}'...")
     manager.remove(remove_volumes=volumes)
-    click.echo(f"✓ Dev engine removed")
+    click.echo("✓ Dev engine removed")
 
 
 @dev_group.command(name="status")

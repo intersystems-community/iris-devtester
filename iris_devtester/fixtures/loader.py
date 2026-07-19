@@ -2,8 +2,7 @@ import logging
 import subprocess
 import time
 from pathlib import Path
-from subprocess import TimeoutExpired
-from typing import List, Optional
+from typing import Optional
 
 from iris_devtester.containers.iris_container import IRISContainer
 

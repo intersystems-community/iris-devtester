@@ -10,8 +10,7 @@ See:
 """
 
 import logging
-import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -136,8 +135,7 @@ def get_namespace_tables(connection: Any, namespace: str) -> List[str]:
         """
         )
 
-        tables = [row[0] for row in cursor.fetchall()]
-        return tables
+        return [row[0] for row in cursor.fetchall()]
 
     finally:
         cursor.close()

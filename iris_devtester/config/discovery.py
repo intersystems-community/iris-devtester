@@ -126,52 +126,55 @@ def discover_config(
     return IRISConfig(**discovered)
 
 
+# Maps IRIS_* variable names to (config_key, converter) pairs.
+# Converters transform the raw string value; a value of None means "skip this key".
+def _parse_auto_create(value: str) -> Optional[bool]:
+    val = value.lower()
+    if val in ("true", "1", "yes"):
+        return True
+    if val in ("false", "0", "no"):
+        return False
+    return None
+
+
+_ENV_MAPPINGS = {
+    "IRIS_HOST": ("host", str),
+    "IRIS_PORT": ("port", int),
+    "IRIS_NAMESPACE": ("namespace", str),
+    "IRIS_USERNAME": ("username", str),
+    "IRIS_PASSWORD": ("password", str),
+    "IRIS_DRIVER": ("driver", str),
+    "IRIS_TIMEOUT": ("timeout", int),
+    "IRIS_AUTO_CREATE": ("auto_create", _parse_auto_create),
+}
+
+
+def _apply_mapping(config: Dict[str, Any], key: str, value: str) -> None:
+    """Apply a single IRIS_* key/value to the config dict using _ENV_MAPPINGS."""
+    if key not in _ENV_MAPPINGS:
+        return
+
+    field_name, converter = _ENV_MAPPINGS[key]
+    converted = converter(value)
+    # _parse_auto_create returns None to signal "unrecognized value, skip"
+    if key == "IRIS_AUTO_CREATE" and converted is None:
+        return
+    config[field_name] = converted
+
+
 def _load_from_environment() -> Dict[str, Any]:
     """
     Load configuration from environment variables.
 
-    Looks for variables:
-    - IRIS_HOST
-    - IRIS_PORT
-    - IRIS_NAMESPACE
-    - IRIS_USERNAME
-    - IRIS_PASSWORD
-    - IRIS_DRIVER
-    - IRIS_TIMEOUT
+    Looks for IRIS_* variables (see _ENV_MAPPINGS).
 
     Returns:
         Dictionary of discovered configuration values
     """
     config: Dict[str, Any] = {}
-
-    if "IRIS_HOST" in os.environ:
-        config["host"] = os.environ["IRIS_HOST"]
-
-    if "IRIS_PORT" in os.environ:
-        config["port"] = int(os.environ["IRIS_PORT"])
-
-    if "IRIS_NAMESPACE" in os.environ:
-        config["namespace"] = os.environ["IRIS_NAMESPACE"]
-
-    if "IRIS_USERNAME" in os.environ:
-        config["username"] = os.environ["IRIS_USERNAME"]
-
-    if "IRIS_PASSWORD" in os.environ:
-        config["password"] = os.environ["IRIS_PASSWORD"]
-
-    if "IRIS_DRIVER" in os.environ:
-        config["driver"] = os.environ["IRIS_DRIVER"]
-
-    if "IRIS_TIMEOUT" in os.environ:
-        config["timeout"] = int(os.environ["IRIS_TIMEOUT"])
-
-    if "IRIS_AUTO_CREATE" in os.environ:
-        val = os.environ["IRIS_AUTO_CREATE"].lower()
-        if val in ("true", "1", "yes"):
-            config["auto_create"] = True
-        elif val in ("false", "0", "no"):
-            config["auto_create"] = False
-
+    for key in _ENV_MAPPINGS:
+        if key in os.environ:
+            _apply_mapping(config, key, os.environ[key])
     return config
 
 
@@ -198,39 +201,20 @@ def _load_from_dotenv() -> Dict[str, Any]:
                 if not line or line.startswith("#"):
                     continue
 
-                # Parse KEY=VALUE
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    value = value.strip()
+                if "=" not in line:
+                    continue
 
-                    # Remove quotes if present
-                    if value.startswith('"') and value.endswith('"'):
-                        value = value[1:-1]
-                    elif value.startswith("'") and value.endswith("'"):
-                        value = value[1:-1]
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip()
 
-                    # Map to config keys
-                    if key == "IRIS_HOST":
-                        config["host"] = value
-                    elif key == "IRIS_PORT":
-                        config["port"] = int(value)
-                    elif key == "IRIS_NAMESPACE":
-                        config["namespace"] = value
-                    elif key == "IRIS_USERNAME":
-                        config["username"] = value
-                    elif key == "IRIS_PASSWORD":
-                        config["password"] = value
-                    elif key == "IRIS_DRIVER":
-                        config["driver"] = value
-                    elif key == "IRIS_TIMEOUT":
-                        config["timeout"] = int(value)
-                    elif key == "IRIS_AUTO_CREATE":
-                        val = value.lower()
-                        if val in ("true", "1", "yes"):
-                            config["auto_create"] = True
-                        elif val in ("false", "0", "no"):
-                            config["auto_create"] = False
+                # Remove quotes if present
+                if value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+                elif value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1]
+
+                _apply_mapping(config, key, value)
 
     except (IOError, ValueError):
         # If .env file can't be read or parsed, just skip it

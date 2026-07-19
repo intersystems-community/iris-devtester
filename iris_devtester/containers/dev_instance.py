@@ -9,7 +9,7 @@ import hashlib
 import logging
 import os
 import subprocess
-from typing import Dict, List, Optional
+from typing import Optional
 
 import docker
 from docker.errors import NotFound

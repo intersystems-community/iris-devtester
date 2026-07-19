@@ -1,6 +1,7 @@
 import logging
+import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -47,13 +48,11 @@ class ConnectionDiagnosticError(Exception):
 
 
 def _extract_sqlcode(error_text: str) -> Optional[int]:
-    import re
     m = re.search(r"SQLCODE:\s*<(-\d+)>", error_text)
     return int(m.group(1)) if m else None
 
 
 def _extract_table_name(error_text: str) -> Optional[str]:
-    import re
     m = re.search(r"Table '([^']+)' not found", error_text, re.IGNORECASE)
     if m:
         return m.group(1)

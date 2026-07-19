@@ -20,31 +20,21 @@ from typing import Any, Dict, List, Optional
 class FixtureError(Exception):
     """Base exception for fixture operations."""
 
-    pass
-
 
 class FixtureValidationError(FixtureError):
     """Raised when fixture validation fails."""
-
-    pass
 
 
 class FixtureLoadError(FixtureError):
     """Raised when fixture loading fails."""
 
-    pass
-
 
 class FixtureCreateError(FixtureError):
     """Raised when fixture creation fails."""
 
-    pass
-
 
 class ChecksumMismatchError(FixtureValidationError):
     """Raised when file checksum doesn't match manifest."""
-
-    pass
 
 
 @dataclass

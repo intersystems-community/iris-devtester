@@ -540,9 +540,7 @@ def list_containers(ctx, show_all, output_format):
             )
 
         if output_format == "json":
-            import json as json_module
-
-            click.echo(json_module.dumps(iris_containers, indent=2))
+            click.echo(json.dumps(iris_containers, indent=2))
         else:
             # Table format
             if not iris_containers:

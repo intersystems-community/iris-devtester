@@ -4,6 +4,7 @@ Port registry for managing IRIS container port assignments.
 Provides atomic file-based persistence with file locking for concurrent safety.
 """
 
+import errno
 import json
 import socket as _socket
 from datetime import datetime
@@ -349,11 +350,9 @@ class PortRegistry:
         except (OSError, _socket.error) as e:
             # If IPv6 is not supported on this host, we don't count it as "occupied"
             # but if it fails with EADDRINUSE, it is occupied.
-            import errno
             if getattr(e, 'errno', None) == errno.EADDRINUSE:
                 return False
             # For other errors (like EAFNOSUPPORT), we ignore and rely on IPv4 check
-            pass
 
         return True
 
