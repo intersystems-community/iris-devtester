@@ -1,6 +1,7 @@
 # AGENTS.md - iris-devtester
 
-**Owner:** Thomas Dyar (Tom) — Sr. Manager, AI Platform and Ecosystems, InterSystems Corporation  
+**Owner:** Thomas Dyar (Tom) — Sr. Manager, AI Platform and Ecosystems, InterSystems Corporation
+
 > NEVER use "Tim" — that is Tim Leavitt, a colleague. Always use "Tom" in conversation.
 
 **Generated**: 2026-03-28
@@ -21,7 +22,7 @@ Battle-tested Python toolkit for InterSystems IRIS database testing. Manages con
 
 ## STRUCTURE
 
-```
+```text
 iris_devtester/              # 179 .py files, ~39k lines
   cli/                       # Click command groups (container, fixture, dev, connection)
   config/                    # IRISConfig, auto-discovery, YAML presets
@@ -45,33 +46,33 @@ specs/                       # Feature specifications (001-027)
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Start/stop containers | `containers/iris_container.py` | `.community()`, `.enterprise()`, `.light()` factory methods |
-| Get a connection | `connections/connection.py` | `get_connection()` — auto-discovers, auto-remediates |
-| Password issues | `utils/password.py` (677 lines) | Largest util; handles ChangePassword flag |
-| Enable CallIn | `utils/enable_callin.py` | MUST call before DBAPI connections work |
-| Load test data | `fixtures/loader.py` | GOF format, <1s for most fixtures |
-| CLI entry point | `cli/__init__.py` | `main()` Click group; aliases: `iris-devtester`, `idt` |
-| pytest fixtures | `testing/fixtures.py` + `tests/conftest.py` | `iris_db`, `iris_db_shared`, `iris_container` |
-| Config discovery | `config/discovery.py` + `config/auto_discovery.py` | Env vars > YAML > container probe |
-| Port conflicts | `ports/registry.py` | File-lock based, cross-process safe |
-| Container health | `containers/monitoring.py` (1185 lines) | Largest file; resource-aware monitoring |
-| CPF merge | `containers/cpf_manager.py` | Merge custom CPF into container at startup |
-| Dev instance | `containers/dev_instance.py` | Persistent `idt-dev-data` Docker volume |
+| Task                  | Location                                           | Notes                                                       |
+| --------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
+| Start/stop containers | `containers/iris_container.py`                     | `.community()`, `.enterprise()`, `.light()` factory methods |
+| Get a connection      | `connections/connection.py`                        | `get_connection()` — auto-discovers, auto-remediates        |
+| Password issues       | `utils/password.py` (677 lines)                    | Largest util; handles ChangePassword flag                   |
+| Enable CallIn         | `utils/enable_callin.py`                           | MUST call before DBAPI connections work                     |
+| Load test data        | `fixtures/loader.py`                               | GOF format, <1s for most fixtures                           |
+| CLI entry point       | `cli/__init__.py`                                  | `main()` Click group; aliases: `iris-devtester`, `idt`      |
+| pytest fixtures       | `testing/fixtures.py` + `tests/conftest.py`        | `iris_db`, `iris_db_shared`, `iris_container`               |
+| Config discovery      | `config/discovery.py` + `config/auto_discovery.py` | Env vars > YAML > container probe                           |
+| Port conflicts        | `ports/registry.py`                                | File-lock based, cross-process safe                         |
+| Container health      | `containers/monitoring.py` (1185 lines)            | Largest file; resource-aware monitoring                     |
+| CPF merge             | `containers/cpf_manager.py`                        | Merge custom CPF into container at startup                  |
+| Dev instance          | `containers/dev_instance.py`                       | Persistent `idt-dev-data` Docker volume                     |
 
 ## CODE MAP (high-centrality symbols)
 
-| Symbol | Type | Location | Role |
-|--------|------|----------|------|
-| `IRISContainer` | class | `containers/iris_container.py` | Core container wrapper; 668 lines |
-| `get_connection()` | function | `connections/connection.py` | Primary public API for DB access |
-| `IRISConfig` | class | `config/models.py` | Config dataclass (host, port, ns, creds) |
-| `FixtureLoader` | class | `fixtures/loader.py` | GOF fixture import |
-| `FixtureCreator` | class | `fixtures/creator.py` | GOF fixture export |
-| `enable_callin_service()` | function | `utils/enable_callin.py` | Required before DBAPI |
-| `reset_password_if_needed()` | function | `utils/password.py` | Auto-remediation |
-| `main()` | Click group | `cli/__init__.py` | CLI entry: container, fixture, dev, test-connection |
+| Symbol                       | Type        | Location                       | Role                                                |
+| ---------------------------- | ----------- | ------------------------------ | --------------------------------------------------- |
+| `IRISContainer`              | class       | `containers/iris_container.py` | Core container wrapper; 668 lines                   |
+| `get_connection()`           | function    | `connections/connection.py`    | Primary public API for DB access                    |
+| `IRISConfig`                 | class       | `config/models.py`             | Config dataclass (host, port, ns, creds)            |
+| `FixtureLoader`              | class       | `fixtures/loader.py`           | GOF fixture import                                  |
+| `FixtureCreator`             | class       | `fixtures/creator.py`          | GOF fixture export                                  |
+| `enable_callin_service()`    | function    | `utils/enable_callin.py`       | Required before DBAPI                               |
+| `reset_password_if_needed()` | function    | `utils/password.py`            | Auto-remediation                                    |
+| `main()`                     | Click group | `cli/__init__.py`              | CLI entry: container, fixture, dev, test-connection |
 
 ## COMMANDS
 
@@ -125,28 +126,32 @@ idt dev up                            # Persistent dev instance
 ## KNOWN PAIN POINTS (downstream consumers)
 
 ### 1. Ryuk kills containers on process exit
+
 Testcontainers Ryuk removes containers when the Python process exits. For persistent containers, use `idt container up` (Docker SDK mode, no Ryuk) + `IRISContainer.attach(name)` to reconnect. See `docs/learnings/testcontainers-ryuk-lifecycle.md`.
 
 ### 2. Password change required on fresh community containers
+
 IRIS community edition forces `ChangePassword=1` on first startup. `with_preconfigured_password()` sets the env var but does NOT clear this flag. `IRISContainer.start()` calls `unexpire_all_passwords()` automatically, but if you hit auth errors: `idt container reset-password <name>` or `iris.reset_password()`. See `docs/learnings/password-reset-changeflag-fix.md`.
 
 **CLI auto-fix (Feature 030)**: `idt test-connection --auto-fix` now detects password-change errors and auto-remediates. The cryptic "Unexpected error: 1" is replaced with an actionable message.
 
 ### 3. No public `get_password()` on IRISContainer
+
 **RESOLVED (Feature 029)**: `get_password()` and `get_username()` public methods added. No longer need `iris._password`.
 
 ### 4. `docker stop` causes data loss — WIJ not flushed (HIGH)
+
 `docker stop` sends SIGKILL after grace period. IRIS's default entrypoint doesn't trap SIGTERM, so the WIJ (write buffer) is not flushed. Tables exist on restart but rows are 0. **Fixed (v1.18.1+)**: `IRISContainer.__exit__()` calls `stop_gracefully()` automatically. For CLI/compose: run `docker exec <container> iris stop IRIS quietly` before `docker stop`. See `docs/learnings/iris-container-graceful-shutdown.md`.
 
 ## ENVIRONMENT
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `IRIS_HOST` | auto-discovered | IRIS hostname |
-| `IRIS_PORT` | `1972` | Superserver port |
-| `IRIS_NAMESPACE` | `USER` | Default namespace |
-| `IRIS_USERNAME` | `_SYSTEM` | Username |
-| `IRIS_PASSWORD` | `SYS` | Password |
+| Variable           | Default            | Description             |
+| ------------------ | ------------------ | ----------------------- |
+| `IRIS_HOST`        | auto-discovered    | IRIS hostname           |
+| `IRIS_PORT`        | `1972`             | Superserver port        |
+| `IRIS_NAMESPACE`   | `USER`             | Default namespace       |
+| `IRIS_USERNAME`    | `_SYSTEM`          | Username                |
+| `IRIS_PASSWORD`    | `SYS`              | Password                |
 | `IRIS_LICENSE_KEY` | `~/.iris/iris.key` | Enterprise license path |
 
 ## TEST FIXTURES
@@ -162,14 +167,59 @@ Coverage: 90% minimum (pyproject.toml enforced), 95%+ target.
 
 ## AGENT SKILLS
 
-| Skill | Trigger | Key Files |
-|-------|---------|-----------|
-| Container | `/container` | `containers/iris_container.py`, `cli/container.py` |
-| Connection | `/connection` | `connections/connection.py`, `utils/enable_callin.py` |
-| Fixture | `/fixture` | `fixtures/loader.py`, `cli/fixture_commands.py` |
-| Troubleshooting | `/troubleshoot` | `docs/TROUBLESHOOTING.md` |
+| Skill           | Trigger         | Key Files                                             |
+| --------------- | --------------- | ----------------------------------------------------- |
+| Container       | `/container`    | `containers/iris_container.py`, `cli/container.py`    |
+| Connection      | `/connection`   | `connections/connection.py`, `utils/enable_callin.py` |
+| Fixture         | `/fixture`      | `fixtures/loader.py`, `cli/fixture_commands.py`       |
+| Troubleshooting | `/troubleshoot` | `docs/TROUBLESHOOTING.md`                             |
 
-Skill locations: `.claude/commands/*.md` (Claude), `.cursor/rules/*.mdc` (Cursor), `.github/copilot-instructions.md` (Copilot)
+Skill manifests: `skills/iris-devtester/`, `skills/iris-devtester-containers/`, `skills/iris-devtester-connections/` (discrete SKILL.md files).
+Slash-command skills: `.claude/commands/*.md` (Claude), `.cursor/rules/*.mdc` (Cursor), `.github/copilot-instructions.md` (Copilot)
+
+## ECOSYSTEM
+
+iris-devtester owns the IRIS **container lifecycle**; sibling tools consume it.
+
+### iris-agentic-dev (iad) integration
+
+iad compiles and executes ObjectScript inside a running container. iris-devtester emits the authoritative connection description iad reads from `.iris-agentic-dev.toml`, so neither tool reconstructs connection details per session (no manual port hunting).
+
+Handoff workflow:
+
+```python
+from iris_devtester.containers import IRISContainer
+
+container = IRISContainer.attach("opsreview-iris")   # reconnect to a running container
+info = container.connection_info()                    # build the handoff contract
+open(".iris-agentic-dev.toml", "w").write(info.to_toml_snippet())  # iad hot-reloads
+```
+
+`IRISConnectionInfo.to_toml_snippet()` output — Docker-only container (no WebGateway):
+
+```toml
+container = "opsreview-iris"
+docker_only = true
+namespace = "USER"
+```
+
+When a `*webgateway*` container is auto-detected on the same Docker network, the host-mapped web port (container port 80) is emitted instead:
+
+```toml
+container = "opsreview-iris"
+web_port = 52774
+docker_only = false
+namespace = "USER"
+```
+
+Fields: `container` (Docker name), `docker_only` (true when no WebGateway reachable), `web_port` (host-mapped WebGateway port; omitted when docker_only), `namespace`. `IRISConnectionInfo` also carries `host`, `superserver_port`, `username`, `password`, `iris_image`, and `webgateway_url`/`webgateway_container` for richer callers. Install: `pip install iris-devtester[iad]`. Capability fingerprinting (NoPWS, atelier_rest, compile_path) is iad's `check_config`, not ours.
+
+### Cross-references
+
+- **iris-agentic-dev**: once the container is up, use iad MCP tools to compile/execute ObjectScript — iad reads the `.iris-agentic-dev.toml` fragment above.
+- **iris-vector-graph (ivg)**: uses idt for test container lifecycle (`ivg-iris`, `ivg-iris-enterprise`).
+- **iris-pgwire**: spec 033 (health/AI Hub editions) plans pgwire integration-test support.
+- **iris-vector-rag**: uses idt as a dev dependency for RAG pipeline tests.
 
 ## HUMAN APPROVAL REQUIRED
 
@@ -183,8 +233,9 @@ Skill locations: `.claude/commands/*.md` (Claude), `.cursor/rules/*.mdc` (Cursor
 
 - [CONSTITUTION.md](CONSTITUTION.md) — 8 core principles
 - [CLAUDE.md](CLAUDE.md) — Claude-specific context
-- [SKILL.md](SKILL.md) — Agent skill manifest
+- [skills/iris-devtester/SKILL.md](skills/iris-devtester/SKILL.md) — Agent skill manifest
+- [skills/](skills/) — Discrete skill files (iris-devtester, -containers, -connections)
+- [iris-agentic-dev](https://github.com/intersystems-community/iris-agentic-dev) — Compile/execute ObjectScript (consumes the `.iris-agentic-dev.toml` handoff)
 - [docs/learnings/](docs/learnings/) — 27 codified lessons
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — Common issues
 - [docs/SQL_VS_OBJECTSCRIPT.md](docs/SQL_VS_OBJECTSCRIPT.md) — Critical: read before IRIS code
-

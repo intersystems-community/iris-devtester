@@ -5,6 +5,27 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-07-19 - iris-agentic-dev Handoff Contract + Discrete Skills
+
+### Added
+
+- **`IRISContainer.connection_info(web_port=None) -> IRISConnectionInfo`**: Builds the authoritative iris-devtester → iris-agentic-dev (iad) handoff contract for a running container — host, host-mapped SuperServer port, credentials, image, and an auto-detected WebGateway URL.
+- **`IRISConnectionInfo`** dataclass (`iris_devtester.containers`): the shared connection description. Fields: `host`, `superserver_port`, `container`, `iris_image`, `namespace`/`username`/`password`, `webgateway_url`, `webgateway_container`, `docker_only`. `docker_only` defaults to "no WebGateway reachable" unless set explicitly.
+- **`IRISConnectionInfo.to_toml_snippet() -> str`**: emits the `.iris-agentic-dev.toml` fragment iad hot-reloads (`container`, `docker_only`/`web_port`, `namespace`). Never emits `docker_only = false` without a usable `web_port`.
+- **`detect_webgateway(client, iris_networks, host)`**: finds a `*webgateway*` container sharing a Docker network with IRIS and returns its host-mapped port 80. Swallows Docker errors → falls back to docker_only.
+- **`pip install iris-devtester[iad]`**: new optional-dependency extra pulling `iris-agentic-dev>=1.0`.
+- **Discrete agent skill files** under `skills/` (Spec 019): `iris-devtester` (top-level, moved from root `SKILL.md`), `iris-devtester-containers`, and `iris-devtester-connections`.
+- **Documentation**: "Works with iris-agentic-dev" section + badge in `README.md`; `ECOSYSTEM` section (handoff workflow, snippet output, cross-references to iris-vector-graph, iris-pgwire, iris-vector-rag) in `AGENTS.md`.
+
+### Changed
+
+- Root `SKILL.md` moved to `skills/iris-devtester/SKILL.md`; references in `README.md`, `AGENTS.md`, `CLAUDE.md`, and `pyproject.toml` repointed.
+- Internal simplification pass across `containers/`, `connections/`, `config/`, `fixtures/`, `utils/`, `cli/`, `ports/`, and `testing/`: removed dead code and unused imports, consolidated duplicated logic (extracted `_run_objectscript` in `fixtures/obj_export.py`; shared env-mapping table in `config/discovery.py`), flattened redundant branches. No behavior or public-API changes.
+
+### Fixed
+
+- Missing f-string prefixes in six remediation messages (`utils/enable_callin.py`, `utils/test_connection.py`, `connections/jdbc.py`, `utils/iris_container_adapter.py`) that printed `{container_name}`/`{config.host}`/`{jdbc_jar_path}`/`{image}`/`{name}` literally instead of interpolating.
+
 ## [1.18.1] - 2026-05-28 - Graceful IRIS Shutdown
 
 ### Fixed
@@ -111,8 +132,6 @@ Closes [#14](https://github.com/intersystems-community/iris-devtester/issues/14)
 ### Deprecated
 
 - **`idt container test-connection`**: Deprecated in favour of `idt test-connection --container <name>`. Prints deprecation warning; will be removed in a future major version.
-
-
 
 ### Fixed
 
@@ -394,19 +413,19 @@ Closes [#14](https://github.com/intersystems-community/iris-devtester/issues/14)
 - **CLI `fixture create` Container Support**: Added missing `--container` parameter to specify source IRIS instance.
 - **API Contract Synchronization**: Fixed method signatures and return types across `FixtureCreator`, `DATFixtureLoader`, and `IRISContainer` to align with public contract tests.
 - **Contract Test Compatibility**: Implemented a robust compatibility layer in `iris_devtester.testing` and `iris_devtester.connections` to support legacy assistant expectations.
-- **Test Performance & Stability**: 
+- **Test Performance & Stability**:
   - Optimized `IRISContainer` startup logic to prevent hangs in restricted environments.
   - Improved `wait_for_iris_ready` timing reliability.
   - Added `clean_port_registry` fixture for integration test isolation.
 
-## [1.8.0] - 2026-01-05 - Feature 022: CPF Merge Support 
+## [1.8.0] - 2026-01-05 - Feature 022: CPF Merge Support
 
-### Added 
+### Added
 
-- **Declarative Configuration (`with_cpf_merge`)**: New method for `IRISContainer` to apply CPF snippets during container boot. 
-- **Optimization Presets**: Added `CPFPreset.CI_OPTIMIZED` and `CPFPreset.SECURE_DEFAULTS` for instant setup. 
-- **2025 Agent Skills Standard**: Standardized on root-level `SKILL.md` and consolidated assistant triggers. 
-- **Consolidated CLI & UI**: Unified agent commands into `/idt` (Claude) and `@idt` (Cursor) for zero clutter. 
+- **Declarative Configuration (`with_cpf_merge`)**: New method for `IRISContainer` to apply CPF snippets during container boot.
+- **Optimization Presets**: Added `CPFPreset.CI_OPTIMIZED` and `CPFPreset.SECURE_DEFAULTS` for instant setup.
+- **2025 Agent Skills Standard**: Standardized on root-level `SKILL.md` and consolidated assistant triggers.
+- **Consolidated CLI & UI**: Unified agent commands into `/idt` (Claude) and `@idt` (Cursor) for zero clutter.
 
 ## [1.5.2] - 2025-12-24 - Performance & Reliability
 
@@ -538,6 +557,7 @@ Closes [#14](https://github.com/intersystems-community/iris-devtester/issues/14)
 ### Technical Details
 
 **$SYSTEM.Monitor.State() Return Values**:
+
 - 0: OK - System healthy, ready for connections
 - 1: Warning - Minor issues, may still work
 - 2: Error - Significant problems, connections may fail
@@ -580,6 +600,7 @@ connection failures during container startup.
 ### Technical Details
 
 **ObjectScript is Position-Based (NOT Keyword-Based)**:
+
 ```objectscript
 // WRONG - This method does NOT exist!
 ##class(Security.Users).ChangePassword("_SYSTEM", "password")
@@ -595,6 +616,7 @@ Halt
 ```
 
 **Key Learnings**:
+
 - The `.properties` syntax means "pass by reference" (required for Get/Modify)
 - Property names are case-sensitive
 - `Write` statement outputs the return value (1 = success)
@@ -609,11 +631,13 @@ Halt
 ### Migration from v1.4.x
 
 No code changes required - v1.5.0 is a drop-in replacement. Just upgrade:
+
 ```bash
 pip install --upgrade iris-devtester
 ```
 
 **What Changed Internally**:
+
 - Password reset now actually works (was silently failing in v1.4.x)
 - Verification happens on correct port (testcontainers-aware)
 - Uses official IRIS API instead of non-existent methods
@@ -652,6 +676,7 @@ pip install --upgrade iris-devtester
 All three versions only hardened the target user. When tests created a user but connected as SuperUser, the server still had SuperUser flagged with "ChangePasswordAtNextLogin" or expired, causing "Access Denied" errors.
 
 **v1.4.5 Dual Hardening Pattern**:
+
 ```python
 # Harden the target user
 _harden_iris_user(container, username="test", password="TESTPWD")
@@ -662,6 +687,7 @@ if username != "SuperUser":
 ```
 
 **ObjectScript Pattern**:
+
 ```objectscript
 set u="{username}",
 p("ChangePasswordAtNextLogin")=0,
@@ -676,6 +702,7 @@ do ##class(Security.Users).SetPassword(u,"{password}")
 ### Why This Fix Works
 
 The dual hardening ensures that:
+
 1. The created test user is properly configured (if using that user)
 2. SuperUser is ALSO properly configured (if using SuperUser)
 3. No matter which user the test connects as, it will work
@@ -684,6 +711,7 @@ The dual hardening ensures that:
 ### Migration from v1.4.2-v1.4.4
 
 No code changes required - v1.4.5 is a drop-in replacement. Just upgrade:
+
 ```bash
 pip install --upgrade iris-devtester
 ```
@@ -720,15 +748,18 @@ pip install --upgrade iris-devtester
 ### Technical Details
 
 **Previous Implementation (v1.4.3)**:
+
 ```objectscript
 do ##class(Security.Users).Get("{user}",.p)
 set p("Password")="{password}"
 set p("PasswordNeverExpires")=1
 do ##class(Security.Users).Modify("{user}",.p)
 ```
+
 **Problem**: Didn't clear ChangePasswordAtNextLogin flag or user expiration state.
 
 **New Implementation (v1.4.4)**:
+
 ```objectscript
 do ##class(Security.Users).UnExpireUser("{user}")
 do ##class(Security.Users).Get("{user}",.p)
@@ -737,9 +768,11 @@ set p("PasswordNeverExpires")=1
 do ##class(Security.Users).Modify("{user}",.p)
 do ##class(Security.Users).SetPassword("{user}","{password}")
 ```
+
 **Fix**: Properly clears all security flags that cause "Password change required" errors.
 
 **IPv4 Forcing (macOS only)**:
+
 ```python
 hostname = os.getenv("IRIS_DEVTESTER_HOST") or (
     "127.0.0.1" if platform.system() == "Darwin" else "localhost"
@@ -747,6 +780,7 @@ hostname = os.getenv("IRIS_DEVTESTER_HOST") or (
 ```
 
 **Settle Delay (macOS only)**:
+
 ```python
 if platform.system() == "Darwin":
     time.sleep(4.0)  # Wait for security metadata propagation
@@ -951,8 +985,8 @@ v1.4.3 added connection-based verification with retry logic, which is valuable f
   - **Example**:
     ```yaml
     volumes:
-      - ./workspace:/external/workspace     # Read-write
-      - ./config:/opt/config:ro             # Read-only
+      - ./workspace:/external/workspace # Read-write
+      - ./config:/opt/config:ro # Read-only
     ```
 
 - **Bug Fix #3: Added container persistence verification (Feature 011)**
@@ -1025,11 +1059,11 @@ v1.4.3 added connection-based verification with retry logic, which is valuable f
 
 ### Performance
 
-| Metric | Before (v1.2.1) | After (v1.2.2) | Improvement |
-|--------|----------------|----------------|-------------|
-| Benchmark pass rate | 0/24 (0.0%) | 22/24 (91.7%) | +91.7% |
-| Container persistence | ~30 seconds | Indefinite | ∞ |
-| Volume mounting | ❌ Not working | ✅ Working | Fixed |
+| Metric                | Before (v1.2.1) | After (v1.2.2) | Improvement |
+| --------------------- | --------------- | -------------- | ----------- |
+| Benchmark pass rate   | 0/24 (0.0%)     | 22/24 (91.7%)  | +91.7%      |
+| Container persistence | ~30 seconds     | Indefinite     | ∞           |
+| Volume mounting       | ❌ Not working  | ✅ Working     | Fixed       |
 
 ## [1.2.1] - 2025-01-13
 
@@ -1055,13 +1089,14 @@ v1.4.3 added connection-based verification with retry logic, which is valuable f
   - **Example**:
     ```yaml
     volumes:
-      - ./data:/external          # Read-write mount
-      - ./config:/opt/config:ro   # Read-only mount
+      - ./data:/external # Read-write mount
+      - ./config:/opt/config:ro # Read-only mount
     ```
 
 ### Migration Notes
 
 No breaking changes - all fixes are backwards compatible:
+
 - Community edition now uses correct image name automatically
 - Volume mounting is additive functionality (empty volumes list works as before)
 - Existing configurations continue to work without modification
@@ -1078,6 +1113,7 @@ No breaking changes - all fixes are backwards compatible:
 ### Changed
 
 #### Refactored CLI to use testcontainers-iris
+
 - **BREAKING**: None - All CLI commands maintain identical interface and behavior
 - Replaced custom Docker SDK wrapper (461 lines) with thin adapter layer (247 lines)
 - Container lifecycle commands now leverage `testcontainers-iris` for container operations
@@ -1089,6 +1125,7 @@ No breaking changes - all fixes are backwards compatible:
   - Automatic improvements as testcontainers-iris evolves
 
 #### Technical Implementation (Feature 009)
+
 - **Added**: `iris_container_adapter.py` (247 lines) - Adapter between CLI and testcontainers-iris
   - `IRISContainerManager.create_from_config()` - Maps ContainerConfig to IRISContainer
   - `IRISContainerManager.get_existing()` - Gets existing containers by name
@@ -1106,6 +1143,7 @@ No breaking changes - all fixes are backwards compatible:
   - Automatic CallIn service enablement
 
 #### Quality Assurance
+
 - **Tests**: All 35 contract tests passing (100%)
 - **Tests**: All 20 adapter unit tests passing (100%)
 - **Zero breaking changes** verified - Same CLI interface, same exit codes, same behavior
@@ -1113,6 +1151,7 @@ No breaking changes - all fixes are backwards compatible:
 - **Documentation**: Updated examples and docstrings to reflect new API
 
 ### Dependencies
+
 - No new dependencies - Leverages existing `testcontainers-iris>=1.2.2` dependency
 
 ## [1.1.0] - 2025-01-11
@@ -1120,6 +1159,7 @@ No breaking changes - all fixes are backwards compatible:
 ### Added
 
 #### Container Lifecycle CLI Commands
+
 - **NEW**: Complete container lifecycle management via CLI
   - `iris-devtester container up` - Create and start IRIS container with zero-config support
   - `iris-devtester container start` - Start existing container
@@ -1130,6 +1170,7 @@ No breaking changes - all fixes are backwards compatible:
   - `iris-devtester container remove` - Remove container with optional volume cleanup
 
 #### Configuration Management
+
 - `ContainerConfig` - Pydantic v2 model for container configuration
   - Support for both Community and Enterprise editions
   - YAML configuration file support (`iris-config.yml`)
@@ -1140,6 +1181,7 @@ No breaking changes - all fixes are backwards compatible:
 - Configuration validation with helpful error messages
 
 #### Multi-Layer Health Checks
+
 - Progressive health validation for containers:
   - Layer 1: Container running (fast fail on crashes)
   - Layer 2: Docker health check (if defined)
@@ -1148,6 +1190,7 @@ No breaking changes - all fixes are backwards compatible:
 - Progress indicators and status updates during container operations
 
 #### Docker SDK Integration
+
 - Comprehensive Docker SDK wrapper with constitutional error messages
 - Automatic image pulling with fallback to local images
 - Port conflict detection with remediation guidance
@@ -1155,17 +1198,20 @@ No breaking changes - all fixes are backwards compatible:
 - Proper exit codes: 0 (success), 1 (error), 2 (config), 3 (running), 5 (timeout)
 
 #### Examples and Documentation
+
 - Example configurations:
   - `examples/iris-config-community.yml` - Community Edition template
   - `examples/iris-config-enterprise.yml` - Enterprise Edition template with license setup
   - `examples/demo-workflow.sh` - Complete lifecycle demonstration script
 
 ### Changed
+
 - Updated package version to 1.1.0
 - Fixed CLI prog_name to match package name (iris-devtester)
 - Added PyYAML and Pydantic dependencies
 
 ### Technical Details
+
 - 33 implementation tasks completed (77% of Feature 008)
 - 35 contract tests (all passing)
 - 50+ unit tests for configuration and validation
@@ -1178,6 +1224,7 @@ No breaking changes - all fixes are backwards compatible:
 ## [1.0.2] - 2025-01-09
 
 ### Fixed
+
 - **CRITICAL**: Fixed `reset_password()` bug where function reported success but password was not actually set
   - Now uses correct IRIS Security API property `Password` (not `ExternalPassword`)
   - Now calls `Security.Users.Get()` before `Modify()` per IRIS API requirements
@@ -1196,6 +1243,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 ### Added
 
 #### Container Management
+
 - `IRISContainer` wrapper with automatic connection management
 - `IRISContainer.community()` - Zero-config Community Edition containers
 - `IRISContainer.enterprise()` - Enterprise Edition with license support
@@ -1206,6 +1254,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 - Wait strategies for container readiness
 
 #### Connection Management
+
 - `get_connection()` - Zero-config connection with auto-discovery
 - DBAPI-first approach (3x faster than JDBC)
 - Automatic fallback to JDBC when DBAPI unavailable
@@ -1214,6 +1263,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 - Environment variable configuration support
 
 #### Testing Utilities
+
 - pytest fixtures for IRIS integration tests
   - `iris_container` - Session-scoped container lifecycle
   - `test_namespace` - Function-scoped namespace with auto-cleanup
@@ -1230,6 +1280,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
   - Multi-port scanning (31972, 1972, 11972, 21972)
 
 #### .DAT Fixture Management
+
 - `FixtureCreator` - Create fixtures from namespaces via BACKUP^DBACK
 - `DATFixtureLoader` - Load fixtures via RESTORE (<1s)
 - `FixtureValidator` - Validate integrity with SHA256 checksums
@@ -1239,6 +1290,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 - Atomic operations with rollback
 
 #### Performance Monitoring
+
 - `MonitoringPolicy` - ^SystemPerformance configuration
 - `configure_monitoring()` - Zero-config monitoring setup
 - `get_monitoring_status()` - Query monitoring state
@@ -1252,6 +1304,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 - `ResourceThresholds` - Configurable thresholds with hysteresis
 
 #### Documentation
+
 - Complete API documentation
 - `SQL_VS_OBJECTSCRIPT.md` - Critical execution pattern guide
 - `rag-templates-production-patterns.md` - 7 battle-tested patterns
@@ -1261,6 +1314,7 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 - Comprehensive docstrings (Google style)
 
 ### Quality Metrics
+
 - 224/238 unit tests passing (94%)
 - 93 contract tests passing (100%)
 - 29 integration tests passing
@@ -1270,7 +1324,9 @@ First stable release of iris-devtester, a battle-tested Python package for Inter
 - Medical-grade error messages (Constitutional Principle #5)
 
 ### Constitutional Principles
+
 All features follow the [8 core principles](CONSTITUTION.md):
+
 1. ✅ Automatic Remediation Over Manual Intervention
 2. ✅ DBAPI First, JDBC Fallback
 3. ✅ Isolation by Default
@@ -1281,7 +1337,9 @@ All features follow the [8 core principles](CONSTITUTION.md):
 8. ✅ Document the Blind Alleys
 
 ### Production Patterns Integrated
+
 Extracted from `rag-templates` production system:
+
 1. Multi-Port Discovery with Fallback
 2. Docker Container Port Auto-Detection
 3. Connection Pooling (documented for v1.2.0)
@@ -1291,15 +1349,19 @@ Extracted from `rag-templates` production system:
 7. Retry Logic with Exponential Backoff
 
 ### Breaking Changes
+
 N/A - Initial release
 
 ### Deprecated
+
 N/A - Initial release
 
 ### Fixed
+
 N/A - Initial release
 
 ### Security
+
 - SHA256 checksums for .DAT fixture integrity
 - Secure password handling in connection strings
 - No credentials in logs or error messages
@@ -1309,18 +1371,21 @@ N/A - Initial release
 ## [Unreleased]
 
 ### Planned for v1.1.0
+
 - VECTOR datatype introspection via audit trail
 - Enhanced schema inspector combining INFORMATION_SCHEMA + audit data
 - SQLAlchemy dialect extension with VECTOR type awareness
 - Schema reflection with correct VECTOR types
 
 ### Planned for v1.2.0
+
 - Production-grade connection pooling implementation
 - Query performance tracking
 - Advanced testing utilities
 - DAT fixture versioning
 
 ### Planned for v2.0.0
+
 - Multi-instance support
 - Mirror configuration support
 - Enterprise features (sharding, ECP, etc.)

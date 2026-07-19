@@ -6,6 +6,7 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/iris-devtester.svg)](https://pypi.org/project/iris-devtester/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Test Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](https://github.com/intersystems-community/iris-devtester)
+[![Works with iris-agentic-dev](https://img.shields.io/badge/works%20with-iris--agentic--dev-blue.svg)](https://github.com/intersystems-community/iris-agentic-dev)
 
 ## What is This?
 
@@ -22,11 +23,13 @@ IRIS DevTester is a comprehensive Python package that provides **automatic, reli
 ## Quick Start
 
 ### 1. Install
+
 ```bash
 pip install iris-devtester[all]
 ```
 
 ### 2. SQLite-Level Connectivity (Warm Start)
+
 Use the persistent dev instance for instant connections across projects:
 
 ```bash
@@ -34,6 +37,7 @@ idt dev up
 ```
 
 Then in your code:
+
 ```python
 from iris_devtester.connections import get_connection
 
@@ -42,7 +46,9 @@ conn = get_connection()
 ```
 
 ### 3. Ephemeral Containers (for CI/CD)
+
 For completely isolated test containers:
+
 ```python
 from iris_devtester.containers import IRISContainer
 
@@ -58,13 +64,14 @@ def test_connection():
 
 Three canonical container editions are available:
 
-| Edition | Size | Use Case | Image |
-|---------|------|----------|-------|
-| **Community** | ~972MB | Development, testing | `intersystemsdc/iris-community` |
-| **Enterprise** | ~1GB+ | Production testing | `containers.intersystems.com/intersystems/iris` |
-| **Light** | **~580MB** | CI/CD pipelines | `caretdev/iris-community-light` |
+| Edition        | Size       | Use Case             | Image                                           |
+| -------------- | ---------- | -------------------- | ----------------------------------------------- |
+| **Community**  | ~972MB     | Development, testing | `intersystemsdc/iris-community`                 |
+| **Enterprise** | ~1GB+      | Production testing   | `containers.intersystems.com/intersystems/iris` |
+| **Light**      | **~580MB** | CI/CD pipelines      | `caretdev/iris-community-light`                 |
 
 ### Python API
+
 ```python
 from iris_devtester.containers import IRISContainer
 
@@ -86,6 +93,7 @@ with IRISContainer.community(version="2025.1") as iris:
 ```
 
 ### CLI Usage
+
 ```bash
 # Community (default)
 iris-devtester container up
@@ -103,12 +111,14 @@ iris-devtester container list
 ### Light Edition Details
 
 The Light edition removes components unnecessary for SQL-only workloads:
+
 - **Removed**: Interoperability/Ensemble, Management Portal, DeepSee/BI, CSP/REST
 - **Kept**: SQL engine, DBAPI, JDBC, ODBC, SQLAlchemy-IRIS support
 
 Perfect for microservices, automated testing, and Python/SQL pipelines.
 
 ### Builder Methods
+
 ```python
 # Set a custom container name (for debugging, logs, multiple containers)
 iris = IRISContainer.community().with_name("my-test-db")
@@ -127,6 +137,7 @@ with IRISContainer.community() \
 ```
 
 ### Constructor Parameters
+
 ```python
 IRISContainer(
     image="intersystemsdc/iris-community:latest",  # Docker image
@@ -148,8 +159,51 @@ IRISContainer(
 ## AI-Assisted Development
 
 This project is optimized for AI coding assistants:
-- **[Agent Skill Manifest](https://github.com/intersystems-community/iris-devtester/blob/main/SKILL.md)** - Hierarchical guidance for Claude, Cursor, and Copilot.
+
+- **[Agent Skills](https://github.com/intersystems-community/iris-devtester/tree/main/skills/)** - Hierarchical guidance for Claude, Cursor, and Copilot (`iris-devtester`, `-containers`, `-connections`).
 - **[AGENTS.md](https://github.com/intersystems-community/iris-devtester/blob/main/AGENTS.md)** - Common build and test commands.
+
+## Works with iris-agentic-dev
+
+iris-devtester owns the **container lifecycle**; [iris-agentic-dev](https://github.com/intersystems-community/iris-agentic-dev) (iad) owns **compiling and executing ObjectScript** inside it. They share one authoritative description of a connection so neither side has to reconstruct it — no manual port hunting.
+
+Once a container is up, emit the handoff fragment iad reads from `.iris-agentic-dev.toml`:
+
+```python
+from iris_devtester.containers import IRISContainer
+
+# Attach to a running container (e.g. started by `idt container up`)
+container = IRISContainer.attach("opsreview-iris")
+
+# Build the handoff contract (auto-detects a WebGateway sidecar if present)
+info = container.connection_info()
+
+# Write the fragment iad hot-reloads
+with open(".iris-agentic-dev.toml", "w") as f:
+    f.write(info.to_toml_snippet())
+```
+
+For a Docker-only container (no WebGateway), `to_toml_snippet()` emits:
+
+```toml
+container = "opsreview-iris"
+docker_only = true
+namespace = "USER"
+```
+
+When a WebGateway sidecar is detected on the same Docker network, it emits the
+host-mapped web port instead:
+
+```toml
+container = "opsreview-iris"
+web_port = 52774
+docker_only = false
+namespace = "USER"
+```
+
+Install the optional integration extra with `pip install iris-devtester[iad]`.
+See [AGENTS.md → ECOSYSTEM](https://github.com/intersystems-community/iris-devtester/blob/main/AGENTS.md#ecosystem)
+and the [iris-devtester-connections skill](https://github.com/intersystems-community/iris-devtester/blob/main/skills/iris-devtester-connections/SKILL.md).
 
 ## Documentation
 
