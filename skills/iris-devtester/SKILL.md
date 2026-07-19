@@ -2,6 +2,7 @@
 name: iris-devtester
 description: Battle-tested InterSystems IRIS infrastructure utilities for Python database testing.
 managed_by: iris-devtester
+source: intersystems-community/iris-devtester
 triggers: [iris, database, testing, container, fixture, gof, connection, remediation]
 prerequisites: [Docker, "Python 3.9+", "pip install iris-devtester[all]"]
 related_skills: [iris-devtester-containers, iris-devtester-connections]

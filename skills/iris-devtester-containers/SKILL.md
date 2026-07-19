@@ -2,6 +2,7 @@
 name: iris-devtester-containers
 description: IRISContainer factory patterns — community/enterprise/light/attach, CPF-first startup, graceful shutdown.
 managed_by: iris-devtester
+source: intersystems-community/iris-devtester
 triggers:
   [container, iriscontainer, community, enterprise, attach, cpf, shutdown, testcontainers, ryuk]
 prerequisites: [Docker, "Python 3.9+", "pip install iris-devtester[all]"]

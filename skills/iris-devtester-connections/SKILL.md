@@ -2,6 +2,7 @@
 name: iris-devtester-connections
 description: ConnectionInfo / IRISConnectionInfo, to_toml_snippet(), the iris-agentic-dev handoff, and connection validation.
 managed_by: iris-devtester
+source: intersystems-community/iris-devtester
 triggers:
   [
     connection,
