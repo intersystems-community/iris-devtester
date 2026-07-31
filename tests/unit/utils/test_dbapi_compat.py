@@ -21,6 +21,74 @@ def reset_adapter():
     dc.reset_adapter()
 
 
+class TestModuleAbsentAfterPatch:
+    """patch.dict removes keys that were absent before the patch on exit.
+
+    The module is importable but not in sys.modules. connect_function must
+    import it rather than raising ImportError.
+    """
+
+    def test_connect_function_importable_when_absent_from_sys_modules(self):
+        """If import_path was absent pre-patch, it's deleted post-patch; must still resolve."""
+        import importlib
+
+        # Ensure the module is absent from sys.modules, then mock it
+        real_module = sys.modules.pop("intersystems_iris", None)
+        fake = MagicMock()
+        fake.connect = object()  # sentinel
+
+        try:
+            assert "intersystems_iris" not in sys.modules, "pre-condition: key must be absent"
+            with patch.dict(sys.modules, {"intersystems_iris": fake}):
+                dc.reset_adapter()
+                dc.get_package_info()  # singleton built while mock is present
+
+            # After patch.dict exit the key is gone (was absent before)
+            assert "intersystems_iris" not in sys.modules
+
+            # connect_function must import the real module, not raise
+            info = dc.get_package_info()
+            # Should not raise; real module is importable
+            fn = info.connect_function
+            assert not isinstance(fn, MagicMock), (
+                "connect_function returned MagicMock after patch exit with absent key"
+            )
+        finally:
+            # Restore original state
+            if real_module is not None:
+                sys.modules["intersystems_iris"] = real_module
+            elif "intersystems_iris" in sys.modules:
+                del sys.modules["intersystems_iris"]
+
+    def test_connect_function_does_not_raise_when_module_absent_from_sys_modules(self):
+        """connect_function must not raise ImportError when module absent but importable."""
+        import importlib
+
+        real_module = sys.modules.pop("intersystems_iris", None)
+        fake = MagicMock()
+        fake.connect = MagicMock()
+
+        try:
+            with patch.dict(sys.modules, {"intersystems_iris": fake}):
+                dc.reset_adapter()
+                info = dc.get_package_info()
+
+            assert "intersystems_iris" not in sys.modules
+
+            # Must not raise
+            dc.reset_adapter()
+            try:
+                info2 = dc.get_package_info()
+                _ = info2.connect_function
+            except ImportError as e:
+                pytest.fail(f"connect_function raised ImportError for importable module: {e}")
+        finally:
+            if real_module is not None:
+                sys.modules["intersystems_iris"] = real_module
+            elif "intersystems_iris" in sys.modules:
+                del sys.modules["intersystems_iris"]
+
+
 class TestSingletonPoisoning:
     """Fix #1: connect resolved at call time, not detection time."""
 

@@ -5,6 +5,12 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.2] - 2026-07-30 - Fix connect_function ImportError when module absent from sys.modules
+
+### Fixed
+
+- **`DBAPIPackageInfo.connect_function` raises after `patch.dict` exit** (`utils/dbapi_compat.py`): `patch.dict(sys.modules, ...)` deletes keys that were absent before the patch when it exits — the common case for unit tests that mock `intersystems_iris` before it has been imported. The 1.19.1 `@property` resolved the MagicMock poisoning but left `sys.modules.get()` returning `None` in this scenario, raising `ImportError: IRIS DBAPI module 'intersystems_iris' is no longer in sys.modules`. The module was importable the whole time. Fixed by falling back to `importlib.import_module(import_path)` when `sys.modules.get()` returns `None`.
+
 ## [1.19.1] - 2026-07-30 - Fix dbapi_compat singleton poisoning under test mocks
 
 ### Fixed

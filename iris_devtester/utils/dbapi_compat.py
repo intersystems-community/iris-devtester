@@ -65,11 +65,17 @@ class DBAPIPackageInfo:
         Resolving at call time (not at detection time) ensures that test patches
         applied via patch.dict(sys.modules, ...) take effect for exactly the
         duration of the patch and do not poison the singleton after the patch exits.
+
+        patch.dict removes keys that were absent before the patch, so after exit
+        the module may be gone from sys.modules even though it is importable.
+        Fall back to importlib.import_module() in that case rather than raising.
         See IDT-BUG-dbapi-adapter-singleton.md.
         """
+        import importlib
+
         module = sys.modules.get(self.import_path)
         if module is None:
-            raise ImportError(f"IRIS DBAPI module '{self.import_path}' is no longer in sys.modules")
+            module = importlib.import_module(self.import_path)
         return getattr(module, self.connect_attr)
 
 
