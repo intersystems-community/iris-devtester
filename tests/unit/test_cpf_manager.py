@@ -36,5 +36,7 @@ def test_temp_cpf_cleanup_on_garbage_collection():
 
     gc.collect()
 
-    if os.path.exists(file_path):
-        os.unlink(file_path)
+    # If __del__ cleanup is broken, the file survives — assert before any manual fallback
+    assert not os.path.exists(file_path), (
+        f"TempCPFManager.__del__ did not clean up {file_path} after GC"
+    )

@@ -42,15 +42,6 @@ class TestIRISReadyWaitStrategy:
         # Should have method to check IRIS process
         assert hasattr(strategy, "check_iris_running") or hasattr(strategy, "wait_until_ready")
 
-    def test_wait_strategy_checks_database_ready(self):
-        """Test that wait strategy verifies database accepts queries."""
-        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
-
-        strategy = IRISReadyWaitStrategy()
-
-        # Should be able to test database readiness
-        assert strategy is not None
-
     def test_wait_strategy_timeout(self):
         """Test that wait strategy respects timeout."""
         from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
@@ -59,29 +50,6 @@ class TestIRISReadyWaitStrategy:
 
         # Should have timeout attribute
         assert hasattr(strategy, "timeout") or hasattr(strategy, "_timeout")
-
-    @patch("time.time")
-    def test_wait_strategy_timeout_raises(self, mock_time):
-        """Test that wait strategy raises on timeout."""
-        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
-
-        # Mock time to simulate timeout
-        mock_time.side_effect = [0, 0, 100]  # Start, check, timeout
-
-        strategy = IRISReadyWaitStrategy(timeout=1)
-
-        # Should implement timeout logic
-        assert strategy is not None
-
-    def test_wait_strategy_default_timeout(self):
-        """Test that wait strategy has reasonable default timeout."""
-        from iris_devtester.containers.wait_strategies import IRISReadyWaitStrategy
-
-        strategy = IRISReadyWaitStrategy()
-
-        # Should have a timeout (either attribute or parameter)
-        assert strategy is not None
-
 
 class TestWaitForIRISReady:
     """Test convenience function for waiting for IRIS."""
@@ -103,8 +71,7 @@ class TestWaitForIRISReady:
 
         result = wait_for_iris_ready(host="localhost", port=1972, timeout=1)
 
-        # Should attempt to connect to port
-        assert isinstance(result, bool) or result is None
+        assert isinstance(result, bool), f"wait_for_iris_ready must return bool, got {type(result)}"
 
     def test_wait_function_with_timeout(self):
         """Test wait function respects timeout parameter."""

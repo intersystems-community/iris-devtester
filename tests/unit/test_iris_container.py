@@ -80,14 +80,13 @@ class TestIRISContainer:
         """Test that get_connection() method exists."""
         from iris_devtester.containers import IRISContainer
 
-        # Check that class has this method
-        assert hasattr(IRISContainer, "get_connection") or "get_connection" in dir(IRISContainer)
+        assert hasattr(IRISContainer, "get_connection") and callable(IRISContainer.get_connection)
 
     def test_wait_for_ready_method_exists(self):
         """Test that wait_for_ready() method exists."""
         from iris_devtester.containers import IRISContainer
 
-        assert hasattr(IRISContainer, "wait_for_ready") or "wait_for_ready" in dir(IRISContainer)
+        assert hasattr(IRISContainer, "wait_for_ready") and callable(IRISContainer.wait_for_ready)
 
     def test_with_preconfigured_password_method_exists(self):
         """Test that with_preconfigured_password() method exists for password pre-configuration."""
@@ -107,21 +106,11 @@ class TestIRISContainer:
         """Test that get_config() method returns IRISConfig."""
         from iris_devtester.containers import IRISContainer
 
-        # Should have method to get config
-        assert hasattr(IRISContainer, "get_config") or "get_config" in dir(IRISContainer)
+        assert hasattr(IRISContainer, "get_config") and callable(IRISContainer.get_config)
 
 
 class TestIRISContainerIntegration:
     """Test IRIS container integration with other components."""
-
-    @patch("iris_devtester.containers.iris_container.get_connection")
-    def test_get_connection_uses_connection_manager(self, mock_get_connection):
-        """Test that get_connection() integrates with connection manager."""
-        from iris_devtester.containers import IRISContainer
-
-        # This tests integration - actual implementation will vary
-        # The key is that IRISContainer should use the connection manager
-        assert mock_get_connection is not None
 
     def test_password_preconfig_sets_env_vars(self):
         """Test that password pre-configuration works via env vars."""
@@ -135,25 +124,8 @@ class TestIRISContainerIntegration:
         assert container._preconfigure_password == "TestPass123"
         assert container._password == "TestPass123"
 
-    def test_container_provides_connection_info(self):
-        """Test that container can provide connection information."""
-        from iris_devtester.containers import IRISContainer
-
-        # Container should be able to provide host, port, namespace
-        # This might be via get_config() or individual methods
-        assert IRISContainer is not None
-
-
 class TestIRISContainerConfiguration:
     """Test IRIS container configuration options."""
-
-    def test_community_accepts_namespace_parameter(self):
-        """Test that community() accepts namespace parameter."""
-        from iris_devtester.containers import IRISContainer
-
-        # Should accept namespace in some form
-        # (might be via .with_namespace() or direct parameter)
-        assert IRISContainer.community is not None
 
     def test_enterprise_requires_license_key(self):
         """Test that enterprise() raises error without license key."""
@@ -173,15 +145,6 @@ class TestIRISContainerConfiguration:
 
         with pytest.raises(ValueError, match="License key file not found"):
             IRISContainer.enterprise(license_key="/nonexistent/path/iris.key")
-
-    def test_container_supports_custom_image(self):
-        """Test that container supports custom IRIS images."""
-        from iris_devtester.containers import IRISContainer
-
-        # Should be able to specify custom image
-        # (implementation may use .with_image() or similar)
-        assert IRISContainer is not None
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

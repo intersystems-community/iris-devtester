@@ -40,15 +40,18 @@ class TempCPFManager:
             file_path = os.path.abspath(tmp.name)
             self._temp_files.add(file_path)
 
-            # Register for automatic cleanup
-            weakref.finalize(self, self._delete_file, file_path)
+            # Register for automatic cleanup.
+            # Must use the unbound method — passing self._delete_file would hold
+            # a strong reference to self through the bound method, preventing GC.
+            weakref.finalize(self, TempCPFManager._delete_file, file_path)
 
             logger.debug(f"Created temporary CPF file: {file_path}")
             return file_path
         finally:
             tmp.close()
 
-    def _delete_file(self, file_path: str):
+    @staticmethod
+    def _delete_file(file_path: str):
         """Internal helper to safely delete a file."""
         try:
             if os.path.exists(file_path):

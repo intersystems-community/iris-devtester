@@ -108,7 +108,7 @@ class TestSingletonPoisoning:
             assert not isinstance(info_after.connect_function, MagicMock), (
                 "Singleton poisoning: connect_function is still a MagicMock after patch exited"
             )
-        except Exception:
+        except (ImportError, dc.DBAPIPackageNotFoundError):
             # Package not installed in test env — that's fine, not the bug we're testing
             pass
 
