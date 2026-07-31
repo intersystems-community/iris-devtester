@@ -29,9 +29,10 @@ Logging Levels:
 
 import importlib.metadata
 import logging
+import sys
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from packaging import version
 
@@ -45,17 +46,31 @@ class DBAPIPackageInfo:
 
     Attributes:
         package_name: One of "intersystems-irispython" or "intersystems-iris"
-        import_path: Module import path (e.g., "intersystems_iris.dbapi._DBAPI")
+        import_path: Module import path (e.g., "intersystems_iris")
         version: Package version (e.g., "5.3.0")
-        connect_function: Reference to the connect() function
+        connect_attr: Attribute name of the connect function on the module (usually "connect")
         detection_time_ms: Time taken to detect package in milliseconds
     """
 
     package_name: str
     import_path: str
     version: str
-    connect_function: Callable[..., Any]
+    connect_attr: str
     detection_time_ms: float
+
+    @property
+    def connect_function(self) -> Any:
+        """Resolve connect function live from sys.modules on every access.
+
+        Resolving at call time (not at detection time) ensures that test patches
+        applied via patch.dict(sys.modules, ...) take effect for exactly the
+        duration of the patch and do not poison the singleton after the patch exits.
+        See IDT-BUG-dbapi-adapter-singleton.md.
+        """
+        module = sys.modules.get(self.import_path)
+        if module is None:
+            raise ImportError(f"IRIS DBAPI module '{self.import_path}' is no longer in sys.modules")
+        return getattr(module, self.connect_attr)
 
 
 def validate_package_version(package_name: str, installed_version: str, min_version: str) -> None:
@@ -154,7 +169,7 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
                 package_name="intersystems-irispython",
                 import_path="intersystems_iris",
                 version=pkg_version,
-                connect_function=intersystems_iris.connect,
+                connect_attr="connect",
                 detection_time_ms=elapsed_ms,
             )
     except (ImportError, importlib.metadata.PackageNotFoundError):
@@ -220,7 +235,7 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
             package_name="intersystems-irispython",
             import_path="iris",
             version=pkg_version,
-            connect_function=iris.connect,
+            connect_attr="connect",
             detection_time_ms=elapsed_ms,
         )
 
@@ -239,7 +254,7 @@ def detect_dbapi_package() -> DBAPIPackageInfo:
             package_name="intersystems-iris",
             import_path="iris.irissdk",
             version=pkg_version,
-            connect_function=iris.irissdk.connect,
+            connect_attr="connect",
             detection_time_ms=elapsed_ms,
         )
     except ImportError:
@@ -314,6 +329,17 @@ def _get_adapter() -> DBAPIConnectionAdapter:
     return _adapter
 
 
+def reset_adapter() -> None:
+    """Clear the singleton adapter so it is re-detected on next use.
+
+    Intended for test teardown. Allows tests that patch sys.modules to restore
+    a clean adapter after their patch exits, without reaching into private globals.
+    See IDT-BUG-dbapi-adapter-singleton.md.
+    """
+    global _adapter
+    _adapter = None
+
+
 def get_connection(*args, **kwargs) -> Any:
     """Get DBAPI connection using detected package.
 
@@ -354,4 +380,5 @@ __all__ = [
     "DBAPIConnectionAdapter",
     "get_connection",
     "get_package_info",
+    "reset_adapter",
 ]

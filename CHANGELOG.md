@@ -5,6 +5,16 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.1] - 2026-07-30 - Fix dbapi_compat singleton poisoning under test mocks
+
+### Fixed
+
+- **`DBAPIConnectionAdapter` singleton mock poisoning** (`utils/dbapi_compat.py`): when a test patched `intersystems_iris` via `patch.dict(sys.modules, ...)` and the adapter singleton was first built during that patch, the adapter held a reference to the mock's `connect` function for the rest of the process — after `sys.modules` was fully restored. Downstream tests then silently operated against a `MagicMock` connection. Fixed by making `DBAPIPackageInfo.connect_function` a `@property` that resolves the function from `sys.modules` on every call instead of binding it at detection time. The per-call cost is a single `sys.modules` lookup and `getattr` — negligible against opening a socket.
+
+### Added
+
+- **`dbapi_compat.reset_adapter()`**: public function to clear the singleton so tests can force re-detection after their patch exits. Previously the only workaround was reaching into the private `_adapter` global from `conftest.py`. Added to `__all__`.
+
 ## [1.19.0] - 2026-07-19 - iris-agentic-dev Handoff Contract + Discrete Skills
 
 ### Added
@@ -983,6 +993,7 @@ v1.4.3 added connection-based verification with retry logic, which is valuable f
     - `iris_devtester/utils/iris_container_adapter.py` (Docker SDK volume application)
     - `iris_devtester/config/container_config.py` (validate_volume_paths method)
   - **Example**:
+
     ```yaml
     volumes:
       - ./workspace:/external/workspace # Read-write
@@ -1087,6 +1098,7 @@ v1.4.3 added connection-based verification with retry logic, which is valuable f
   - **Impact**: Configuration-defined volumes now work correctly (previously ignored)
   - **Location**: `iris_devtester/utils/iris_container_adapter.py:52-58`
   - **Example**:
+
     ```yaml
     volumes:
       - ./data:/external # Read-write mount
