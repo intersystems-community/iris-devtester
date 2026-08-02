@@ -124,6 +124,87 @@ class TestIRISContainerIntegration:
         assert container._preconfigure_password == "TestPass123"
         assert container._password == "TestPass123"
 
+class TestAttachPortOverride:
+    """attach(port=) must skip docker port lookup and use the supplied port directly."""
+
+    def _make_mock_container(self, host_port: int = 31972):
+        """Return a mock Docker container whose port binding reports host_port."""
+        mock_container = MagicMock()
+        mock_container.attrs = {
+            "NetworkSettings": {
+                "Ports": {"1972/tcp": [{"HostPort": str(host_port)}]},
+                "Networks": {},
+            }
+        }
+        mock_container.name = "ivg-iris-enterprise"
+        # get_container_host_ip() is called by get_config() in the testcontainers path
+        mock_container.get_container_host_ip = MagicMock(return_value="localhost")
+        mock_container.get_exposed_port = MagicMock(return_value=host_port)
+        return mock_container
+
+    @patch("iris_devtester.containers.iris_container.IRISContainer.get_config")
+    @patch("docker.from_env")
+    def test_explicit_port_skips_docker_lookup(self, mock_docker, mock_get_config):
+        """When port= is supplied, _mapped_port must equal that port, not the docker binding."""
+        from iris_devtester.containers import IRISContainer
+
+        mock_client = MagicMock()
+        mock_docker.return_value = mock_client
+        mock_client.containers.get.return_value = self._make_mock_container(host_port=31972)
+
+        iris = IRISContainer.attach("ivg-iris-enterprise", port=31971)
+
+        assert iris._mapped_port == 31971, (
+            f"Expected _mapped_port=31971 (explicit), got {iris._mapped_port}"
+        )
+
+    @patch("iris_devtester.containers.iris_container.IRISContainer.get_config")
+    @patch("docker.from_env")
+    def test_explicit_port_used_by_get_mapped_port(self, mock_docker, mock_get_config):
+        """get_mapped_port(1972) must return the explicit port, not the docker-inspected one."""
+        from iris_devtester.containers import IRISContainer
+
+        mock_client = MagicMock()
+        mock_docker.return_value = mock_client
+        mock_client.containers.get.return_value = self._make_mock_container(host_port=31972)
+
+        iris = IRISContainer.attach("ivg-iris-enterprise", port=31971)
+
+        assert iris.get_mapped_port(1972) == 31971
+
+    @patch("iris_devtester.containers.iris_container.IRISContainer.get_config")
+    @patch("docker.from_env")
+    def test_without_port_does_not_pin_mapped_port(self, mock_docker, mock_get_config):
+        """Without port=, _mapped_port is not pinned by attach() — port discovery deferred to get_config()."""
+        from iris_devtester.containers import IRISContainer
+
+        mock_client = MagicMock()
+        mock_docker.return_value = mock_client
+        mock_client.containers.get.return_value = self._make_mock_container(host_port=31972)
+
+        iris = IRISContainer.attach("ivg-iris-enterprise")
+
+        # No explicit port: _mapped_port is not set by attach itself (get_config handles discovery)
+        assert iris._mapped_port is None
+
+    @patch.dict("os.environ", {"IVG_PORT": "31971"})
+    @patch("iris_devtester.containers.iris_container.IRISContainer.get_config")
+    @patch("docker.from_env")
+    def test_ivg_port_env_var_respected(self, mock_docker, mock_get_config):
+        """IVG_PORT env var must be honoured as a port override in attach()."""
+        from iris_devtester.containers import IRISContainer
+
+        mock_client = MagicMock()
+        mock_docker.return_value = mock_client
+        mock_client.containers.get.return_value = self._make_mock_container(host_port=31972)
+
+        iris = IRISContainer.attach("ivg-iris-enterprise")
+
+        assert iris._mapped_port == 31971, (
+            f"IVG_PORT=31971 should override docker binding 31972, got {iris._mapped_port}"
+        )
+
+
 class TestIRISContainerConfiguration:
     """Test IRIS container configuration options."""
 

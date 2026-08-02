@@ -350,7 +350,7 @@ class IRISContainer(IRISBase):
         return container
 
     @classmethod
-    def attach(cls, container_name: str, **kwargs) -> "IRISContainer":
+    def attach(cls, container_name: str, port: Optional[int] = None, **kwargs) -> "IRISContainer":
         """
         Attach to an existing IRIS container by name.
 
@@ -360,17 +360,42 @@ class IRISContainer(IRISBase):
 
         Args:
             container_name: Name of the existing Docker container.
+            port: Host-side SuperServer port to use instead of the Docker-inspected
+                binding. Required when Docker Desktop NAT rewrites the source IP and
+                IRIS rejects the connection (macOS Docker Desktop with irishealth
+                enterprise). When supplied, the docker port lookup is skipped entirely.
+                Also honoured via ``IVG_PORT`` or ``IRIS_PORT`` environment variables
+                when ``port`` is not provided explicitly.
             **kwargs: Additional configuration (username, password, namespace).
 
         Returns:
             An IRISContainer instance attached to the existing container.
         """
+        import os
+
         if not container_name:
             raise ValueError("container_name must be a non-empty string")
+
+        # Resolve explicit port override: parameter > IVG_PORT > IRIS_PORT
+        if port is None:
+            for env_var in ("IVG_PORT", "IRIS_PORT"):
+                env_val = os.environ.get(env_var)
+                if env_val:
+                    try:
+                        port = int(env_val)
+                    except ValueError:
+                        pass
+                    else:
+                        break
 
         instance = cls(image="", name=container_name, **kwargs)
         instance._is_attached = True
         instance._container_name = container_name
+
+        # Pin the mapped port immediately so get_mapped_port(1972) never falls
+        # through to the docker port lookup, regardless of which code path below runs.
+        if port is not None:
+            instance._mapped_port = port
 
         try:
             import docker
@@ -379,15 +404,16 @@ class IRISContainer(IRISBase):
             container = client.containers.get(container_name)
             instance._container = container
 
-            # If it's a mock container, we need to set these manually
             if not HAS_TESTCONTAINERS:
                 instance.host = "localhost"
-                # Try to find port from container ports
-                ports = container.attrs.get("NetworkSettings", {}).get("Ports", {})
-                if "1972/tcp" in ports and ports["1972/tcp"]:
-                    instance._mapped_port = int(ports["1972/tcp"][0]["HostPort"])
+                # Only read docker port binding when no explicit port was given
+                if port is None:
+                    ports = container.attrs.get("NetworkSettings", {}).get("Ports", {})
+                    if "1972/tcp" in ports and ports["1972/tcp"]:
+                        instance._mapped_port = int(ports["1972/tcp"][0]["HostPort"])
             else:
-                # testcontainers will handle discovery via get_config()
+                # testcontainers will handle host/port discovery via get_config(),
+                # but _mapped_port is already pinned above if port was supplied.
                 instance.get_config()
 
         except Exception as e:
