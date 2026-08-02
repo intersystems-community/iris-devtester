@@ -5,6 +5,12 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.3] - 2026-08-02 - Fix attach() ignoring explicit port override
+
+### Fixed
+
+- **`IRISContainer.attach()` ignores explicit port, always uses docker port lookup** (`containers/iris_container.py`): `attach()` had no port parameter. It always derived the host-side SuperServer port from `docker port <container> 1972/tcp`, which fails on macOS Docker Desktop with irishealth enterprise: Docker Desktop NAT rewrites the source IP from `127.0.0.1` to a bridge address, so IRIS RSTs the connection even though the port binding exists. The user-supplied `IVG_PORT=31971` was silently ignored. Added `port: Optional[int]` to `attach()`; when supplied, `_mapped_port` is pinned immediately so `get_mapped_port(1972)` returns it without calling `get_exposed_port()`. Also reads `IVG_PORT` and `IRIS_PORT` env vars as fallbacks when `port=` is not passed explicitly.
+
 ## [1.19.2] - 2026-07-30 - Fix connect_function ImportError when module absent from sys.modules
 
 ### Fixed
