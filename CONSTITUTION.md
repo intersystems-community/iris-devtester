@@ -15,10 +15,12 @@ This constitution codifies the hard-won lessons, blind alleys avoided, and battl
 **ABSOLUTE REQUIREMENT**: This project uses `intersystems-irispython` as the ONLY Python package for IRIS connectivity.
 
 **FORBIDDEN PACKAGES**:
+
 - ❌ `intersystems-iris` (old package, deprecated)
 - ❌ Any other IRIS Python packages
 
 **Why This Matters**:
+
 - `intersystems-irispython` is the modern, maintained package (v5.3.0+)
 - `intersystems-iris` is the legacy package (v3.0.0+) with known issues
 - Mixing packages causes import conflicts and mysterious failures
@@ -35,6 +37,7 @@ This constitution codifies the hard-won lessons, blind alleys avoided, and battl
 This single document answers the most critical question in IRIS development: "How do I execute this operation?"
 
 **Why This Matters**:
+
 - Using the wrong execution method causes mysterious failures
 - 53 integration tests failed because of this misunderstanding
 - DBAPI is 3x faster for SQL but CANNOT execute ObjectScript
@@ -50,11 +53,13 @@ This single document answers the most critical question in IRIS development: "Ho
 **The Principle**: Infrastructure problems must be automatically detected and remediated without developer intervention.
 
 **Why It Matters**:
+
 - Password expiration errors have wasted hundreds of developer hours
 - Manual remediation breaks CI/CD pipelines
 - "Works on my machine" scenarios damage team productivity
 
 **Implementation Requirements**:
+
 - ✅ Password change required → automatic reset
 - ✅ Container not found → automatic start
 - ✅ Port conflicts → automatic port reassignment
@@ -62,11 +67,13 @@ This single document answers the most critical question in IRIS development: "Ho
 - ✅ Connection failures → automatic retry with backoff
 
 **Forbidden**:
+
 - ❌ Error messages without remediation steps
 - ❌ Requiring manual Docker commands
 - ❌ Silent failures without auto-recovery attempts
 
 **Example**:
+
 ```python
 # WRONG: Manual intervention required
 raise ConnectionError("Password change required. Run: docker exec...")
@@ -82,6 +89,7 @@ if "Password change required" in str(error):
 **The Principle**: Use the appropriate connection method based on what operation you need to perform.
 
 **Why It Matters**:
+
 - IRIS has **two distinct execution paths**: SQL (via DBAPI) and ObjectScript (via iris.connect())
 - Using the wrong tool causes mysterious failures
 - DBAPI is 3x faster for SQL operations
@@ -90,17 +98,18 @@ if "Password change required" in str(error):
 
 **The Decision Matrix**:
 
-| Operation Type | Use | Speed | Example |
-|----------------|-----|-------|---------|
-| SQL queries (SELECT, INSERT, UPDATE, DELETE) | **DBAPI** | Fast (3x) | `cursor.execute("SELECT * FROM MyTable")` |
-| SQL DDL (CREATE TABLE, DROP TABLE) | **DBAPI** | Fast (3x) | `cursor.execute("CREATE TABLE ...")` |
-| Backup/Restore namespace | **DBAPI** + $SYSTEM.OBJ.Execute() | Medium | `cursor.execute("SELECT $SYSTEM.OBJ.Execute('...')")` |
-| Create/Delete namespace | **iris.connect()** | Medium | `iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")` |
-| Task Manager operations | **iris.connect()** | Medium | `iris_obj.execute("Set task = ##class(%SYS.Task).%New()")` |
-| Global variables | **iris.connect()** | Medium | `iris_obj.set("^MyGlobal", "value")` |
-| User/password management | **docker exec** | Slow | `docker exec iris_db iris session IRIS ...` |
+| Operation Type                               | Use                               | Speed     | Example                                                            |
+| -------------------------------------------- | --------------------------------- | --------- | ------------------------------------------------------------------ |
+| SQL queries (SELECT, INSERT, UPDATE, DELETE) | **DBAPI**                         | Fast (3x) | `cursor.execute("SELECT * FROM MyTable")`                          |
+| SQL DDL (CREATE TABLE, DROP TABLE)           | **DBAPI**                         | Fast (3x) | `cursor.execute("CREATE TABLE ...")`                               |
+| Backup/Restore namespace                     | **DBAPI** + $SYSTEM.OBJ.Execute() | Medium    | `cursor.execute("SELECT $SYSTEM.OBJ.Execute('...')")`              |
+| Create/Delete namespace                      | **iris.connect()**                | Medium    | `iris_obj.classMethodValue("Config.Namespaces", "Create", "TEST")` |
+| Task Manager operations                      | **iris.connect()**                | Medium    | `iris_obj.execute("Set task = ##class(%SYS.Task).%New()")`         |
+| Global variables                             | **iris.connect()**                | Medium    | `iris_obj.set("^MyGlobal", "value")`                               |
+| User/password management                     | **docker exec**                   | Slow      | `docker exec iris_db iris session IRIS ...`                        |
 
 **Implementation Requirements**:
+
 - ✅ Use DBAPI for all SQL operations (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE)
 - ✅ Use iris.connect() for ObjectScript operations (namespaces, Task Manager, globals)
 - ✅ Use docker exec only for admin operations (password reset, system config)
@@ -108,6 +117,7 @@ if "Password change required" in str(error):
 - ✅ Log which connection type is used for each operation
 
 **Forbidden**:
+
 - ❌ `cursor.execute("DO ##class(...)...")` - DBAPI cannot execute ObjectScript
 - ❌ `cursor.execute("Set ^GlobalData = 'value'")` - DBAPI cannot set globals
 - ❌ Using iris.connect() for simple SQL queries (3x slower than DBAPI)
@@ -144,6 +154,7 @@ cursor.execute("SELECT $SYSTEM.OBJ.Execute('Do ##class(Config.Namespaces).Create
 ```
 
 **Performance Evidence**:
+
 ```
 Benchmark Results (1000 simple queries):
 - DBAPI: 2.3 seconds
@@ -163,23 +174,27 @@ For admin ops → Use docker exec (when iris.connect() unavailable)
 **The Principle**: Every test suite gets its own isolated IRIS instance unless explicitly shared.
 
 **Why It Matters**:
+
 - Shared databases cause test pollution
 - Parallel test execution requires isolation
 - Cleanup failures cascade to other tests
 - "Works alone but fails in suite" mysteries
 
 **Implementation Requirements**:
+
 - ✅ Testcontainers for test isolation
 - ✅ Unique namespaces per test class
 - ✅ test_run_id tracking for data cleanup
 - ✅ Automatic cleanup even on test failure
 
 **Forbidden**:
+
 - ❌ Shared databases without cleanup
 - ❌ Assuming tests run sequentially
 - ❌ Leaving test data behind
 
 **Scope Guidelines**:
+
 ```python
 # Module scope: Fast, shared state acceptable
 @pytest.fixture(scope="module")
@@ -199,12 +214,14 @@ def iris_db_isolated():
 **The Principle**: `pip install iris-devtester && pytest` must work without configuration.
 
 **Why It Matters**:
+
 - Reduces onboarding friction
 - Enables quick experimentation
 - Makes examples self-contained
 - CI/CD "just works"
 
 **Implementation Requirements**:
+
 - ✅ Sensible defaults for all configuration
 - ✅ Auto-discovery of IRIS instances
 - ✅ Community edition defaults
@@ -212,11 +229,13 @@ def iris_db_isolated():
 - ✅ Explicit configuration always possible
 
 **Forbidden**:
+
 - ❌ Required configuration files
 - ❌ Mandatory environment variables
 - ❌ Undocumented prerequisites
 
 **Configuration Hierarchy** (highest priority first):
+
 1. Explicit constructor arguments
 2. Environment variables
 3. .env files in project root
@@ -228,11 +247,13 @@ def iris_db_isolated():
 **The Principle**: Errors must be detected immediately with clear remediation steps.
 
 **Why It Matters**:
+
 - Debugging time is expensive
 - Stack traces without context are useless
 - Developers need actionable guidance
 
 **Implementation Requirements**:
+
 - ✅ Detect errors at initialization, not first use
 - ✅ Include "What went wrong" explanation
 - ✅ Include "How to fix it" remediation
@@ -240,11 +261,13 @@ def iris_db_isolated():
 - ✅ Link to relevant documentation
 
 **Forbidden**:
+
 - ❌ Generic error messages
 - ❌ Stack traces without explanation
 - ❌ "Contact administrator" without details
 
 **Example**:
+
 ```python
 # WRONG
 raise ConnectionError("Failed to connect")
@@ -275,12 +298,14 @@ raise ConnectionError(
 **The Principle**: Support both Community and Enterprise editions equally well.
 
 **Why It Matters**:
+
 - Different projects have different needs
 - Development often uses Community, production uses Enterprise
 - License management is complex
 - Mirror configurations are enterprise-only
 
 **Implementation Requirements**:
+
 - ✅ Community edition as default
 - ✅ Enterprise edition via license_key parameter
 - ✅ Auto-discovery of license files
@@ -288,28 +313,51 @@ raise ConnectionError(
 - ✅ Clear documentation of edition differences
 
 **Forbidden**:
+
 - ❌ Hardcoded edition assumptions
 - ❌ Enterprise-only code paths without community fallback
 - ❌ Obscure license errors
 
 **License Discovery Order**:
+
 1. Explicit `license_key` parameter
 2. `IRIS_LICENSE_KEY` environment variable
 3. `~/.iris/iris.key`
 4. `./iris.key` in project root
 5. Auto-discovered from Docker volume mounts
 
+**`_SYSTEM` Password Assumption — Read Before Using Enterprise Images**:
+
+IDT's default credential (`_SYSTEM`/`SYS`) reflects the factory default shipped in InterSystems community images. Enterprise and HealthShare images often ship with:
+
+- Expired `_SYSTEM` password requiring immediate change at first login
+- Different default password or no default password at all
+- `ChangePassword=1` flag set, blocking programmatic login
+
+`attach()` calls `unexpire_all_passwords()` by default (wildcard unexpire via
+`UnExpireUserPasswords("*")`) to handle this silently. For `start()`-managed
+containers the CPF merge sets `PasswordNeverExpires=1` for `SuperUser` and
+`_SYSTEM` pre-boot, then `reset_password()` applies any custom password
+post-start via `PasswordExternal` (accepts plaintext — **never** put plaintext
+into `PasswordHash=` in a CPF file, which expects `hash,salt` PBKDF2 format).
+
+If login fails against an enterprise image with "password expired" or "access
+denied" even after attach, call `unexpire_all_passwords(container_name)` manually
+or pass `unexpire_passwords=True` explicitly.
+
 ### 7. MEDICAL-GRADE RELIABILITY
 
 **The Principle**: All code must be battle-tested in production scenarios with comprehensive error handling.
 
 **Why It Matters**:
+
 - Healthcare applications require 99.9%+ uptime
 - Silent failures are unacceptable
 - Diagnostic data saves hours of debugging
 - Idempotency prevents cascading failures
 
 **Implementation Requirements**:
+
 - ✅ 95%+ test coverage
 - ✅ All error paths tested
 - ✅ Idempotent operations (safe to retry)
@@ -319,12 +367,14 @@ raise ConnectionError(
 - ✅ Health check endpoints
 
 **Forbidden**:
+
 - ❌ Untested error paths
 - ❌ Non-idempotent operations
 - ❌ Silent failures
 - ❌ Assumptions about state
 
 **Reliability Checklist**:
+
 ```python
 # Every operation must answer:
 - [ ] What happens if this fails?
@@ -340,24 +390,28 @@ raise ConnectionError(
 **The Principle**: MUST use the official `iris.connect()` interface from InterSystems documentation. NEVER use undocumented private attributes like `_DBAPI`.
 
 **Why It Matters**:
+
 - `_DBAPI` does NOT exist in intersystems-irispython (tested in v5.1.2 and v5.3.0)
 - Using non-existent attributes causes mysterious import failures
 - Official API is `iris.connect()` per InterSystems documentation
 - Private attributes are subject to change without warning
 
 **Implementation Requirements**:
+
 - ✅ Use `iris.connect()` for DBAPI connections (official DB-API 2.0 interface)
-- ✅ Follow official InterSystems documentation: https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT_pyapi
+- ✅ Follow official InterSystems documentation: <https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT_pyapi>
 - ✅ Never import from private modules (anything starting with `_`)
 - ✅ Test compatibility with both v5.1.2 and v5.3.0
 
 **Forbidden**:
-- ❌ `from intersystems_iris.dbapi._DBAPI import connect` - **_DBAPI does not exist!**
+
+- ❌ `from intersystems_iris.dbapi._DBAPI import connect` - **\_DBAPI does not exist!**
 - ❌ `iris._DBAPI.connect()` - **No such attribute!**
 - ❌ Any code relying on undocumented internal APIs
 - ❌ Assuming package structure without verification
 
 **Correct API Usage**:
+
 ```python
 # ✅ CORRECT - Official DB-API 2.0 interface
 import iris
@@ -378,6 +432,7 @@ iris._DBAPI.connect(...)  # AttributeError!
 ```
 
 **Empirical Evidence**:
+
 ```python
 # Tested on intersystems-irispython v5.1.2 and v5.3.0
 import iris
@@ -386,8 +441,9 @@ hasattr(iris, 'connect')  # True in BOTH versions!
 ```
 
 **Official Documentation**:
-- InterSystems Python API: https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT_pyapi
-- DB-API 2.0 Specification: https://peps.python.org/pep-0249/
+
+- InterSystems Python API: <https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=BPYNAT_pyapi>
+- DB-API 2.0 Specification: <https://peps.python.org/pep-0249/>
 
 **Reference**: See hipporag2-pipeline CONSTITUTION.md Principle 9 for detailed empirical testing results.
 
@@ -396,12 +452,14 @@ hasattr(iris, 'connect')  # True in BOTH versions!
 **The Principle**: IRIS setup and connectivity should be invisible. A developer should go from "nothing" to "connected" with zero manual configuration.
 
 **Why It Matters**:
+
 - SQLite is the benchmark for "zero-friction" development
 - Infrastructure setup is a major barrier to IRIS adoption
 - Developer "flow" is interrupted by infrastructure management
 - If a user has to think about ports, passwords, or container lifecycles, we have more work to do.
 
 **Implementation Requirements**:
+
 - ✅ `get_connection()` with zero-config auto-discovery
 - ✅ Automatic container lifecycle management (transparent to the user)
 - ✅ Standardized default credentials (`_SYSTEM`/`SYS`)
@@ -409,11 +467,13 @@ hasattr(iris, 'connect')  # True in BOTH versions!
 - ✅ Silent infrastructure: infrastructure "noise" (logs, status) is hidden unless an error occurs
 
 **Forbidden**:
+
 - ❌ Requiring manual Docker commands for basic connectivity
 - ❌ Mandatory configuration files for local dev
 - ❌ Exposing infrastructure complexity in the primary API
 
 **Example**:
+
 ```python
 # THE NORTH STAR EXPERIENCE
 from iris_devtester import IRISContainer
@@ -427,25 +487,28 @@ conn = IRISContainer.community().get_connection()
 **The Principle**: Failed approaches must be documented to prevent repetition.
 
 **Why It Matters**:
+
 - Developers waste time rediscovering "why not"
 - Institutional knowledge must be preserved
 - Context for design decisions is valuable
 - Prevents regression to worse solutions
 
 **Documented Blind Alleys**:
+
 - **Why not JDBC-only?** → DBAPI is 3x faster, see benchmark
 - **Why not shared test databases?** → Data pollution, see case study
 - **Why not manual password resets?** → CI/CD breaks, see incident report
 - **Why not port 1972 hardcoded?** → Conflicts in parallel tests, see issue #42
 - **Why not prefer `iris.connect()`?** → In `intersystems-irispython` 5.3.1+, `iris.connect` uses the `_elsdk_` driver which has a critical `SIGSEGV` bug with `FETCH FIRST N ROWS ONLY` syntax. Prefer `intersystems_iris.connect` (the stable `_IRISNative` path) instead.
 
-
 **Example Documentation**:
+
 ```markdown
 ## Why Not Use Docker Compose for Tests?
 
 **What we tried**: Using docker-compose.yml for test database
 **Why it didn't work**:
+
 - Parallel tests conflicted on ports
 - Cleanup required manual intervention
 - CI/CD required docker-compose installation
@@ -462,12 +525,14 @@ conn = IRISContainer.community().get_connection()
 ### Amendment Process
 
 Principles may be amended when:
+
 1. New evidence contradicts existing principle
 2. Technology landscape changes materially
 3. Production experience reveals gap
 4. Community consensus emerges
 
 **Amendment requires**:
+
 - Concrete evidence (benchmarks, case studies, incident reports)
 - Backwards compatibility analysis
 - Migration guide for existing code
@@ -477,18 +542,21 @@ Principles may be amended when:
 ### Enforcement
 
 **Pre-commit hooks** validate:
+
 - [ ] No hardcoded passwords or credentials
 - [ ] All database operations are idempotent
 - [ ] Error messages include remediation
 - [ ] Test isolation via testcontainers or unique namespaces
 
 **CI/CD validates**:
+
 - [ ] 95%+ test coverage
 - [ ] All platforms (Linux, Mac, Windows)
 - [ ] Both Community and Enterprise editions
 - [ ] Performance benchmarks (no regressions)
 
 **Code review checklist**:
+
 - [ ] Follows DBAPI-first principle
 - [ ] Automatic remediation implemented
 - [ ] Comprehensive error handling
@@ -498,12 +566,14 @@ Principles may be amended when:
 ## Version History
 
 ### v1.2.0 (2026-02-06)
+
 - Added Principle 9: SQLite-Level Ergonomics (The North Star)
 - Renumbered Principle 9 "Document the Blind Alleys" → Principle 10
 - Standardized on `_SYSTEM` as the default toolkit username
 - Renamed project to `iris-devtester` consistently across documentation
 
 ### v1.1.0 (2025-11-23)
+
 - Added Principle 8: Use Official IRIS Python API (No Private Attributes)
 - Documents empirically tested fact that `_DBAPI` does NOT exist in intersystems-irispython v5.1.2 or v5.3.0
 - Mandates use of official `iris.connect()` API per InterSystems documentation
@@ -511,6 +581,7 @@ Principles may be amended when:
 - Based on critical findings from hipporag2-pipeline project testing
 
 ### v1.0.0 (2025-10-05)
+
 - Initial constitution
 - 8 core principles established
 - Based on rag-templates production experience

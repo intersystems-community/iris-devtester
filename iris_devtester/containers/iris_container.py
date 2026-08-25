@@ -7,6 +7,7 @@ from iris_devtester.config import IRISConfig
 from iris_devtester.connections import get_connection
 from iris_devtester.containers.connection_info import IRISConnectionInfo
 from iris_devtester.containers.models import ContainerHealth, ContainerHealthStatus, HealthCheckLevel, ValidationResult
+from iris_devtester.utils.password import reset_password, unexpire_all_passwords
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +351,13 @@ class IRISContainer(IRISBase):
         return container
 
     @classmethod
-    def attach(cls, container_name: str, port: Optional[int] = None, **kwargs) -> "IRISContainer":
+    def attach(
+        cls,
+        container_name: str,
+        port: Optional[int] = None,
+        unexpire_passwords: bool = True,
+        **kwargs,
+    ) -> "IRISContainer":
         """
         Attach to an existing IRIS container by name.
 
@@ -366,6 +373,10 @@ class IRISContainer(IRISBase):
                 enterprise). When supplied, the docker port lookup is skipped entirely.
                 Also honoured via ``IVG_PORT`` or ``IRIS_PORT`` environment variables
                 when ``port`` is not provided explicitly.
+            unexpire_passwords: When True (default), call unexpire_all_passwords() after
+                attaching. Enterprise images often ship with expired passwords; this
+                prevents silent login failures. Set to False when the container is known
+                to have valid credentials and you want to skip the overhead.
             **kwargs: Additional configuration (username, password, namespace).
 
         Returns:
@@ -429,6 +440,15 @@ class IRISContainer(IRISBase):
                 "  2. Ensure the container is started: docker start <name>\n"
                 "  3. Check if your user has permission to access the Docker socket"
             )
+
+        if unexpire_passwords:
+            # Enterprise images often ship with expired passwords; wildcard unexpire
+            # prevents silent login failures. Failure is non-fatal — the container
+            # is already attached and the caller may supply valid credentials.
+            try:
+                unexpire_all_passwords(container_name)
+            except Exception:
+                pass
 
         return instance
 
@@ -863,17 +883,14 @@ class IRISContainer(IRISBase):
         from iris_devtester.config.presets import CPFPreset
 
         if not hasattr(self, "_cpf_temp_files") or not self._cpf_temp_files:
-            if self._preconfigure_password:
-                cpf = (
-                    "[Actions]\n"
-                    "ModifyService:Name=%Service_CallIn,Enabled=1,AutheEnabled=48\n"
-                    f"ModifyUser:Name=SuperUser,PasswordHash={self._preconfigure_password},"
-                    "ChangePassword=0,PasswordNeverExpires=1\n"
-                    "ModifyUser:Name=_SYSTEM,ChangePassword=0,PasswordNeverExpires=1"
-                )
-            else:
-                cpf = CPFPreset.SECURE_DEFAULTS
-            self.with_cpf_merge(cpf)
+            # Always use SECURE_DEFAULTS for the CPF merge — it handles CallIn
+            # and clears expiry flags for SuperUser/_SYSTEM via proper CPF fields.
+            # When a custom password is requested we reset it post-start via
+            # PasswordExternal (plaintext accepted) rather than injecting it into
+            # PasswordHash= here, which requires a pre-computed PBKDF2 hash,salt
+            # string — passing plaintext into PasswordHash= sets a corrupt hash
+            # and makes every subsequent login fail silently.
+            self.with_cpf_merge(CPFPreset.SECURE_DEFAULTS)
 
         self._password_handled = True
 
@@ -892,6 +909,21 @@ class IRISContainer(IRISBase):
 
         super().start()
         self.get_config()
+
+        # Post-start: apply custom password via PasswordExternal (accepts plaintext).
+        # Must happen after super().start() so the container is ready.
+        if self._preconfigure_password:
+            config = self.get_config()
+            username = self._preconfigure_username or "SuperUser"
+            reset_password(
+                container_name=self.get_container_name(),
+                username=username,
+                new_password=self._preconfigure_password,
+                hostname=config.host,
+                port=config.port,
+                verify=False,
+            )
+
         self._password_preconfigured = True
         return self
 

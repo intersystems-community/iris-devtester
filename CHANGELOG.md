@@ -5,6 +5,20 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.4] - 2026-08-25 - Fix plaintext password in CPF merge + wildcard unexpire on attach
+
+### Fixed
+
+- **`start()` passes plaintext password into `PasswordHash=` CPF field** (`containers/iris_container.py`): when `with_preconfigured_password()` was used, `start()` built a custom CPF merge that set `PasswordHash={plaintext}`. The `PasswordHash=` field in a CPF merge file expects a `hash,salt` PBKDF2 format string — passing plaintext produces a corrupt stored hash that causes every subsequent login to fail silently with `<ACCESS VIOLATION>`. Fixed by always using `CPFPreset.SECURE_DEFAULTS` for the CPF merge (handles CallIn enablement and expiry flags correctly) and applying any custom password post-start via `reset_password()` which uses `PasswordExternal` — the IRIS Security API field that accepts plaintext and handles PBKDF2 hashing internally.
+
+### Added
+
+- **`IRISContainer.attach(unexpire_passwords=True)`** (`containers/iris_container.py`): enterprise and HealthShare images commonly ship with expired `_SYSTEM` passwords or `ChangePassword=1` set. Without wildcard unexpire, the first programmatic login silently fails. `attach()` now calls `unexpire_all_passwords(container_name)` after successful container inspection by default. Failure is swallowed — the container is already attached and the caller may have valid credentials. Pass `unexpire_passwords=False` to skip when credentials are known-good and you want to avoid the overhead.
+
+### Documentation
+
+- **`CONSTITUTION.md` Principle 6** — added `_SYSTEM` Password Assumption section documenting: (1) community vs. enterprise default credential differences, (2) why `PasswordHash=` in CPF must never receive plaintext, (3) how IDT's CPF + post-start `reset_password()` dance works, and (4) the wildcard unexpire backstop in `attach()`.
+
 ## [1.19.3] - 2026-08-02 - Fix attach() ignoring explicit port override
 
 ### Fixed
