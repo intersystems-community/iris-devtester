@@ -1,456 +1,304 @@
-"""
-Unit tests for auto-discovery module.
-
-Tests verify Docker and native IRIS instance detection.
-"""
+"""Unit tests for config/auto_discovery.py — all subprocess-based, no Docker or IRIS needed."""
 
 import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from iris_devtester.connections.auto_discovery import (
-    _detect_port_from_docker,
-    _detect_port_from_native,
-    auto_detect_iris_host_and_port,
-    auto_detect_iris_port,
-)
+
+class TestTestIrisPort:
+    def test_returns_true_when_success_in_stdout(self):
+        from iris_devtester.config.auto_discovery import _test_iris_port
+
+        mock_result = MagicMock(stdout="SUCCESS", returncode=0)
+        with patch("subprocess.run", return_value=mock_result):
+            assert _test_iris_port(1972) is True
+
+    def test_returns_false_when_failed_in_stdout(self):
+        from iris_devtester.config.auto_discovery import _test_iris_port
+
+        mock_result = MagicMock(stdout="FAILED", returncode=0)
+        with patch("subprocess.run", return_value=mock_result):
+            assert _test_iris_port(1972) is False
+
+    def test_returns_false_on_timeout(self):
+        from iris_devtester.config.auto_discovery import _test_iris_port
+
+        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("python", 5)):
+            assert _test_iris_port(1972) is False
+
+    def test_returns_false_on_file_not_found(self):
+        from iris_devtester.config.auto_discovery import _test_iris_port
+
+        with patch("subprocess.run", side_effect=FileNotFoundError("python not found")):
+            assert _test_iris_port(1972) is False
+
+    def test_returns_false_on_generic_exception(self):
+        from iris_devtester.config.auto_discovery import _test_iris_port
+
+        with patch("subprocess.run", side_effect=RuntimeError("unexpected")):
+            assert _test_iris_port(1972) is False
+
+    def test_returns_false_on_empty_stdout(self):
+        from iris_devtester.config.auto_discovery import _test_iris_port
+
+        mock_result = MagicMock(stdout="", returncode=0)
+        with patch("subprocess.run", return_value=mock_result):
+            assert _test_iris_port(1972) is False
 
 
-class TestDockerDetection:
-    """Test Docker container port detection."""
+class TestDiscoverIrisPort:
+    def test_returns_first_successful_port(self):
+        from iris_devtester.config.auto_discovery import discover_iris_port
 
-    def test_detect_port_from_docker_with_standard_mapping(self):
-        """
-        Test detection with standard port mapping.
+        def fake_test(port, timeout=5):
+            return port == 11972
 
-        Expected: Detects port 1972 from Docker output.
-        """
-        mock_output = (
-            "iris_db\t0.0.0.0:1972->1972/tcp, :::1972->1972/tcp\n"
-            "postgres_db\t0.0.0.0:5432->5432/tcp\n"
+        with patch("iris_devtester.config.auto_discovery._test_iris_port", side_effect=fake_test):
+            result = discover_iris_port([1972, 11972, 21972])
+        assert result == 11972
+
+    def test_returns_none_when_no_port_responds(self):
+        from iris_devtester.config.auto_discovery import discover_iris_port
+
+        with patch("iris_devtester.config.auto_discovery._test_iris_port", return_value=False):
+            result = discover_iris_port([1972, 11972])
+        assert result is None
+
+    def test_uses_default_ports_when_none_given(self):
+        from iris_devtester.config.auto_discovery import discover_iris_port
+
+        with patch("iris_devtester.config.auto_discovery._test_iris_port", return_value=False) as mock_test:
+            discover_iris_port()
+        # Default ports [31972, 1972, 11972, 21972] should all be tried
+        assert mock_test.call_count == 4
+
+    def test_returns_first_default_port_on_success(self):
+        from iris_devtester.config.auto_discovery import discover_iris_port
+
+        with patch("iris_devtester.config.auto_discovery._test_iris_port", return_value=True):
+            result = discover_iris_port()
+        assert result == 31972  # first in default list
+
+
+class TestDiscoverDockerIris:
+    def test_finds_iris_container_by_port_mapping(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
+
+        docker_output = "my-iris\t0.0.0.0:11972->1972/tcp, 0.0.0.0:52773->52773/tcp\n"
+        mock_result = MagicMock(returncode=0, stdout=docker_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris()
+
+        assert config is not None
+        assert config["port"] == 11972
+        assert config["host"] == "localhost"
+        assert config["container_name"] == "my-iris"
+
+    def test_returns_none_when_no_iris_containers(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
+
+        docker_output = "postgres\t0.0.0.0:5432->5432/tcp\n"
+        mock_result = MagicMock(returncode=0, stdout=docker_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris()
+
+        assert config is None
+
+    def test_returns_none_on_docker_ps_failure(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
+
+        mock_result = MagicMock(returncode=1, stdout="")
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris()
+
+        assert config is None
+
+    def test_returns_none_when_docker_not_installed(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
+
+        with patch("subprocess.run", side_effect=FileNotFoundError("docker not found")):
+            config = discover_docker_iris()
+
+        assert config is None
+
+    def test_returns_none_on_docker_timeout(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
+
+        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("docker", 5)):
+            config = discover_docker_iris()
+
+        assert config is None
+
+    def test_pins_to_specific_container_name(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
+
+        docker_output = (
+            "iris-project-a\t0.0.0.0:1972->1972/tcp\n"
+            "iris-project-b\t0.0.0.0:11972->1972/tcp\n"
         )
+        mock_result = MagicMock(returncode=0, stdout=docker_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris(container_name="iris-project-b")
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=mock_output,
-            )
+        assert config is not None
+        assert config["port"] == 11972
 
-            port = _detect_port_from_docker()
+    def test_returns_none_when_pinned_container_not_found(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
 
-            assert port == 1972
+        docker_output = "iris-project-a\t0.0.0.0:1972->1972/tcp\n"
+        mock_result = MagicMock(returncode=0, stdout=docker_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris(container_name="iris-project-b")
 
-    def test_detect_port_from_docker_with_custom_mapping(self):
-        """
-        Test detection with custom port mapping (e.g., 51773->1972).
+        assert config is None
 
-        Expected: Detects external port 51773.
-        """
-        mock_output = "iris_db\t0.0.0.0:51773->1972/tcp\n"
+    def test_returns_none_on_generic_exception(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=mock_output,
-            )
+        with patch("subprocess.run", side_effect=RuntimeError("unexpected")):
+            config = discover_docker_iris()
 
-            port = _detect_port_from_docker()
+        assert config is None
 
-            assert port == 51773
+    def test_skips_lines_without_port_mapping(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
 
-    def test_detect_port_from_docker_no_iris_container(self):
-        """
-        Test detection when no IRIS container running.
+        # iris in name but no port mapping
+        docker_output = "iris-no-ports\t\n"
+        mock_result = MagicMock(returncode=0, stdout=docker_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris()
 
-        Expected: Returns None.
-        """
-        mock_output = "postgres_db\t0.0.0.0:5432->5432/tcp\n"
+        assert config is None
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=mock_output,
-            )
+    def test_handles_empty_stdout(self):
+        from iris_devtester.config.auto_discovery import discover_docker_iris
 
-            port = _detect_port_from_docker()
+        mock_result = MagicMock(returncode=0, stdout="")
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_docker_iris()
 
-            assert port is None
-
-    def test_detect_port_from_docker_not_installed(self):
-        """
-        Test detection when Docker not installed.
-
-        Expected: Returns None gracefully.
-        """
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.side_effect = FileNotFoundError("docker not found")
-
-            port = _detect_port_from_docker()
-
-            assert port is None
-
-    def test_detect_port_from_docker_not_running(self):
-        """
-        Test detection when Docker daemon not running.
-
-        Expected: Returns None gracefully.
-        """
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1)
-
-            port = _detect_port_from_docker()
-
-            assert port is None
+        assert config is None
 
 
-class TestNativeDetection:
-    """Test native IRIS instance detection."""
+class TestDiscoverNativeIris:
+    def test_finds_running_instance(self):
+        from iris_devtester.config.auto_discovery import discover_native_iris
 
-    def test_detect_port_from_native_standard_output(self):
-        """
-        Test detection from 'iris list' standard output.
-
-        Expected: Detects port 1972.
-        """
-        mock_output = (
-            "Configuration 'IRIS'\n"
-            "    Directory:    /usr/irissys\n"
-            "    SuperServers: 1972\n"
-            "    WebServers:   52773\n"
+        iris_list_output = (
+            "Configuration 'IRIS':\n"
+            "  status: running, since Mon Aug 25 10:00:00 2025\n"
+            "  SuperServers: 1972\n"
         )
+        mock_result = MagicMock(returncode=0, stdout=iris_list_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_native_iris()
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=mock_output,
-            )
+        assert config is not None
+        assert config["port"] == 1972
+        assert config["host"] == "localhost"
 
-            port = _detect_port_from_native()
+    def test_returns_none_when_iris_not_running(self):
+        from iris_devtester.config.auto_discovery import discover_native_iris
 
-            assert port == 1972
+        iris_list_output = "Configuration 'IRIS':\n  status: down\n"
+        mock_result = MagicMock(returncode=0, stdout=iris_list_output)
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_native_iris()
 
-    def test_detect_port_from_native_custom_port(self):
-        """
-        Test detection with custom SuperServer port.
+        assert config is None
 
-        Expected: Detects custom port.
-        """
-        mock_output = "Configuration 'IRIS'\n" "    SuperServers: 51972\n"
+    def test_returns_none_on_iris_command_failure(self):
+        from iris_devtester.config.auto_discovery import discover_native_iris
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=mock_output,
-            )
+        mock_result = MagicMock(returncode=1, stdout="")
+        with patch("subprocess.run", return_value=mock_result):
+            config = discover_native_iris()
 
-            port = _detect_port_from_native()
+        assert config is None
 
-            assert port == 51972
+    def test_returns_none_when_iris_not_installed(self):
+        from iris_devtester.config.auto_discovery import discover_native_iris
 
-    def test_detect_port_from_native_not_installed(self):
-        """
-        Test detection when IRIS not installed.
+        with patch("subprocess.run", side_effect=FileNotFoundError("iris not found")):
+            config = discover_native_iris()
 
-        Expected: Returns None gracefully.
-        """
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.side_effect = FileNotFoundError("iris not found")
+        assert config is None
 
-            port = _detect_port_from_native()
+    def test_returns_none_on_timeout(self):
+        from iris_devtester.config.auto_discovery import discover_native_iris
 
-            assert port is None
+        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("iris", 5)):
+            config = discover_native_iris()
 
-    def test_detect_port_from_native_no_instances(self):
-        """
-        Test detection when no IRIS instances running.
+        assert config is None
 
-        Expected: Returns None.
-        """
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout="No configurations found\n",
-            )
+    def test_returns_none_on_generic_exception(self):
+        from iris_devtester.config.auto_discovery import discover_native_iris
 
-            port = _detect_port_from_native()
+        with patch("subprocess.run", side_effect=RuntimeError("unexpected")):
+            config = discover_native_iris()
 
-            assert port is None
+        assert config is None
 
 
-class TestCombinedAutoDetection:
-    """Test combined auto-detection logic."""
+class TestAutoDiscoverIris:
+    def test_finds_via_docker_first(self):
+        from iris_devtester.config.auto_discovery import auto_discover_iris
 
-    def test_auto_detect_prefers_docker(self):
-        """
-        Test that Docker detection is preferred over native.
+        docker_config = {"host": "localhost", "port": 11972, "username": "_SYSTEM",
+                         "password": "SYS", "namespace": "USER", "container_name": "test"}
+        with patch("iris_devtester.config.auto_discovery.discover_docker_iris", return_value=docker_config), \
+             patch("iris_devtester.config.auto_discovery.discover_native_iris") as mock_native, \
+             patch("iris_devtester.config.auto_discovery.discover_iris_port") as mock_scan:
+            config = auto_discover_iris()
 
-        Expected: Uses Docker port when both available.
-        """
-        docker_output = "iris_db\t0.0.0.0:1972->1972/tcp\n"
-        native_output = "SuperServers: 51972\n"
+        assert config is docker_config
+        mock_native.assert_not_called()
+        mock_scan.assert_not_called()
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
+    def test_falls_back_to_native_when_docker_fails(self):
+        from iris_devtester.config.auto_discovery import auto_discover_iris
 
-            def side_effect(*args, **kwargs):
-                cmd = args[0]
-                if cmd[0] == "docker":
-                    return MagicMock(returncode=0, stdout=docker_output)
-                elif cmd[0] == "iris":
-                    return MagicMock(returncode=0, stdout=native_output)
-                return MagicMock(returncode=1)
+        native_config = {"host": "localhost", "port": 1972, "username": "_SYSTEM",
+                         "password": "SYS", "namespace": "USER"}
+        with patch("iris_devtester.config.auto_discovery.discover_docker_iris", return_value=None), \
+             patch("iris_devtester.config.auto_discovery.discover_native_iris", return_value=native_config), \
+             patch("iris_devtester.config.auto_discovery.discover_iris_port") as mock_scan:
+            config = auto_discover_iris()
 
-            mock_run.side_effect = side_effect
+        assert config is native_config
+        mock_scan.assert_not_called()
 
-            port = auto_detect_iris_port()
+    def test_falls_back_to_port_scan(self):
+        from iris_devtester.config.auto_discovery import auto_discover_iris
 
-            # Should use Docker port (1972) not native (51972)
-            assert port == 1972
+        with patch("iris_devtester.config.auto_discovery.discover_docker_iris", return_value=None), \
+             patch("iris_devtester.config.auto_discovery.discover_native_iris", return_value=None), \
+             patch("iris_devtester.config.auto_discovery.discover_iris_port", return_value=31972):
+            config = auto_discover_iris()
 
-    def test_auto_detect_falls_back_to_native(self):
-        """
-        Test fallback to native when Docker unavailable.
+        assert config is not None
+        assert config["port"] == 31972
 
-        Expected: Uses native IRIS port.
-        """
-        native_output = "SuperServers: 1972\n"
+    def test_returns_none_when_all_fail(self):
+        from iris_devtester.config.auto_discovery import auto_discover_iris
 
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
+        with patch("iris_devtester.config.auto_discovery.discover_docker_iris", return_value=None), \
+             patch("iris_devtester.config.auto_discovery.discover_native_iris", return_value=None), \
+             patch("iris_devtester.config.auto_discovery.discover_iris_port", return_value=None):
+            config = auto_discover_iris()
 
-            def side_effect(*args, **kwargs):
-                cmd = args[0]
-                if cmd[0] == "docker":
-                    raise FileNotFoundError("docker not found")
-                elif cmd[0] == "iris":
-                    return MagicMock(returncode=0, stdout=native_output)
-                return MagicMock(returncode=1)
+        assert config is None
 
-            mock_run.side_effect = side_effect
+    def test_passes_container_name_to_docker_discovery(self):
+        from iris_devtester.config.auto_discovery import auto_discover_iris
 
-            port = auto_detect_iris_port()
+        with patch("iris_devtester.config.auto_discovery.discover_docker_iris", return_value=None) as mock_docker, \
+             patch("iris_devtester.config.auto_discovery.discover_native_iris", return_value=None), \
+             patch("iris_devtester.config.auto_discovery.discover_iris_port", return_value=None):
+            auto_discover_iris(container_name="my-iris")
 
-            assert port == 1972
-
-    def test_auto_detect_returns_none_when_nothing_found(self):
-        """
-        Test behavior when no IRIS instances found.
-
-        Expected: Returns None gracefully.
-        """
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1)
-
-            port = auto_detect_iris_port()
-
-            assert port is None
-
-    def test_auto_detect_host_and_port_docker(self):
-        """
-        Test host/port detection from Docker.
-
-        Expected: Returns (localhost, port).
-        """
-        docker_output = "iris_db\t0.0.0.0:1972->1972/tcp\n"
-
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=docker_output,
-            )
-
-            host, port = auto_detect_iris_host_and_port()
-
-            assert host == "localhost"
-            assert port == 1972
-
-    def test_auto_detect_host_and_port_native(self):
-        """
-        Test host/port detection from native IRIS.
-
-        Expected: Returns (localhost, port).
-        """
-        native_output = "SuperServers: 1972\n"
-
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-
-            def side_effect(*args, **kwargs):
-                cmd = args[0]
-                if cmd[0] == "docker":
-                    return MagicMock(returncode=1)  # No Docker
-                elif cmd[0] == "iris":
-                    return MagicMock(returncode=0, stdout=native_output)
-                return MagicMock(returncode=1)
-
-            mock_run.side_effect = side_effect
-
-            host, port = auto_detect_iris_host_and_port()
-
-            assert host == "localhost"
-            assert port == 1972
-
-    def test_auto_detect_host_and_port_not_found(self):
-        """
-        Test behavior when no instances found.
-
-        Expected: Returns (None, None).
-        """
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1)
-
-            host, port = auto_detect_iris_host_and_port()
-
-            assert host is None
-            assert port is None
-
-
-# --------------------------------------------------------------------------
-# Multi-container determinism tests (container_name parameter)
-# --------------------------------------------------------------------------
-
-# Simulates a dev machine running 10+ IRIS containers simultaneously.
-# Without container_name, the first match from docker ps wins (non-deterministic).
-# With container_name, only the pinned container is matched (deterministic).
-MULTI_CONTAINER_DOCKER_OUTPUT = (
-    "iris-rag-main\t0.0.0.0:11972->1972/tcp, :::11972->1972/tcp\n"
-    "iris-vector-graph-main\t0.0.0.0:21972->1972/tcp, :::21972->1972/tcp\n"
-    "iris-analytics\t0.0.0.0:31972->1972/tcp\n"
-    "iris-dev-test\t0.0.0.0:1972->1972/tcp, :::1972->1972/tcp\n"
-    "postgres_db\t0.0.0.0:5432->5432/tcp\n"
-    "redis\t0.0.0.0:6379->6379/tcp\n"
-    "iris-ml-pipeline\t0.0.0.0:41972->1972/tcp\n"
-)
-
-
-class TestContainerNamePinning:
-    """Test deterministic container selection via container_name parameter.
-
-    Verifies the fix for the multi-container non-determinism bug:
-    on machines with 10+ IRIS containers, auto-detection used to return
-    whichever container appeared first in 'docker ps' output.
-
-    The container_name parameter pins detection to a specific container.
-    """
-
-    def test_detect_port_pinned_to_specific_container(self):
-        """Pin to iris-vector-graph-main -> should return port 21972."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            port = _detect_port_from_docker(container_name="iris-vector-graph-main")
-
-            assert port == 21972
-
-    def test_detect_port_pinned_to_different_container(self):
-        """Pin to iris-dev-test -> should return port 1972."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            port = _detect_port_from_docker(container_name="iris-dev-test")
-
-            assert port == 1972
-
-    def test_detect_port_pinned_to_nonexistent_container(self):
-        """Pin to container that doesn't exist -> should return None."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            port = _detect_port_from_docker(container_name="iris-does-not-exist")
-
-            assert port is None
-
-    def test_detect_port_without_pinning_returns_first_match(self):
-        """Without container_name, returns the first container's port (legacy behavior)."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            port = _detect_port_from_docker()
-
-            # First container in docker ps output is iris-rag-main on port 11972
-            assert port == 11972
-
-    def test_auto_detect_iris_port_with_container_name(self):
-        """auto_detect_iris_port passes container_name to Docker detection."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            port = auto_detect_iris_port(container_name="iris-analytics")
-
-            assert port == 31972
-
-    def test_auto_detect_host_and_port_with_container_name(self):
-        """auto_detect_iris_host_and_port passes container_name to Docker detection."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            host, port = auto_detect_iris_host_and_port(
-                container_name="iris-ml-pipeline",
-            )
-
-            assert host == "localhost"
-            assert port == 41972
-
-    def test_container_name_none_is_backward_compatible(self):
-        """container_name=None behaves identically to the old parameterless call."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-
-            port_explicit_none = _detect_port_from_docker(container_name=None)
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=MULTI_CONTAINER_DOCKER_OUTPUT,
-            )
-            port_no_arg = _detect_port_from_docker()
-
-            assert port_explicit_none == port_no_arg
-
-    def test_container_name_with_no_docker(self):
-        """container_name specified but Docker not available -> falls back to native."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-
-            def side_effect(*args, **kwargs):
-                cmd = args[0]
-                if cmd[0] == "docker":
-                    raise FileNotFoundError("docker not found")
-                elif cmd[0] == "iris":
-                    return MagicMock(returncode=0, stdout="SuperServers: 1972\n")
-                return MagicMock(returncode=1)
-
-            mock_run.side_effect = side_effect
-
-            # container_name is Docker-only; should gracefully fall back to native
-            port = auto_detect_iris_port(container_name="iris-vector-graph-main")
-
-            assert port == 1972
-
-    def test_pinned_container_not_running_no_native(self):
-        """Pinned container not in docker ps and no native -> returns None."""
-        with patch("iris_devtester.connections.auto_discovery.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1)
-
-            host, port = auto_detect_iris_host_and_port(
-                container_name="iris-vector-graph-main",
-            )
-
-            assert host is None
-            assert port is None
+        mock_docker.assert_called_once_with(container_name="my-iris")
