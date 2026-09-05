@@ -8,6 +8,7 @@ from .connection_commands import test_connection
 from .container import container_group as container
 from .dev_commands import dev_group as dev
 from .fixture_commands import fixture
+from .image_commands import image_group as image
 
 
 @click.group()
@@ -55,6 +56,7 @@ main.add_command(fixture)
 main.add_command(container)
 main.add_command(dev)
 main.add_command(test_connection)
+main.add_command(image)
 
 
-__all__ = ["main", "fixture", "container", "test_connection"]
+__all__ = ["main", "fixture", "container", "image", "test_connection"]
