@@ -5,6 +5,14 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`IRISContainer.community()` on arm64 defaulted to the pinned `2025.1` tag**, whose bundled Community license has expired. IRIS exited with the misleading "Invalid Community Edition license, may have exceeded core limit" message, whatever the CPU count. It now defaults to the rolling `latest-em` tag. See `docs/learnings/community-license-expiry-not-core-limit.md`.
+- **Expired community license now fails fast.** Startup stops as soon as IRIS logs the license error and raises a `RuntimeError` naming the image and the fix, instead of waiting 120 s for a `TimeoutError`.
+- **Docker runtime messages no longer assume Docker Desktop.** Remediation text now covers OrbStack (`orb start`), Docker Desktop, and Colima.
+
 ## [1.20.0] - 2026-09-29 - Drop CaretDev testcontainers-iris/sqlalchemy-iris; idt image; no default test user
 
 ### Removed

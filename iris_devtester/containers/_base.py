@@ -21,6 +21,8 @@ from testcontainers.core.waiting_utils import wait_for_logs
 
 logger = logging.getLogger(__name__)
 
+_LICENSE_REJECTED = "Invalid Community Edition license"
+
 
 class IRISDockerContainer(DockerContainer):
     """Minimal InterSystems IRIS container (drop-in for testcontainers.iris.IRISContainer).
@@ -67,7 +69,17 @@ class IRISDockerContainer(DockerContainer):
             self.with_volume_mapping(self.license_key, "/usr/irissys/mgr/iris.key", "ro")
 
     def _connect(self) -> None:
-        wait_for_logs(self, predicate="Enabling logons")
+        try:
+            wait_for_logs(
+                self,
+                predicate=lambda logs: "Enabling logons" in logs or _LICENSE_REJECTED in logs,
+            )
+        except TimeoutError as e:
+            if self._community_license_rejected():
+                raise self._license_error() from e
+            raise
+        if self._community_license_rejected():
+            raise self._license_error()
         if self.namespace.upper() != "USER":
             cmd = (
                 "iris session iris -U %%SYS "
@@ -85,6 +97,29 @@ class IRISDockerContainer(DockerContainer):
         )
         res = self.exec(cmd)
         logger.debug("create user %s -> %s", self.username, res)
+
+    def _license_error(self) -> RuntimeError:
+        return RuntimeError(
+            f"IRIS refused to start: community license rejected in {self.image}\n"
+            "\n"
+            "What went wrong:\n"
+            "  IRIS logged 'Invalid Community Edition license, may have exceeded core\n"
+            "  limit'. Despite the wording, this is almost always an expired license\n"
+            "  baked into an older community image, not a CPU count problem.\n"
+            "\n"
+            "How to fix it:\n"
+            "  1. Use a current image: IRISContainer.community() (defaults to latest-em)\n"
+            "     or containers.intersystems.com/intersystems/iris-community:latest-em\n"
+            "  2. Re-pull if the tag is cached locally: docker pull <image>\n"
+        )
+
+    def _community_license_rejected(self) -> bool:
+        try:
+            stdout, stderr = self.get_logs()
+        except Exception:
+            return False
+        logs = (stdout or b"") + (stderr or b"")
+        return _LICENSE_REJECTED.encode() in logs
 
     def get_connection_url(self, host: Optional[str] = None) -> str:
         """SQLAlchemy-style URL: iris://user:pass@host:port/NAMESPACE."""

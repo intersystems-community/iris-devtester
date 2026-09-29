@@ -154,7 +154,7 @@ def get_container_status(
             "  1. Check if Docker is responding:\n"
             "     docker ps\n"
             "\n"
-            "  2. Restart Docker Desktop if needed\n",
+            "  2. Restart your Docker runtime if needed (OrbStack: orb restart | Docker Desktop: restart the app)\n",
         )
 
     except Exception as e:

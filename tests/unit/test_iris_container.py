@@ -66,6 +66,30 @@ class TestIRISContainer:
 
         assert "2025.2" in container.image
 
+    def test_community_arm64_default_tag_does_not_go_stale(self):
+        """ARM64 default must track a rolling tag, not a pinned release.
+
+        Community images embed an expiring license; the old pinned 2025.1
+        default stopped starting in 2026 ("Invalid Community Edition license,
+        may have exceeded core limit") regardless of CPU count.
+        """
+        from unittest.mock import patch
+
+        from iris_devtester.containers import IRISContainer
+
+        with patch("platform.machine", return_value="arm64"):
+            container = IRISContainer.community()
+        assert container.image == "containers.intersystems.com/intersystems/iris-community:latest-em"
+
+    def test_community_arm64_explicit_version(self):
+        from unittest.mock import patch
+
+        from iris_devtester.containers import IRISContainer
+
+        with patch("platform.machine", return_value="arm64"):
+            container = IRISContainer.community(version="2026.1")
+        assert container.image.endswith("iris-community:2026.1")
+
     def test_community_creates_container_object(self):
         """Test that .community() returns a container instance."""
         from iris_devtester.containers import IRISContainer

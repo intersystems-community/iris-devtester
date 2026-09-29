@@ -69,7 +69,7 @@ class TestFactoryMethods:
 
         with patch("platform.machine", return_value="arm64"):
             container = IRISContainer.community()
-            assert "containers.intersystems.com/intersystems/iris-community:2025.1" in container.image
+            assert "containers.intersystems.com/intersystems/iris-community:latest-em" in container.image
 
     def test_community_custom_image(self):
         """Test community() with explicit image override."""

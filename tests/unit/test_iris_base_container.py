@@ -127,7 +127,10 @@ class TestConnect:
         c = IRISDockerContainer(username="u", password="p")
         c.exec = MagicMock()
         c._connect()
-        mock_wait.assert_called_once_with(c, predicate="Enabling logons")
+        mock_wait.assert_called_once()
+        predicate = mock_wait.call_args.kwargs["predicate"]
+        assert predicate("... Enabling logons ...")
+        assert not predicate("still starting")
         assert c.exec.call_count == 1
         cmd = c.exec.call_args[0][0]
         assert "Security.Users).Create(\"u\",\"%ALL\",\"p\")" in cmd
@@ -176,6 +179,54 @@ class TestConnect:
         c.exec = MagicMock()
         c._connect()
         c.exec.assert_not_called()
+
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_expired_community_license_raises_guidance(self, mock_wait):
+        mock_wait.side_effect = TimeoutError("did not emit logs")
+        c = IRISDockerContainer(image="containers.intersystems.com/intersystems/iris-community:2025.1")
+        c.get_logs = MagicMock(
+            return_value=(
+                b"Error: Invalid Community Edition license, may have exceeded core limit.",
+                b"",
+            )
+        )
+        with pytest.raises(RuntimeError) as exc:
+            c._connect()
+        msg = str(exc.value)
+        assert "iris-community:2025.1" in msg
+        assert "expired" in msg
+        assert "latest-em" in msg
+        assert isinstance(exc.value.__cause__, TimeoutError)
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_license_error_stops_wait_early(self, mock_wait):
+        # Fail fast: predicate must also match the license error so we don't
+        # sit through the full log-wait timeout on a dead container.
+        c = IRISDockerContainer(image="img:old")
+        c.get_logs = MagicMock(return_value=(b"Invalid Community Edition license", b""))
+        c.exec = MagicMock()
+        with pytest.raises(RuntimeError, match="community license rejected"):
+            c._connect()
+        predicate = mock_wait.call_args.kwargs["predicate"]
+        assert predicate("Error: Invalid Community Edition license, may have exceeded core limit")
+        c.exec.assert_not_called()
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_other_timeouts_propagate_unchanged(self, mock_wait):
+        mock_wait.side_effect = TimeoutError("did not emit logs")
+        c = IRISDockerContainer()
+        c.get_logs = MagicMock(return_value=(b"something else", b""))
+        with pytest.raises(TimeoutError):
+            c._connect()
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_log_read_failure_keeps_original_timeout(self, mock_wait):
+        mock_wait.side_effect = TimeoutError("did not emit logs")
+        c = IRISDockerContainer()
+        c.get_logs = MagicMock(side_effect=Exception("container gone"))
+        with pytest.raises(TimeoutError):
+            c._connect()
 
 
 class TestStart:

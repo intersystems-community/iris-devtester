@@ -435,7 +435,7 @@ class TestTranslateDockerError:
         error_msg = str(result)
         assert "Failed to connect to Docker daemon" in error_msg
         assert "Docker is not running" in error_msg
-        assert "Start Docker Desktop" in error_msg or "systemctl start docker" in error_msg
+        assert "OrbStack" in error_msg and "Docker Desktop" in error_msg
 
     def test_translate_connection_refused(self):
         """Test translation of connection refused error."""

@@ -193,14 +193,16 @@ class IRISContainer(IRISBase):
 
         Args:
             image: Docker image to use. If None, auto-detects based on architecture.
-            version: Image version tag. Options: 'latest', '2025.1', '2025.2', etc.
+            version: Image version tag. Options: 'latest' (→ 'latest-em' on ARM64), '2026.1', etc.
         """
         if image is None:
             import platform as platform_module
 
             if platform_module.machine() == "arm64":
                 # ARM64 (Apple Silicon) - use official InterSystems registry
-                tag = version if version != "latest" else "2025.1"
+                # Rolling tag: community images embed an expiring license, so a
+                # pinned release default eventually refuses to start.
+                tag = version if version != "latest" else "latest-em"
                 image = f"containers.intersystems.com/intersystems/iris-community:{tag}"
             else:
                 # x86_64 - use Docker Hub community image

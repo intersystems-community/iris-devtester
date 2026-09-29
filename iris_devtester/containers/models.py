@@ -319,7 +319,7 @@ class ValidationResult:
             message=f"Cannot connect to Docker daemon.\n  Error: {str(error)}",
             remediation_steps=[
                 "1. Check if Docker is running:\n   docker --version",
-                "2. Start Docker Desktop (macOS/Windows)\n"
+                "2. Start your Docker runtime (OrbStack: orb start | Docker Desktop | Colima)\n"
                 "   # Or start Docker daemon (Linux):\n"
                 "   sudo systemctl start docker",
                 "3. Verify Docker is accessible:\n   docker ps",
