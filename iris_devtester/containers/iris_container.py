@@ -121,6 +121,11 @@ class IRISContainer(IRISBase):
         """Return the currently configured username."""
         return self._username
 
+    def _url_credentials(self) -> "tuple[str, str]":
+        # get_connection_url() must reflect the credentials idt manages, not the
+        # base class's optional extra-user fields.
+        return self._username, self._password
+
     def stop_gracefully(self, timeout: int = 30) -> bool:
         """Stop IRIS cleanly before stopping the container.
 

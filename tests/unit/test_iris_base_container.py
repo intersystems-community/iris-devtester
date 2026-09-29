@@ -20,6 +20,12 @@ from iris_devtester.containers._base import IRISDockerContainer
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.fixture(autouse=True)
+def _clean_iris_env(monkeypatch):
+    for var in ("IRIS_USERNAME", "IRIS_PASSWORD", "IRIS_NAMESPACE"):
+        monkeypatch.delenv(var, raising=False)
+
+
 class TestNoCaretDevDependency:
     def test_import_does_not_pull_sqlalchemy_or_testcontainers_iris(self):
         code = (
@@ -68,8 +74,9 @@ class TestInit:
         c = IRISDockerContainer()
         assert c.image == "intersystemsdc/iris-community:latest"
         assert c.port == 1972
-        assert c.username == "test"
-        assert c.password == "test"
+        # No baked-in test/test %ALL account (upstream testcontainers-iris default)
+        assert c.username is None
+        assert c.password is None
         assert c.namespace == "USER"
         assert c.driver == "iris"
         assert c.license_key is None
@@ -132,9 +139,43 @@ class TestConnect:
         c.exec = MagicMock()
         c._connect()
         cmds = [call[0][0] for call in c.exec.call_args_list]
-        assert len(cmds) == 2
+        assert len(cmds) == 1
         assert 'CREATE DATABASE MYNS' in cmds[0]
         assert "%SQL.Statement).%ExecDirect" in cmds[0]
+
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_no_credentials_creates_no_user(self, mock_wait):
+        c = IRISDockerContainer()
+        c.exec = MagicMock()
+        c._connect()
+        mock_wait.assert_called_once()
+        c.exec.assert_not_called()
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_username_without_password_creates_no_user(self, mock_wait):
+        c = IRISDockerContainer(username="u")
+        c.exec = MagicMock()
+        c._connect()
+        c.exec.assert_not_called()
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_env_credentials_opt_in_to_user_creation(self, mock_wait, monkeypatch):
+        monkeypatch.setenv("IRIS_USERNAME", "envuser")
+        monkeypatch.setenv("IRIS_PASSWORD", "envpw")
+        c = IRISDockerContainer()
+        c.exec = MagicMock()
+        c._connect()
+        assert 'Create("envuser","%ALL","envpw")' in c.exec.call_args[0][0]
+
+    @patch("iris_devtester.containers._base.wait_for_logs")
+    def test_iris_container_creates_no_extra_user(self, mock_wait):
+        from iris_devtester.containers.iris_container import IRISContainer
+
+        c = IRISContainer()
+        c.exec = MagicMock()
+        c._connect()
+        c.exec.assert_not_called()
 
 
 class TestStart:
@@ -164,6 +205,20 @@ class TestConnectionUrl:
         c.get_exposed_port = MagicMock(return_value=40000)
         assert c.get_connection_url() == "iris://u:p w%2F%40@h:40000/NS"
         c.get_exposed_port.assert_called_once_with(1972)
+
+    def test_url_defaults_to_system_credentials(self):
+        c = IRISDockerContainer()
+        c._container = MagicMock()
+        c.get_exposed_port = MagicMock(return_value=1)
+        assert c.get_connection_url(host="x") == "iris://_SYSTEM:SYS@x:1/USER"
+
+    def test_iris_container_url_uses_its_credentials(self):
+        from iris_devtester.containers.iris_container import IRISContainer
+
+        c = IRISContainer(username="admin", password="pw")
+        c._container = MagicMock()
+        c.get_exposed_port = MagicMock(return_value=2)
+        assert c.get_connection_url(host="x") == "iris://admin:pw@x:2/USER"
 
     def test_url_host_override(self):
         c = IRISDockerContainer(username="u", password="p")

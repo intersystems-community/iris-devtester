@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`testcontainers-iris` / `sqlalchemy-iris` dependency** — `IRISContainer` now builds on an in-house `IRISDockerContainer` (`containers/_base.py`) that subclasses `testcontainers.core.container.DockerContainer` directly. `sqlalchemy-iris` shipped its own `iris/__init__.py`, and under uv it replaced `intersystems-irispython`'s `iris.connect` with a stub in downstream projects. Constructor signature, env fallbacks, license mount, log wait, and `get_connection_url()` are unchanged. See `docs/learnings/testcontainers-iris-removal.md`.
 
+### Changed
+
+- **No more default `test`/`test` %ALL user.** The absorbed testcontainers-iris logic created a `test` superuser with password `test` on every container start. A user is now created only when both username and password are supplied, as arguments or via `IRIS_USERNAME`/`IRIS_PASSWORD`. `get_connection_url()` defaults to `_SYSTEM:SYS`, and on `IRISContainer` it reflects the container's managed credentials.
+
 ### Fixed
 
 - **Undeclared `packaging` dependency** — `utils/dbapi_compat.py` imports it, and it only ever arrived transitively via the removed chain. It is now declared directly.

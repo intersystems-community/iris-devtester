@@ -23,7 +23,16 @@ logger = logging.getLogger(__name__)
 
 
 class IRISDockerContainer(DockerContainer):
-    """Minimal InterSystems IRIS container (drop-in for testcontainers.iris.IRISContainer)."""
+    """Minimal InterSystems IRIS container (drop-in for testcontainers.iris.IRISContainer).
+
+    Unlike upstream, no ``test``/``test`` %ALL account is created by default. A
+    user is created only when both username and password are supplied, either as
+    arguments or via ``IRIS_USERNAME`` / ``IRIS_PASSWORD``. Otherwise the image's
+    built-in ``_SYSTEM`` account is used.
+    """
+
+    DEFAULT_USERNAME = "_SYSTEM"
+    DEFAULT_PASSWORD = "SYS"
 
     def __init__(
         self,
@@ -38,8 +47,8 @@ class IRISDockerContainer(DockerContainer):
     ) -> None:
         super().__init__(image=image, **kwargs)
         self.image = image
-        self.username = username or os.environ.get("IRIS_USERNAME", "test")
-        self.password = password or os.environ.get("IRIS_PASSWORD", "test")
+        self.username = username or os.environ.get("IRIS_USERNAME")
+        self.password = password or os.environ.get("IRIS_PASSWORD")
         self.namespace = namespace or os.environ.get("IRIS_NAMESPACE", "USER")
         self.port = port
         self.driver = driver
@@ -67,6 +76,8 @@ class IRISDockerContainer(DockerContainer):
             )
             res = self.exec(cmd)
             logger.debug("create database: %s -> %s", cmd, res)
+        if not (self.username and self.password):
+            return
         cmd = "iris session iris -U %%SYS '##class(Security.Users).Create(\"%s\",\"%s\",\"%s\")'" % (
             self.username,
             "%ALL",
@@ -81,4 +92,11 @@ class IRISDockerContainer(DockerContainer):
             raise ContainerStartException("container has not been started")
         host = host or self.get_container_host_ip()
         port = self.get_exposed_port(self.port)
-        return f"iris://{self.username}:{quote(self.password, safe=' +')}@{host}:{port}/{self.namespace}"
+        username, password = self._url_credentials()
+        return f"iris://{username}:{quote(password, safe=' +')}@{host}:{port}/{self.namespace}"
+
+    def _url_credentials(self) -> "tuple[str, str]":
+        return (
+            self.username or self.DEFAULT_USERNAME,
+            self.password or self.DEFAULT_PASSWORD,
+        )

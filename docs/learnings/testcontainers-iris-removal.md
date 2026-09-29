@@ -29,6 +29,18 @@ The ~93 lines of `testcontainers-iris` are now in
 - `get_connection_url()` returns the same `iris://user:pass@host:port/NS` string,
   built without sqlalchemy
 
+## Deliberate change: no default `test`/`test` %ALL account
+
+Upstream defaulted `username`/`password` to `test`/`test`. Its `_connect` then
+ran `Security.Users.Create("test","%ALL","test")` on every container start,
+including every iris-devtester `IRISContainer`, which never used that account.
+That left a well-known superuser credential in every test container.
+
+Now a user is created only when both username and password are supplied, either
+as arguments or via `IRIS_USERNAME` / `IRIS_PASSWORD` in the process environment (idt does not read `.env` for these; load it with direnv, `uv run --env-file`, or pytest-dotenv).
+Otherwise the image's `_SYSTEM` account is used. `get_connection_url()` falls
+back to `_SYSTEM:SYS`. `IRISContainer` reports its own managed credentials.
+
 ## Blind alley: subclassing DbContainer
 
 The obvious move is to subclass `testcontainers.core.generic.DbContainer`, as
