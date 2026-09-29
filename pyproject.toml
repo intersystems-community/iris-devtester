@@ -38,13 +38,13 @@ classifiers = [
 
 dependencies = [
     "testcontainers>=4.0.0",
-    "testcontainers-iris>=1.2.2",
     "python-dotenv>=1.0.0",
     "docker>=6.0.0",
     "filelock>=3.13.0",
     "click>=8.0.0",
     "PyYAML>=6.0",
     "pydantic>=2.0.0",
+    "packaging>=21.0",
 ]
 
 [project.optional-dependencies]

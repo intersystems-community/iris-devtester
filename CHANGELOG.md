@@ -5,6 +5,21 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- **`testcontainers-iris` / `sqlalchemy-iris` dependency** — `IRISContainer` now builds on an in-house `IRISDockerContainer` (`containers/_base.py`) that subclasses `testcontainers.core.container.DockerContainer` directly. `sqlalchemy-iris` shipped its own `iris/__init__.py`, and under uv it replaced `intersystems-irispython`'s `iris.connect` with a stub in downstream projects. Constructor signature, env fallbacks, license mount, log wait, and `get_connection_url()` are unchanged. See `docs/learnings/testcontainers-iris-removal.md`.
+
+### Fixed
+
+- **Undeclared `packaging` dependency** — `utils/dbapi_compat.py` imports it, and it only ever arrived transitively via the removed chain. It is now declared directly.
+- **`IRISContainerManager` testcontainers mode** now builds iris-devtester's `IRISContainer` instead of the upstream class, so `with_cpf_merge()` is available.
+
+### Added
+
+- **`idt image load` / `idt image build`** — turn a kits-web tarball into a running container. `load` handles `docker_kits/` docker-save archives. `build` handles `singlefile_kits/*-dockerubuntu*.tar.gz` installer kits (Dockerfile + `irisinstall_silent` + `imageBuildSteps.sh`).
+
 ## [1.19.4] - 2026-08-25 - Fix plaintext password in CPF merge + wildcard unexpire on attach
 
 ### Fixed
@@ -1406,7 +1421,7 @@ N/A - Initial release
 
 ---
 
-## [Unreleased]
+## Historical roadmap
 
 ### Planned for v1.1.0
 

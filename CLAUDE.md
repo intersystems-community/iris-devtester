@@ -41,7 +41,7 @@ iris-devtester --help
 
 ```text
 iris_devtester/
-├── containers/         # IRISContainer — central class (extends testcontainers-iris)
+├── containers/         # IRISContainer — central class (extends _base.IRISDockerContainer)
 │   ├── iris_container.py   # Factory methods: .community(), .enterprise(), .light(),
 │   │                       #   .health(), .ai_hub(), .attach(), .dev()
 │   ├── models.py       # ContainerHealth, ContainerHealthStatus, HealthCheckLevel,
@@ -125,6 +125,7 @@ reset), 033 (health/ai_hub editions), 034 (CPF-first password strategy).
 it when the current implementation is unclear — especially `common/iris_connection_manager.py`.
 
 <!-- codebase-memory-mcp: Code Discovery Protocol -->
+
 ## Code Discovery Protocol (codebase-memory-mcp)
 
 **ALWAYS use `codebase-memory-mcp` tools FIRST for any code exploration:**

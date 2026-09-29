@@ -1,6 +1,6 @@
-"""Adapter layer between CLI and testcontainers-iris.
+"""Adapter layer between CLI and IRIS testcontainers.
 
-This module provides a thin wrapper around testcontainers-iris for CLI use,
+This module provides a thin wrapper around iris-devtester's IRISContainer for CLI use,
 adapting the test-focused API for command-line container lifecycle management.
 """
 
@@ -10,9 +10,8 @@ from typing import Optional
 import docker
 from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
-from testcontainers.iris import IRISContainer
-
 from iris_devtester.config.container_config import ContainerConfig
+from iris_devtester.containers.iris_container import IRISContainer
 
 
 @dataclass
@@ -244,7 +243,7 @@ def verify_container_persistence(
 
 
 class IRISContainerManager:
-    """Manager for IRIS containers using testcontainers-iris."""
+    """Manager for IRIS containers (testcontainers or Docker SDK)."""
 
     @staticmethod
     def create_from_config(config: ContainerConfig, use_testcontainers: bool = True) -> Container:
@@ -253,7 +252,7 @@ class IRISContainerManager:
 
         Args:
             config: Container configuration
-            use_testcontainers: If True, use testcontainers-iris (pytest fixtures).
+            use_testcontainers: If True, use testcontainers (pytest fixtures).
                               If False, use Docker SDK directly (CLI commands).
 
         Returns:
@@ -278,7 +277,7 @@ class IRISContainerManager:
 
     @staticmethod
     def _create_with_testcontainers(config: ContainerConfig) -> IRISContainer:
-        """Create container using testcontainers-iris (automatic cleanup)."""
+        """Create container using testcontainers (automatic cleanup)."""
         # Create base container
         container = IRISContainer(
             image=config.get_image_name(),

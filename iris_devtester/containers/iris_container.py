@@ -49,7 +49,7 @@ IRISBase: Any = _IRISMockContainer
 # Check for testcontainers
 HAS_TESTCONTAINERS = False
 try:
-    from testcontainers.iris import IRISContainer as _ActualBase
+    from iris_devtester.containers._base import IRISDockerContainer as _ActualBase
 
     IRISBase = _ActualBase
     HAS_TESTCONTAINERS = True
