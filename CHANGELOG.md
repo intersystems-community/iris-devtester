@@ -5,6 +5,25 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **`IRISDockerContainer` passes username, password and namespace through the exec environment**, not through the command text. The two start-up steps (create database, create user) run fixed commands that read `IDT_NAMESPACE`, `IDT_USERNAME` and `IDT_PASSWORD` inside IRIS, so any password works, including one with quotes or `$(...)`. `IRISContainer` inherits this.
+- **New validation, raised as `ValueError` from the constructor before `docker run`.** A namespace other than `USER` must match `[A-Za-z][A-Za-z0-9_]{0,63}`. A username (checked only when a password is also supplied) must match `[A-Za-z0-9_][A-Za-z0-9_.@-]{0,127}`. A password must be non-empty and free of NUL. Values read from `IRIS_NAMESPACE`, `IRIS_USERNAME` and `IRIS_PASSWORD` are validated too and named in the error. The password never appears in an error or log line.
+- **Create-database and create-user failures now raise.** The exit status was only logged before; a failed step now raises a structured `RuntimeError` naming the step.
+- **Community licence check logs Docker failures at warning level** and only swallows Docker and container-not-started errors; other exceptions propagate. On the start-up timeout path the message now says when the licence check could not read the container logs.
+- **`idt container up` containers carry labels** `io.iris-devtester.created-by=idt` and `io.iris-devtester.image=<ref>` (same for `IRISContainerManager._create_with_docker_sdk`). Nothing else about `container up` changes.
+
+### Removed
+
+- **`driver` parameter and attribute on `IRISDockerContainer`.** It had no effect. Passing `driver=` now raises `TypeError`.
+- Dead code in `containers/iris_container.py`: the `_IRISMockContainer` stub, the `IRISBase` / `_ActualBase` aliases, and the `HAS_TESTCONTAINERS` flag with its constructor warning and manual host/port branch in `attach()`. `testcontainers` is a hard dependency, so these paths never ran.
+
+### Notes
+
+- `IRISDockerContainer` deliberately does not derive from testcontainers' `DbContainer`: upstream marks it deprecated for removal and its `_connect` imports sqlalchemy. See `docs/learnings/testcontainers-iris-removal.md` and `docs/learnings/container-base-dead-code-and-env-transfer.md`.
+
 ## [1.20.1] - 2026-09-29 - Community arm64 default tag fix (expired 2025.1 license); OrbStack-aware messages
 
 ### Fixed

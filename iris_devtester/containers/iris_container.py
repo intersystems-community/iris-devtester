@@ -5,6 +5,12 @@ from typing import Any, Optional
 
 from iris_devtester.config import IRISConfig
 from iris_devtester.connections import get_connection
+from iris_devtester.containers._base import (
+    IRISDockerContainer,
+    validate_namespace,
+    validate_password,
+    validate_username,
+)
 from iris_devtester.containers.connection_info import IRISConnectionInfo
 from iris_devtester.containers.models import ContainerHealth, ContainerHealthStatus, HealthCheckLevel, ValidationResult
 from iris_devtester.utils.password import reset_password, unexpire_all_passwords
@@ -12,52 +18,7 @@ from iris_devtester.utils.password import reset_password, unexpire_all_passwords
 logger = logging.getLogger(__name__)
 
 
-# Single base class definition to satisfy LSP
-class _IRISMockContainer:
-    def __init__(self, image: str = "", **kwargs):
-        self.image = image
-        self._container = None
-
-    def start(self):
-        return self
-
-    def stop(self, *args, **kwargs):
-        pass
-
-    def get_container_host_ip(self) -> str:
-        return "localhost"
-
-    def get_exposed_port(self, port: int) -> int:
-        return port
-
-    def with_env(self, key: str, value: str):
-        return self
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        pass
-
-    def get_container_name(self) -> str:
-        return "iris_db"
-
-
-# Select the base class. We use Any type to bypass strict type check on the class itself.
-IRISBase: Any = _IRISMockContainer
-
-# Check for testcontainers
-HAS_TESTCONTAINERS = False
-try:
-    from iris_devtester.containers._base import IRISDockerContainer as _ActualBase
-
-    IRISBase = _ActualBase
-    HAS_TESTCONTAINERS = True
-except ImportError:
-    pass
-
-
-class IRISContainer(IRISBase):
+class IRISContainer(IRISDockerContainer):
     """
     Enhanced IRIS container with automatic connection and password management.
 
@@ -79,8 +40,15 @@ class IRISContainer(IRISBase):
         namespace: str = "USER",
         **kwargs,
     ):
-        if not HAS_TESTCONTAINERS:
-            logger.warning("testcontainers not installed. Functionality will be limited.")
+        # Validate our own arguments with the base rules (FR-008). They are not
+        # forwarded: the base would try to create a database/user for them, but
+        # IRISContainer manages its credentials itself.
+        if namespace and namespace.upper() != "USER":
+            validate_namespace(namespace)
+        if username and password:
+            validate_username(username)
+        if password and "\x00" in password:
+            validate_password(password)
 
         # Extract custom kwargs before passing to parent
         self._port_registry = kwargs.pop("port_registry", None)
@@ -422,17 +390,9 @@ class IRISContainer(IRISBase):
             container = client.containers.get(container_name)
             instance._container = container
 
-            if not HAS_TESTCONTAINERS:
-                instance.host = "localhost"
-                # Only read docker port binding when no explicit port was given
-                if port is None:
-                    ports = container.attrs.get("NetworkSettings", {}).get("Ports", {})
-                    if "1972/tcp" in ports and ports["1972/tcp"]:
-                        instance._mapped_port = int(ports["1972/tcp"][0]["HostPort"])
-            else:
-                # testcontainers will handle host/port discovery via get_config(),
-                # but _mapped_port is already pinned above if port was supplied.
-                instance.get_config()
+            # testcontainers handles host/port discovery via get_config(), but
+            # _mapped_port is already pinned above if port was supplied.
+            instance.get_config()
 
         except Exception as e:
             # For attached containers, we MUST find the container to be useful
