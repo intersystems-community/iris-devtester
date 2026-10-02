@@ -5,27 +5,11 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - container base hardening (feature 036)
+## [1.21.0] - 2026-10-02 - `idt image` hardening; container base hardening
 
-### Changed
+### `idt image` hardening (feature 035)
 
-- **`IRISDockerContainer` passes username, password and namespace through the exec environment**, not through the command text. The two start-up steps (create database, create user) run fixed commands that read `IDT_NAMESPACE`, `IDT_USERNAME` and `IDT_PASSWORD` inside IRIS, so any password works, including one with quotes or `$(...)`. `IRISContainer` inherits this.
-- **New validation, raised as `ValueError` from the constructor before `docker run`.** A namespace other than `USER` must match `[A-Za-z][A-Za-z0-9_]{0,63}`. A username (checked only when a password is also supplied) must match `[A-Za-z0-9_][A-Za-z0-9_.@-]{0,127}`. A password must be non-empty and free of NUL. Values read from `IRIS_NAMESPACE`, `IRIS_USERNAME` and `IRIS_PASSWORD` are validated too and named in the error. The password never appears in an error or log line.
-- **Create-database and create-user failures now raise.** The exit status was only logged before; a failed step now raises a structured `RuntimeError` naming the step.
-- **Community licence check logs Docker failures at warning level** and only swallows Docker and container-not-started errors; other exceptions propagate. On the start-up timeout path the message now says when the licence check could not read the container logs.
-- **`idt container up` containers carry labels** `io.iris-devtester.created-by=idt` and `io.iris-devtester.image=<ref>` (same for `IRISContainerManager._create_with_docker_sdk`). Nothing else about `container up` changes.
-
-### Removed
-
-- **`driver` parameter and attribute on `IRISDockerContainer`.** It had no effect. Passing `driver=` now raises `TypeError`.
-- Dead code in `containers/iris_container.py`: the `_IRISMockContainer` stub, the `IRISBase` / `_ActualBase` aliases, and the `HAS_TESTCONTAINERS` flag with its constructor warning and manual host/port branch in `attach()`. `testcontainers` is a hard dependency, so these paths never ran.
-
-### Notes
-
-- `IRISDockerContainer` deliberately does not derive from testcontainers' `DbContainer`: upstream marks it deprecated for removal and its `_connect` imports sqlalchemy. See `docs/learnings/testcontainers-iris-removal.md` and `docs/learnings/container-base-dead-code-and-env-transfer.md`.
-## [Unreleased] - `idt image` hardening (feature 035)
-
-### Changed
+#### Changed
 
 - **`idt image build --timeout` now means the IRIS health wait only** (default 120 s). It used to be a total limit (default 900 s) that was partly ignored. The build phase has its own `--build-timeout` (default 900 s) and `idt image load` has `--load-timeout` (default 300 s); `idt image load --timeout` is also the health wait (default 120 s).
 - **The `_SYSTEM` password is masked by default** in the `idt image` summary (`********`), and the "Setting \_SYSTEM password to ..." line is gone. Use `--show-password` to print it. `idt container up` output is unchanged.
@@ -33,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A failed password reset with a non-default `--password` now fails** (exit 1, container kept). With the default password it stays a warning.
 - `iris_devtester/cli/image_commands.py` is now a shim over the new `iris_devtester/cli/image/` package; the import path is unchanged.
 
-### Added
+#### Added
 
 - `--build-timeout`, `--load-timeout`, `--replace`, `--show-password`, `--iris-main-image` options and the `IDT_IRIS_MAIN` and `IRIS_LICENSE_KEY` environment variables.
 - Build timeouts are enforced: the whole build process group gets SIGTERM, then SIGKILL after 3 s (macOS and Linux; Windows kills only the Docker CLI).
@@ -42,9 +26,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - One error format (what / why / fix) for every failure, and exit codes: 0 success, 1 Docker or runtime failure, 2 bad input or precondition (installer kit given to `load`, bad explicit path, name collision, no valid `iris-main`, architecture mismatch), 5 any timeout.
 - `docs/learnings/image-build-installer-kit.md`.
 
-### Fixed
+#### Fixed
 
 - Timeouts are no longer reported as "Unexpected error".
+
+### Container base hardening (feature 036)
+
+#### Changed
+
+- **`IRISDockerContainer` passes username, password and namespace through the exec environment**, not through the command text. The two start-up steps (create database, create user) run fixed commands that read `IDT_NAMESPACE`, `IDT_USERNAME` and `IDT_PASSWORD` inside IRIS, so any password works, including one with quotes or `$(...)`. `IRISContainer` inherits this.
+- **New validation, raised as `ValueError` from the constructor before `docker run`.** A namespace other than `USER` must match `[A-Za-z][A-Za-z0-9_]{0,63}`. A username (checked only when a password is also supplied) must match `[A-Za-z0-9_][A-Za-z0-9_.@-]{0,127}`. A password must be non-empty and free of NUL. Values read from `IRIS_NAMESPACE`, `IRIS_USERNAME` and `IRIS_PASSWORD` are validated too and named in the error. The password never appears in an error or log line.
+- **Create-database and create-user failures now raise.** The exit status was only logged before; a failed step now raises a structured `RuntimeError` naming the step.
+- **Community licence check logs Docker failures at warning level** and only swallows Docker and container-not-started errors; other exceptions propagate. On the start-up timeout path the message now says when the licence check could not read the container logs.
+- **`idt container up` containers carry labels** `io.iris-devtester.created-by=idt` and `io.iris-devtester.image=<ref>` (same for `IRISContainerManager._create_with_docker_sdk`). Nothing else about `container up` changes.
+
+#### Removed
+
+- **`driver` parameter and attribute on `IRISDockerContainer`.** It had no effect. Passing `driver=` now raises `TypeError`.
+- Dead code in `containers/iris_container.py`: the `_IRISMockContainer` stub, the `IRISBase` / `_ActualBase` aliases, and the `HAS_TESTCONTAINERS` flag with its constructor warning and manual host/port branch in `attach()`. `testcontainers` is a hard dependency, so these paths never ran.
+
+#### Notes
+
+- `IRISDockerContainer` deliberately does not derive from testcontainers' `DbContainer`: upstream marks it deprecated for removal and its `_connect` imports sqlalchemy. See `docs/learnings/testcontainers-iris-removal.md` and `docs/learnings/container-base-dead-code-and-env-transfer.md`.
 
 ## [1.20.1] - 2026-09-29 - Community arm64 default tag fix (expired 2025.1 license); OrbStack-aware messages
 
