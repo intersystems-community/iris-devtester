@@ -12,6 +12,7 @@ from docker.errors import DockerException, NotFound
 from docker.models.containers import Container
 from iris_devtester.config.container_config import ContainerConfig
 from iris_devtester.containers.iris_container import IRISContainer
+from iris_devtester.containers.labels import build_labels
 
 
 @dataclass
@@ -350,9 +351,13 @@ class IRISContainerManager:
 
             volumes[host_path] = {"bind": container_path, "mode": "ro"}
 
-        # Create container without testcontainers labels (prevents ryuk cleanup)
+        # Create container without testcontainers labels (prevents ryuk cleanup).
+        # The idt labels below only mark the container as ours; they do not
+        # opt it in to ryuk.
+        image_name = config.get_image_name()
         container = client.containers.create(
-            image=config.get_image_name(),
+            image=image_name,
+            labels=build_labels(image_name),
             name=config.container_name,
             volumes=volumes or None,
             ports={

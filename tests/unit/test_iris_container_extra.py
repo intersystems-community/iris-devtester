@@ -256,7 +256,9 @@ class TestAttachMethod:
                 host_port=31972
             )
 
-            with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+            with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                 container = IRISContainer.attach("test-iris", port=31971)
 
             assert container._mapped_port == 31971
@@ -273,7 +275,9 @@ class TestAttachMethod:
                 host_port=31972
             )
 
-            with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+            with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                 container = IRISContainer.attach("test-iris")
 
             # Port is read from docker attrs
@@ -291,7 +295,9 @@ class TestAttachMethod:
                     host_port=31972
                 )
 
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     container = IRISContainer.attach("test-iris")
 
                 assert container._mapped_port == 31971
@@ -308,7 +314,9 @@ class TestAttachMethod:
                     host_port=31972
                 )
 
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     container = IRISContainer.attach("test-iris")
 
                 assert container._mapped_port == 31970
@@ -325,7 +333,9 @@ class TestAttachMethod:
                     host_port=31972
                 )
 
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     container = IRISContainer.attach("test-iris", port=31968)
 
                 assert container._mapped_port == 31968
@@ -342,7 +352,9 @@ class TestAttachMethod:
                     host_port=31972
                 )
 
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     container = IRISContainer.attach("test-iris")
 
                 # Falls back to docker reading
@@ -369,7 +381,9 @@ class TestAttachMethod:
             mock_docker.return_value = mock_client
             mock_client.containers.get.return_value = self._make_mock_docker_container()
 
-            with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+            with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                 container = IRISContainer.attach(
                     "test-iris",
                     username="CUSTOM",
@@ -390,7 +404,9 @@ class TestAttachMethod:
             mock_docker.return_value = mock_client
             mock_client.containers.get.return_value = self._make_mock_docker_container()
 
-            with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", True):
+            with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                 with patch.object(IRISContainer, "get_config") as mock_get_config:
                     IRISContainer.attach("test-iris", port=31971)
                     mock_get_config.assert_called_once()
@@ -407,7 +423,9 @@ class TestAttachMethod:
             with patch(
                 "iris_devtester.containers.iris_container.unexpire_all_passwords"
             ) as mock_unexpire:
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     IRISContainer.attach("test-iris")
                     mock_unexpire.assert_called_once_with("test-iris")
 
@@ -423,7 +441,9 @@ class TestAttachMethod:
             with patch(
                 "iris_devtester.containers.iris_container.unexpire_all_passwords"
             ) as mock_unexpire:
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     IRISContainer.attach("test-iris", unexpire_passwords=False)
                     mock_unexpire.assert_not_called()
 
@@ -440,7 +460,9 @@ class TestAttachMethod:
                 "iris_devtester.containers.iris_container.unexpire_all_passwords",
                 side_effect=Exception("Failed to unexpire"),
             ):
-                with patch("iris_devtester.containers.iris_container.HAS_TESTCONTAINERS", False):
+                with patch.object(IRISContainer, "get_exposed_port", return_value=31972), patch.object(
+                IRISContainer, "get_container_host_ip", return_value="localhost"
+            ):
                     # Should not raise, just continue
                     container = IRISContainer.attach("test-iris")
                     assert container is not None
@@ -771,7 +793,7 @@ class TestPortRegistry:
             with patch.object(container, "with_env"):
                 with patch.object(container, "with_bind_ports"):
                     with patch.object(container, "get_config"):
-                        with patch("iris_devtester.containers.iris_container.IRISBase.start"):
+                        with patch("iris_devtester.containers.iris_container.IRISDockerContainer.start"):
                             container.start()
 
         mock_port_registry.assign_port.assert_called_once_with(
@@ -788,7 +810,7 @@ class TestPortRegistry:
         with patch.object(container, "with_cpf_merge"):
             with patch.object(container, "with_env"):
                 with patch.object(container, "get_config"):
-                    with patch("iris_devtester.containers.iris_container.IRISBase.start"):
+                    with patch("iris_devtester.containers.iris_container.IRISDockerContainer.start"):
                         container.start()
 
         assert container._port_assignment is None
