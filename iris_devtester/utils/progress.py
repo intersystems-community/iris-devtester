@@ -285,6 +285,7 @@ def print_connection_info(
     namespace: str,
     username: str = "_SYSTEM",
     password: str = "SYS",
+    show_password: bool = True,
 ) -> None:
     """
     Print connection information for IRIS container.
@@ -296,6 +297,8 @@ def print_connection_info(
         namespace: Default namespace
         username: Username
         password: Password
+        show_password: Print the real password (default). When False the
+            password is masked as ``********``.
 
     Example:
         >>> print_connection_info("iris_db", 1972, 52773, "USER")
@@ -311,4 +314,7 @@ def print_connection_info(
     print(f"  Web Portal:  http://localhost:{webserver_port}")
     print(f"  Namespace:   {namespace}")
     print(f"  Username:    {username}")
-    print(f"  Password:    {password}")
+    if show_password:
+        print(f"  Password:    {password}")
+    else:
+        print("  Password:    ******** (set with --password)")

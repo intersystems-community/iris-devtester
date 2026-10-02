@@ -5,7 +5,7 @@ All notable changes to iris-devtester will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - container base hardening (feature 036)
 
 ### Changed
 
@@ -23,6 +23,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 
 - `IRISDockerContainer` deliberately does not derive from testcontainers' `DbContainer`: upstream marks it deprecated for removal and its `_connect` imports sqlalchemy. See `docs/learnings/testcontainers-iris-removal.md` and `docs/learnings/container-base-dead-code-and-env-transfer.md`.
+## [Unreleased] - `idt image` hardening (feature 035)
+
+### Changed
+
+- **`idt image build --timeout` now means the IRIS health wait only** (default 120 s). It used to be a total limit (default 900 s) that was partly ignored. The build phase has its own `--build-timeout` (default 900 s) and `idt image load` has `--load-timeout` (default 300 s); `idt image load --timeout` is also the health wait (default 120 s).
+- **The `_SYSTEM` password is masked by default** in the `idt image` summary (`********`), and the "Setting \_SYSTEM password to ..." line is gone. Use `--show-password` to print it. `idt container up` output is unchanged.
+- **The license key is mounted, not baked.** `idt image build` no longer copies `iris.key` into the build context or image; it mounts it read-only at run time. The key comes from `--license`, `IRIS_LICENSE_KEY` or `./iris.key` only; the package-parent and `~/ws/iris-devtester/iris.key` lookups were removed.
+- **A failed password reset with a non-default `--password` now fails** (exit 1, container kept). With the default password it stays a warning.
+- `iris_devtester/cli/image_commands.py` is now a shim over the new `iris_devtester/cli/image/` package; the import path is unchanged.
+
+### Added
+
+- `--build-timeout`, `--load-timeout`, `--replace`, `--show-password`, `--iris-main-image` options and the `IDT_IRIS_MAIN` and `IRIS_LICENSE_KEY` environment variables.
+- Build timeouts are enforced: the whole build process group gets SIGTERM, then SIGKILL after 3 s (macOS and Linux; Windows kills only the Docker CLI).
+- Containers created by `idt image` are labelled `io.iris-devtester.created-by=idt` and `io.iris-devtester.image=<ref>`. Only labelled containers can be replaced (`--replace`); unlabelled ones are never removed.
+- `iris-main` is validated against `--platform` by its ELF header before the build directory is populated, and can be extracted from an image.
+- One error format (what / why / fix) for every failure, and exit codes: 0 success, 1 Docker or runtime failure, 2 bad input or precondition (installer kit given to `load`, bad explicit path, name collision, no valid `iris-main`, architecture mismatch), 5 any timeout.
+- `docs/learnings/image-build-installer-kit.md`.
+
+### Fixed
+
+- Timeouts are no longer reported as "Unexpected error".
 
 ## [1.20.1] - 2026-09-29 - Community arm64 default tag fix (expired 2025.1 license); OrbStack-aware messages
 
